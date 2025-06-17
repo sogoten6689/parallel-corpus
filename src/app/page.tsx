@@ -1,10 +1,14 @@
+'use client';
 import Image from "next/image";
+import { useTranslation } from "react-i18next";
 
 export default function Home() {
+  const { t } = useTranslation();
+
   return (
     <div className="grid items-center justify-items-center">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <h1 className="text-[32px] sm:text-[48px]">Parallel Corpus</h1>
+        <h1 className="text-[32px] sm:text-[48px]">{t("app_name")}</h1>
       </main>
       <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
         <a

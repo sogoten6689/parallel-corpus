@@ -12,7 +12,9 @@ import {
   MoonOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
-import { useTheme } from '@/app/ThemeProvider';
+import { useTheme } from '@/app/theme-provider';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from './language-switcher';
 
 const { Header, Sider, Content } = Layout;
 
@@ -23,12 +25,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   } = theme.useToken();
 
   const { mode, toggleTheme } = useTheme();
+  const { t } = useTranslation();
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
         <div
-          className=' flex items-center justify-center  p-4 align-center space-x-4'
-          // style={{ display: 'flex' }}
+          className=' flex items-center justify-center p-2 align-center space-x-2'
         >
           <Image 
             width={32}
@@ -36,7 +38,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             src="/hcmus-icon.png"
             alt="logo"
           />
-          {!collapsed && <Typography.Text style={{ color: 'white' }} color='white' className='font-bold color-white text-2xl text-white py-2 my-2'>Parallel Corpus</Typography.Text>}
+          {!collapsed && <Typography.Text style={{ color: 'white' }} color='white' className='font-bold color-white text-2xl text-white py-2 my-2'>{t("app_name")}</Typography.Text>}
         </div>
         <Menu theme="dark" mode="inline" defaultSelectedKeys={['1']} items={
           [
@@ -59,10 +61,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className='flex-end'>
               
               <div style={{ float: 'right', padding: '0 16px' }}>
-                Theme: {mode === 'light' ? <SunOutlined onClick={toggleTheme} /> : <MoonOutlined onClick={toggleTheme} />}
+                {t('toggleTheme')} {mode === 'light' ? <SunOutlined onClick={toggleTheme} /> : <MoonOutlined onClick={toggleTheme} />}
               </div>
               <div style={{ float: 'right', padding: '0 16px' }}>
-                Language: EN
+                <LanguageSwitcher />
               </div>
           </div>
         </Header>

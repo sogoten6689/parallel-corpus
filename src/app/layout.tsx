@@ -1,9 +1,11 @@
+'use client';
+import './i18n/config';
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import AppLayout from "@/components/ui/app-layout";
-import ThemeProvider from "./ThemeProvider";
+import ThemeProvider from "./theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,18 +17,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "HCMUS - Parallel Corpus",
-  description: "HCMUS - Parallel Corpus",
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning={false}>
+      <head>
+        <title>HCMUS - Parallel Corpus</title>
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -35,7 +36,6 @@ export default function RootLayout({
             <AppLayout>{children}</AppLayout>
           </ThemeProvider>
         </AntdRegistry>
-        {/* {children} */}
       </body>
     </html>
   );
