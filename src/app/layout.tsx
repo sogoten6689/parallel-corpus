@@ -6,6 +6,7 @@ import "./globals.css";
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import AppLayout from "@/components/ui/app-layout";
 import ThemeProvider from "./theme-provider";
+import ReduxProvider from '@/redux/provider';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,7 +34,9 @@ export default function RootLayout({
       >
         <AntdRegistry>
           <ThemeProvider>
-            <AppLayout>{children}</AppLayout>
+            <ReduxProvider>
+              <AppLayout>{children}</AppLayout>
+            </ReduxProvider>
           </ThemeProvider>
         </AntdRegistry>
       </body>
