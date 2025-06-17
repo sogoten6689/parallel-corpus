@@ -1,7 +1,6 @@
 'use client';
 
 import { Select } from 'antd';
-import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const languages = [
