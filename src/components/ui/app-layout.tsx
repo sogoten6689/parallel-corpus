@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Layout, Menu, theme } from 'antd';
+import { Image, Layout, Menu, theme, Typography } from 'antd';
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -22,17 +22,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <Layout style={{ minHeight: '100vh' }}>
       <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
         <div
-          style={{
-            height: 32,
-            margin: 16,
-            background: 'rgba(255, 255, 255, 0.3)',
-            color: '#fff',
-            textAlign: 'center',
-            lineHeight: '32px',
-            fontWeight: 'bold',
-          }}
+          className=' flex items-center justify-center  p-4 align-center space-x-4'
+          // style={{ display: 'flex' }}
         >
-          {collapsed ? 'PC' : 'ParallelCorpus'}
+          <Image 
+            width={32}
+            height={32}
+            src="/hcmus-icon.png"
+            alt="logo"
+          />
+          {!collapsed && <Typography.Text style={{ color: 'white' }} color='white' className='font-bold color-white text-2xl text-white py-2 my-2'>Parallel Corpus</Typography.Text>}
         </div>
         <Menu theme="dark" mode="inline" defaultSelectedKeys={['1']} items={
           [
