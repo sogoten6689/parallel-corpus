@@ -10,11 +10,17 @@ import {
   BulbOutlined,
   SunOutlined,
   MoonOutlined,
+  FontColorsOutlined,
+  InfoOutlined,
+  TagOutlined,
+  TagsOutlined,
+  StockOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useTheme } from '@/app/theme-provider';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './language-switcher';
+import FileUploader from './file-uploader';
 
 const { Header, Sider, Content } = Layout;
 
@@ -44,13 +50,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           [
             {
               key: '1',
-              icon: <HomeOutlined />,
-              label: <Link href="/">Home</Link>,
+              icon: <FontColorsOutlined />,
+              label: <Link href="/">{t('word')}</Link>,
             },
             {
               key: '2',
-              icon: <UserOutlined />,
-              label: <Link href="/about">About</Link>,
+              icon: <TagOutlined /> ,
+              label: <Link href="/tag">{t('tag')}</Link>,
+            },
+            {
+              key: '3',
+              icon: <TagsOutlined /> ,
+              label: <Link href="/word-tag">{t('word_tag')}</Link>,
+            },
+            {
+              key: '4',
+              icon: <StockOutlined /> ,
+              label: <Link href="/statistical">{t('statistical')}</Link>,
+            },
+            {
+              key: '5',
+              icon: <InfoOutlined  />,
+              label: <Link href="/introduction">{t('introduction')}</Link>,
             },
           ]
         }>
@@ -66,6 +87,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <div style={{ float: 'right', padding: '0 16px' }}>
                 <LanguageSwitcher />
               </div>
+              <div style={{ float: 'right', padding: '0 16px' }}>
+                <FileUploader />
+              </div>
+
           </div>
         </Header>
         <Content style={{ margin: '16px' }}>

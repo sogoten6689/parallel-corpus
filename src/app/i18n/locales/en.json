@@ -2,5 +2,11 @@
   "app_name": "Parallel Corpus",
   "welcome": "Welcome to Parallel Corpus",
   "toggleTheme": "Toggle theme",
-  "language": "Language"
+  "language": "Language",
+  "word": "Word",
+  "tag": "Tag",
+  "word_tag": "Word Tag",
+  "in_develop": "In develop",
+  "statistical": "Statistical",
+  "introduction": "Introduction"
 }
