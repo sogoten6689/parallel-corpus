@@ -94,7 +94,7 @@ export default function FileUploader() {
       </div>
 
 
-      {/* {loading && <p className="text-gray-500">Đang tải dữ liệu...</p>} */}
+      {loading && <p className="text-gray-500">Đang tải dữ liệu...</p>}
     </div>
   );
 }

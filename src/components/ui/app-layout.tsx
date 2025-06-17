@@ -3,11 +3,6 @@
 import React, { useState } from 'react';
 import { Image, Layout, Menu, theme, Typography } from 'antd';
 import {
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  UserOutlined,
-  HomeOutlined,
-  BulbOutlined,
   SunOutlined,
   MoonOutlined,
   FontColorsOutlined,
