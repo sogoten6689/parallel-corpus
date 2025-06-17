@@ -7,8 +7,12 @@ import {
   MenuUnfoldOutlined,
   UserOutlined,
   HomeOutlined,
+  BulbOutlined,
+  SunOutlined,
+  MoonOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
+import { useTheme } from '@/app/ThemeProvider';
 
 const { Header, Sider, Content } = Layout;
 
@@ -18,6 +22,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     token: { colorBgContainer },
   } = theme.useToken();
 
+  const { mode, toggleTheme } = useTheme();
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
@@ -52,12 +57,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Layout>
         <Header style={{ padding: 0, background: colorBgContainer }}>
           <div className='flex-end'>
+              
+              <div style={{ float: 'right', padding: '0 16px' }}>
+                Theme: {mode === 'light' ? <SunOutlined onClick={toggleTheme} /> : <MoonOutlined onClick={toggleTheme} />}
+              </div>
               <div style={{ float: 'right', padding: '0 16px' }}>
                 Language: EN
-              </div>
-
-              <div style={{ float: 'right', padding: '0 16px' }}>
-                Theme: Light
               </div>
           </div>
         </Header>
