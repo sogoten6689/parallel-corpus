@@ -4,6 +4,7 @@ import './i18n/config';
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AntdRegistry } from '@ant-design/nextjs-registry';
+import '@ant-design/v5-patch-for-react-19';
 import AppLayout from "@/components/ui/app-layout";
 import ThemeProvider from "./theme-provider";
 import ReduxProvider from '@/redux/provider';
@@ -23,7 +24,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  
+
   return (
     <html lang="en" suppressHydrationWarning={false}>
       <head>

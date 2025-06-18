@@ -1,22 +1,38 @@
 'use client';
 
-import { Select } from 'antd';
+import { Dropdown, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { GlobalOutlined } from '@ant-design/icons';
 
 const languages = [
-  { value: 'en', label: 'English' },
-  { value: 'vi', label: 'Tiếng Việt' },
+  { key: 'en', label: 'English' },
+  { key: 'vi', label: 'Tiếng Việt' },
 ];
 
 export default function LanguageSwitcher() {
   const { i18n } = useTranslation();
+
+  const items = languages.map((lang) => ({
+    key: lang.key,
+    label: lang.label,
+    onClick: () => i18n.changeLanguage(lang.key)
+  }));
+
+  const getCurrentLanguageLabel = () => {
+    return languages.find(lang => lang.key === i18n.language)?.label || 'English';
+  };
+
   return (
-    <Select
-      defaultValue={i18n.language}
-      value={i18n.language}
-      onChange={(lang) => i18n.changeLanguage(lang)}
-      style={{ width: 120 }}
-      options={languages}
-    />
+    <Dropdown
+      menu={{ items }}
+      trigger={['click']}
+    >
+      <a onClick={(e) => e.preventDefault()}>
+        <Space className="cursor-pointer">
+          <GlobalOutlined />
+          {getCurrentLanguageLabel()}
+        </Space>
+      </a>
+    </Dropdown>
   );
 }
