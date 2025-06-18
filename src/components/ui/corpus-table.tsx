@@ -6,7 +6,6 @@ import { RowWord } from '@/types/row-word.type';
 
 const columns = [
   { title: 'ID', dataIndex: 'ID', key: 'ID' },
-  { title: 'ID Sentence', dataIndex: 'ID_sen', key: 'ID_sen' },
   { title: 'Word', dataIndex: 'Word', key: 'Word' },
   { title: 'Lemma', dataIndex: 'Lemma', key: 'Lemma' },
   { title: 'Links', dataIndex: 'Links', key: 'Links' },
@@ -17,7 +16,6 @@ const columns = [
   { title: 'NER', dataIndex: 'NER', key: 'NER' },
   { title: 'Semantic', dataIndex: 'Semantic', key: 'Semantic' },
 ];
-
 
 type CorpusTableProps = {
   data: RowWord[]
@@ -31,7 +29,7 @@ export default function CorpusTable({ data }: CorpusTableProps) {
         columns={columns}
         rowKey="ID"
         scroll={{ x: 'max-content' }}
-        pagination={{ pageSize: 10 }}
+        className='w-full'
       />
     </div>
   );

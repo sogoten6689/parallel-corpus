@@ -33,7 +33,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <div
           className=' flex items-center justify-center p-2 align-center space-x-2'
         >
-          <Image 
+          <Image
             width={32}
             height={32}
             src="/hcmus-icon.png"
@@ -50,22 +50,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             },
             {
               key: '2',
-              icon: <TagOutlined /> ,
+              icon: <TagOutlined />,
               label: <Link href="/tag">{t('tag')}</Link>,
             },
             {
               key: '3',
-              icon: <TagsOutlined /> ,
+              icon: <TagsOutlined />,
               label: <Link href="/word-tag">{t('word_tag')}</Link>,
             },
             {
               key: '4',
-              icon: <StockOutlined /> ,
+              icon: <StockOutlined />,
               label: <Link href="/statistical">{t('statistical')}</Link>,
             },
             {
               key: '5',
-              icon: <InfoOutlined  />,
+              icon: <InfoOutlined />,
               label: <Link href="/introduction">{t('introduction')}</Link>,
             },
           ]
@@ -75,16 +75,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Layout>
         <Header style={{ padding: 0, background: colorBgContainer }}>
           <div className='flex-end'>
-              
-              <div style={{ float: 'right', padding: '0 16px' }}>
-                {t('toggleTheme')} {mode === 'light' ? <SunOutlined onClick={toggleTheme} /> : <MoonOutlined onClick={toggleTheme} />}
-              </div>
-              <div style={{ float: 'right', padding: '0 16px' }}>
-                <LanguageSwitcher />
-              </div>
-              <div style={{ float: 'right', padding: '0 16px' }}>
-                <FileUploader />
-              </div>
+
+            <div style={{ float: 'right', padding: '0 16px' }}>
+              <span
+                className="cursor-pointer select-none"
+                onClick={toggleTheme}
+              >
+                {t('toggleTheme')}
+              </span>{' '}
+              {mode === 'light' ? (
+                <SunOutlined onClick={toggleTheme} />
+              ) : (
+                <MoonOutlined onClick={toggleTheme} />
+              )}
+            </div>
+            <div style={{ float: 'right', padding: '0 16px' }}>
+              <LanguageSwitcher />
+            </div>
+            <div style={{ float: 'right', padding: '0 16px' }}>
+              <FileUploader />
+            </div>
 
           </div>
         </Header>
