@@ -1,7 +1,7 @@
 'use client';
 import CorpusTable from "@/components/ui/corpus-table";
 import { RootState } from "@/redux";
-import { Breadcrumb, Switch } from "antd";
+import { Switch } from "antd";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 import { useState } from "react";

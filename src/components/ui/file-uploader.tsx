@@ -90,11 +90,11 @@ export default function FileUploader() {
     },
   };
 
-  const parseTextAndDispatch = (text: string, action: any) => {
-    const lines = text.split('\n').filter((l) => l.trim() !== '');
-    const rows: RowWord[] = lines.map(parseLine);
-    dispatch(action(rows));
-  };
+  // const parseTextAndDispatch = (text: string, action: PayloadAction<RowWord[]>) => {
+  //   const lines = text.split('\n').filter((l) => l.trim() !== '');
+  //   const rows: RowWord[] = lines.map(parseLine);
+  //   dispatch(action(rows));
+  // };
 
   const handleLoadSample = async () => {
     setLoading(true);
@@ -110,8 +110,19 @@ export default function FileUploader() {
     }
     const text_1 = await response_dt1.text(),
       text_2 = await response_dt2.text();
-    parseTextAndDispatch(text_1, setRows_1);
-    parseTextAndDispatch(text_2, setRows_2);
+
+
+    // parseTextAndDispatch(text_1, setRows_1);
+    // parseTextAndDispatch(text_2, setRows_2);
+
+    const lines_1 = text_1.split('\n').filter((l) => l.trim() !== '');
+    const row_1s: RowWord[] = lines_1.map(parseLine);
+    dispatch(setRows_1(row_1s));
+
+    const lines_2 = text_2.split('\n').filter((l) => l.trim() !== '');
+    const row_2s: RowWord[] = lines_2.map(parseLine);
+    dispatch(setRows_2(row_2s));
+
     setLoading(false);
   };
 
