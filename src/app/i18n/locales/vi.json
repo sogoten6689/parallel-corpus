@@ -17,7 +17,8 @@
   "please_upload_two_files": "Vui lòng tải lên chính xác 2 tệp",
   "no_valid_data": "Không tìm thấy dữ liệu hợp lệ trong tệp",
   "error_parsing_file": "Lỗi khi phân tích tệp",
-  "selected_files": "Tệp đã chọn",
+  "select_files": "Chọn tệp",
   "loading_data": "Đang tải dữ liệu...",
-  "select_language": "Chọn chế độ xem"
+  "select_language": "Chọn chế độ xem",
+  "upload_files": "Tải lên tệp"
 }

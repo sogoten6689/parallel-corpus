@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Image, Layout, Menu, theme, Typography } from 'antd';
+import { Image, Layout, Menu, theme, Typography, Flex, Divider } from 'antd';
 import {
   SunOutlined,
   MoonOutlined,
@@ -73,30 +73,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </Menu>
       </Sider>
       <Layout>
-        <Header style={{ padding: 0, background: colorBgContainer }}>
-          <div className='flex-end'>
-
-            <div style={{ float: 'right', padding: '0 16px' }}>
-              <span
-                className="cursor-pointer select-none"
-                onClick={toggleTheme}
-              >
-                {t('toggleTheme')}
-              </span>{' '}
-              {mode === 'light' ? (
-                <SunOutlined onClick={toggleTheme} />
-              ) : (
-                <MoonOutlined onClick={toggleTheme} />
-              )}
-            </div>
-            <div style={{ float: 'right', padding: '0 16px' }}>
-              <LanguageSwitcher />
-            </div>
-            <div style={{ float: 'right', padding: '0 16px' }}>
+        <Header style={{ background: colorBgContainer }}>
+          <Flex gap='middle' align="center" style={{ width: '100%' }}>
+            <Flex gap="middle" align="center" style={{ flex: 1, justifyContent: 'center' }}>
               <FileUploader />
-            </div>
-
-          </div>
+            </Flex>
+            
+            <Flex gap="middle" align="center" style={{ justifyContent: 'flex-end', marginRight: 20 }}>
+              {mode === 'light' ? (
+                <SunOutlined onClick={toggleTheme} style={{ fontSize: 20, verticalAlign: 'middle' }} />
+              ) : (
+                <MoonOutlined onClick={toggleTheme} style={{ fontSize: 20, verticalAlign: 'middle' }} />
+              )}
+              <Divider type="vertical" />
+              <LanguageSwitcher />
+            </Flex>
+          </Flex>
         </Header>
         <Content style={{ margin: '16px' }}>
           <div style={{ padding: 24, minHeight: 360, background: colorBgContainer }}>

@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux';
 import { setRows_1, setRows_2 } from '@/redux/slices/dataSlice';
 import { RowWord } from '@/types/row-word.type';
 import { useState } from 'react';
-import { Button, Upload, message } from 'antd';
+import { Button, Upload, App, Spin, Dropdown } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
@@ -14,6 +14,7 @@ const sampleFiles = [
 ];
 
 export default function FileUploader() {
+  const { message } = App.useApp(); // Add this line to get message from App context
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
@@ -70,24 +71,46 @@ export default function FileUploader() {
     accept: '.txt',
     fileList,
     multiple: true,
-    beforeUpload: (file) => {
-      if (fileList.length >= 2) {
-        message.error(t('max_two_files'));
-        return false;
+    showUploadList: false,
+    beforeUpload: () => false, // Prevent auto upload
+    onChange: (info) => {
+      let files = info.fileList.slice(-2);
+
+      if (files.length < 2) {
+        setFileList([]); // Clear fileList so next selection is fresh
+        message.warning(t('please_upload_two_files'));
+        // Optionally clear redux state here if needed
+        return;
       }
-      handleUpload(file);
-      setFileList(prev => [...prev, { ...file, status: 'done' } as UploadFile]);
-      return false; // Prevent default upload behavior
-    },
-    onRemove: (file) => {
-      setFileList(prev => prev.filter(item => item.uid !== file.uid));
-      // Clear corresponding data
-      if (fileList.indexOf(file) === 0) {
-        dispatch(setRows_1([]));
-      } else {
-        dispatch(setRows_2([]));
-      }
-    },
+
+      setFileList(files);
+
+      // Process files only if exactly two are selected
+      files.forEach((file, idx) => {
+        if (file.originFileObj) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const text = reader.result as string;
+              const lines = text.split('\n').filter((l) => l.trim() !== '');
+              const rows: RowWord[] = lines.map(parseLine);
+              if (rows.length === 0) {
+                message.error(t('no_valid_data'));
+                return;
+              }
+              if (idx === 0) {
+                dispatch(setRows_1(rows));
+              } else {
+                dispatch(setRows_2(rows));
+              }
+            } catch {
+              message.error(t('error_parsing_file'));
+            }
+          };
+          reader.readAsText(file.originFileObj);
+        }
+      });
+    }
   };
 
   const parseTextAndDispatch = (text: string, action: any) => {
@@ -104,7 +127,7 @@ export default function FileUploader() {
     const response_dt1 = await fetch('/data/' + file_1),
       response_dt2 = await fetch('/data/' + file_2);
     if (!response_dt1.ok || !response_dt2.ok) {
-      alert('Failed to load sample files');
+      message.error(t('failed_to_load_sample_files') || 'Failed to load sample files');
       setLoading(false);
       return;
     }
@@ -115,43 +138,43 @@ export default function FileUploader() {
     setLoading(false);
   };
 
-  return (
-    <div className="flex w-full justify-center items-center">
-      {loading && (
-        <p className="text-gray-500 text-center">{t('loading_data')}</p>
-      )}
-      {/* Sample Files Section */}
-      <div className="flex flex-row items-center space-x-2">
-        <select
-          value={selectedSample}
-          onChange={(e) => setSelectedSample(e.target.value)}
-          className="border px-2 py-1 rounded"
-        >
-          {sampleFiles.map((file, idx) => (
-            <option key={idx} value={idx}>
-              {file.label}
-            </option>
-          ))}
-        </select>
-        <Button
-          onClick={handleLoadSample}
-          className="px-3 py-1 rounded"
-          type="primary"
-          loading={loading}
-        >
-          {t("view_sample")}
-        </Button>
-      </div>
+  // Dropdown menu for sample files
+  const sampleMenuItems = sampleFiles.map((file, idx) => ({
+    key: String(idx),
+    label: file.label,
+  }));
 
-      {/* File Upload Section */}
-      <div className="flex flex-row items-center space-x-2 ml-4">
-        <label className="font-semibold">{t("machine_upload")}:</label>
-        <Upload {...uploadProps}>
-          <Button icon={<UploadOutlined />}>
-            {t('selected_files')} (Max: 2)
-          </Button>
-        </Upload>
-      </div>
-    </div>
+  return (
+    <>
+      {loading && (
+        <><Spin /><p className="text-gray-500 text-center">{t('loading_data')}</p></>
+      )}
+      <Dropdown
+        menu={{
+          items: sampleMenuItems,
+          onClick: ({ key }) => setSelectedSample(key),
+          selectedKeys: [selectedSample],
+        }}
+        arrow
+        trigger={['click']}
+      >
+        <Button className="rounded">
+          {sampleFiles[Number(selectedSample)].label}
+        </Button>
+      </Dropdown>
+      <Button
+        onClick={handleLoadSample}
+        className="rounded"
+        type="primary"
+        loading={loading}
+      >
+        {t("view_sample")}
+      </Button>
+      <Upload {...uploadProps}>
+        <Button icon={<UploadOutlined />}>
+          {t('select_files')}
+        </Button>
+      </Upload>
+    </>
   );
 }

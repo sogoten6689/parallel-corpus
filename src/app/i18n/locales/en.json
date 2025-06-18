@@ -19,5 +19,6 @@
   "error_parsing_file": "Error parsing file",
   "selected_files": "Selected files",
   "loading_data": "Loading data...",
-  "select_language": "Select view mode"
+  "select_language": "Select view mode",
+  "upload_files": "Upload files"
 }
