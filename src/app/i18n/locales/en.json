@@ -37,5 +37,6 @@
   "phrase_tooltip": "Phrase",
   "grm_tooltip": "Grm",
   "ner_tooltip": "NER",
-  "semantic_tooltip": "Semantic"
+  "semantic_tooltip": "Semantic",
+  "search_word": "Search word"
 }
