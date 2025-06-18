@@ -1,23 +1,24 @@
 'use client';
 
 import { useDispatch } from 'react-redux';
-import { setRows } from '@/redux/slices/dataSlice';
+import { setRows_1, setRows_2 } from '@/redux/slices/dataSlice';
 import { RowWord } from '@/types/row-word.type';
 import { useState } from 'react';
-import { Button } from 'antd';
+import { Button, Upload, message } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-
+import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 
 const sampleFiles = [
-  { label: 'Tiếng Anh (sample_en.txt)', value: 'sample_en.txt' },
-  { label: 'Tiếng Việt (sample_vn.txt)', value: 'sample_vn.txt' },
+  { label: 'Tiếng Anh-Việt (sample)', value_1: 'sample_en.txt', value_2: 'sample_vn.txt' },
 ];
 
 export default function FileUploader() {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
-  const [selectedSample, setSelectedSample] = useState('sample_en.txt');
+  const [selectedSample, setSelectedSample] = useState("0");
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
 
   const parseLine = (line: string): RowWord => {
     const fields = line.split('\t');
@@ -36,65 +37,121 @@ export default function FileUploader() {
     };
   };
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = reader.result as string;
-      const lines = text.split('\n').filter((l) => l.trim() !== '');
-      const rows: RowWord[] = lines.map(parseLine);
-      console.log(rows.length);
-      
-      dispatch(setRows(rows));
-    };
-    reader.readAsText(file);
+  const handleUpload = (file: File): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const text = reader.result as string;
+          const lines = text.split('\n').filter((l) => l.trim() !== '');
+          const rows: RowWord[] = lines.map(parseLine);
+          if (rows.length === 0) {
+            message.error(t('no_valid_data'));
+            reject(new Error('No valid data'));
+            return;
+          }
+          // Dispatch based on file order
+          if (fileList.length === 0) {
+            dispatch(setRows_1(rows));
+          } else {
+            dispatch(setRows_2(rows));
+          }
+          resolve();
+        } catch (error) {
+          message.error(t('error_parsing_file'));
+          reject(error);
+        }
+      };
+      reader.readAsText(file);
+    });
   };
 
-  const parseTextAndDispatch = (text: string) => {
+  const uploadProps: UploadProps = {
+    accept: '.txt',
+    fileList,
+    multiple: true,
+    beforeUpload: (file) => {
+      if (fileList.length >= 2) {
+        message.error(t('max_two_files'));
+        return false;
+      }
+      handleUpload(file);
+      setFileList(prev => [...prev, { ...file, status: 'done' } as UploadFile]);
+      return false; // Prevent default upload behavior
+    },
+    onRemove: (file) => {
+      setFileList(prev => prev.filter(item => item.uid !== file.uid));
+      // Clear corresponding data
+      if (fileList.indexOf(file) === 0) {
+        dispatch(setRows_1([]));
+      } else {
+        dispatch(setRows_2([]));
+      }
+    },
+  };
+
+  const parseTextAndDispatch = (text: string, action: any) => {
     const lines = text.split('\n').filter((l) => l.trim() !== '');
     const rows: RowWord[] = lines.map(parseLine);
-    dispatch(setRows(rows));
+    dispatch(action(rows));
   };
 
   const handleLoadSample = async () => {
     setLoading(true);
-    const response = await fetch('/data/' + selectedSample); // public/data/sample_en.txt
-    const text = await response.text();
-    parseTextAndDispatch(text);
+    const idx = Number(selectedSample);
+    const file_1 = sampleFiles[idx].value_1,
+      file_2 = sampleFiles[idx].value_2;
+    const response_dt1 = await fetch('/data/' + file_1),
+      response_dt2 = await fetch('/data/' + file_2);
+    if (!response_dt1.ok || !response_dt2.ok) {
+      alert('Failed to load sample files');
+      setLoading(false);
+      return;
+    }
+    const text_1 = await response_dt1.text(),
+      text_2 = await response_dt2.text();
+    parseTextAndDispatch(text_1, setRows_1);
+    parseTextAndDispatch(text_2, setRows_2);
     setLoading(false);
   };
 
   return (
-    <div className="flex">
-        <div className="flex items-center space-x-2 mt-1">
-          <select
-            value={selectedSample}
-            onChange={(e) => setSelectedSample(e.target.value)}
-            className="border px-2 py-1 rounded"
-          >
-            {sampleFiles.map((file) => (
-              <option key={file.value} value={file.value}>
-                {file.label}
-              </option>
-            ))}
-          </select>
-          <Button
-            onClick={handleLoadSample}
-            className="px-3 py-1 bg-blue-500 text-white rounded"
-          >
-            Tải lên
-          </Button>
-        </div>
-
-      <div className="ml-4">
-        <label className="font-semibold">{t("machine_upload")}: </label>
-        <input type="file" accept=".txt" onChange={handleUpload} className="mt-1" placeholder=''/>
+    <div className="flex w-full justify-center items-center">
+      {loading && (
+        <p className="text-gray-500 text-center">{t('loading_data')}</p>
+      )}
+      {/* Sample Files Section */}
+      <div className="flex flex-row items-center space-x-2">
+        <select
+          value={selectedSample}
+          onChange={(e) => setSelectedSample(e.target.value)}
+          className="border px-2 py-1 rounded"
+        >
+          {sampleFiles.map((file, idx) => (
+            <option key={idx} value={idx}>
+              {file.label}
+            </option>
+          ))}
+        </select>
+        <Button
+          onClick={handleLoadSample}
+          className="px-3 py-1 rounded"
+          type="primary"
+          loading={loading}
+        >
+          {t("view_sample")}
+        </Button>
       </div>
 
-
-      {loading && <p className="text-gray-500">Đang tải dữ liệu...</p>}
+      {/* File Upload Section */}
+      <div className="flex flex-row items-center space-x-2 ml-4">
+        <label className="font-semibold">{t("machine_upload")}:</label>
+        <Upload {...uploadProps}>
+          <Button icon={<UploadOutlined />}>
+            {t('selected_files')} (Max: 2)
+          </Button>
+        </Upload>
+      </div>
     </div>
   );
 }

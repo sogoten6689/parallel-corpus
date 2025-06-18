@@ -8,5 +8,16 @@
   "word_tag": "Word Tag",
   "in_develop": "In develop",
   "statistical": "Statistical",
-  "introduction": "Introduction"
+  "introduction": "Introduction",
+  "lang1": "Language 1",
+  "lang2": "Language 2",
+  "view_sample": "View data sample",
+  "display_lang": "Language",
+  "machine_upload": "Or upload from your device",
+  "please_upload_two_files": "Please upload exactly 2 files",
+  "no_valid_data": "No valid data found in the file",
+  "error_parsing_file": "Error parsing file",
+  "selected_files": "Selected files",
+  "loading_data": "Loading data...",
+  "select_language": "Select view mode"
 }

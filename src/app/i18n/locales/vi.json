@@ -2,5 +2,22 @@
   "app_name": "Ngữ liệu song song",
   "welcome": "Chào mừng đến với Parallel Corpus",
   "toggleTheme": "Chuyển giao diện",
-  "language": "Ngôn ngữ"
+  "language": "Ngôn ngữ",
+  "word": "Từ",
+  "tag": "Thẻ",
+  "word_tag": "Từ và thẻ",
+  "in_develop": "Đang phát triển",
+  "statistical": "Thống kê",
+  "introduction": "Giới thiệu",
+  "lang1": "Ngôn ngữ 1",
+  "lang2": "Ngôn ngữ 2",
+  "view_sample": "Xem dữ liệu mẫu",
+  "display_lang": "Ngôn ngữ",
+  "machine_upload": "Hoặc tải lên từ thiết bị của bạn",
+  "please_upload_two_files": "Vui lòng tải lên chính xác 2 tệp",
+  "no_valid_data": "Không tìm thấy dữ liệu hợp lệ trong tệp",
+  "error_parsing_file": "Lỗi khi phân tích tệp",
+  "selected_files": "Tệp đã chọn",
+  "loading_data": "Đang tải dữ liệu...",
+  "select_language": "Chọn chế độ xem"
 }
