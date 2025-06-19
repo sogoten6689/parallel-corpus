@@ -4,7 +4,7 @@ import TagTable from "@/components/ui/tag-table";
 import { useTranslation } from "react-i18next";
 import { Divider } from 'antd';
 
-const Tag: React.FC = () => {
+const Word: React.FC = () => {
   const { t } = useTranslation();
 
   return (
@@ -25,4 +25,4 @@ const Tag: React.FC = () => {
   );
 }
 
-export default Tag;
+export default Word;

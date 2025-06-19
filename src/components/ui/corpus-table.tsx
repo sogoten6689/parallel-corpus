@@ -1,13 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Table, Tooltip } from 'antd';
+import { Table, Tooltip, Typography } from 'antd';
 import { RowWord } from '@/types/row-word.type';
-import { useTranslation } from 'react-i18next';
+import { Point } from '@/types/point.type';
+import { useTranslation } from "react-i18next";
 import Modal from 'antd/es/modal/Modal';
 
+const { Text } = Typography;
 type CorpusTableProps = {
-  data: RowWord[]
+  data: RowWord[],
+  sentences: Record<string, Point>
 }
 
 const getColumnKey = (key: string) => {
@@ -37,8 +40,9 @@ const getColumnKey = (key: string) => {
   }
 }
 
-export default function CorpusTable({ data }: CorpusTableProps) {
-const { t } = useTranslation();
+
+export default function CorpusTable({ data, sentences }: CorpusTableProps) {
+  const { t } = useTranslation();
 
 
 // Giả sử bạn dùng i18n
@@ -84,6 +88,9 @@ const columns = columnKeys.map((key) => {
 
   return (
     <div style={{ padding: 16 }}>
+      <div className="mb-4">
+        <Text strong>{t('total_rows')}: {data.length}, {t('total_sentences')}: {Object.entries(sentences).length}</Text>
+      </div>
       <Table
         dataSource={data}
         columns={columns}

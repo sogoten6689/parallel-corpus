@@ -9,7 +9,9 @@ import { useState } from "react";
 export default function Home() {
   const { t } = useTranslation();
   const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1),
-    rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2);
+    rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2),
+    sentences_1 = useSelector((state: RootState) => state.dataSlice.dicId_1),
+    sentences_2 = useSelector((state: RootState) => state.dataSlice.dicId_2);
 
   // State to switch between tables
   const [showFirst, setShowFirst] = useState(true);
@@ -32,7 +34,7 @@ export default function Home() {
           />
         </div>
         <div className="p-4">
-          <CorpusTable data={showFirst ? rows_1 : rows_2} />
+          <CorpusTable data={showFirst ? rows_1 : rows_2} sentences={showFirst ? sentences_1 : sentences_2} />
         </div>
       </div>
     </>
