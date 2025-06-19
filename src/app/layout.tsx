@@ -1,13 +1,15 @@
 'use client';
 import './i18n/config';
+// import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AntdRegistry } from '@ant-design/nextjs-registry';
+import '@ant-design/v5-patch-for-react-19';
+import AppLayout from "@/components/ui/app-layout";
 import ThemeProvider from "./theme-provider";
 import ReduxProvider from '@/redux/provider';
 import '@ant-design/v5-patch-for-react-19';
 import { App as AntdApp } from 'antd';
-import dynamic from 'next/dynamic';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,18 +21,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Dynamically import AppLayout with no SSR
-const DynamicAppLayout = dynamic(() => import('@/components/ui/app-layout'), {
-  ssr: false,
-});
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning={false}>
       <head>
         <title>HCMUS - Parallel Corpus</title>
       </head>
@@ -41,7 +39,7 @@ export default function RootLayout({
           <AntdRegistry>
             <ThemeProvider>
               <ReduxProvider>
-                <DynamicAppLayout>{children}</DynamicAppLayout>
+                <AppLayout>{children}</AppLayout>
               </ReduxProvider>
             </ThemeProvider>
           </AntdRegistry>
