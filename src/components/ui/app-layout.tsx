@@ -10,6 +10,7 @@ import {
   TagOutlined,
   TagsOutlined,
   StockOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useTheme } from '@/app/theme-provider';
@@ -49,22 +50,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               label: <Link href="/">{t('word')}</Link>,
             },
             {
-              key: '2',
+              key: '12',
+              icon: <SearchOutlined />,
+              label: <Link href="/search-word">{t('search_word')}</Link>,
+            },
+            {
+              key: '3',
               icon: <TagOutlined />,
               label: <Link href="/tag">{t('tag')}</Link>,
             },
             {
-              key: '3',
+              key: '4',
               icon: <TagsOutlined />,
               label: <Link href="/word-tag">{t('word_tag')}</Link>,
             },
             {
-              key: '4',
+              key: '5',
               icon: <StockOutlined />,
               label: <Link href="/statistical">{t('statistical')}</Link>,
             },
             {
-              key: '5',
+              key: '6',
               icon: <InfoOutlined />,
               label: <Link href="/introduction">{t('introduction')}</Link>,
             },
@@ -91,9 +97,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Flex>
         </Header>
         <Content style={{ margin: '16px' }}>
-          <div style={{ padding: 24, minHeight: 360, background: colorBgContainer }}>
             {children}
-          </div>
         </Content>
       </Layout>
     </Layout>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { setRows_1, setRows_2 } from '@/redux/slices/dataSlice';
 import { RowWord } from '@/types/row-word.type';
 import { useState } from 'react';
@@ -9,7 +9,6 @@ import { UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 import { initDictSenID } from '@/dao/data-util';
-import { RootState } from "@/redux";
 
 const sampleFiles = [
   { label: 'Tiếng Anh-Việt (sample)', value_1: 'sample_en.txt', value_2: 'sample_vn.txt' },
@@ -51,7 +50,7 @@ export default function FileUploader() {
     showUploadList: false,
     beforeUpload: () => false,
     onChange: (info) => {
-      let files = info.fileList.slice(-2);
+      const files = info.fileList.slice(-2);
 
       if (files.length < 2) {
         setFileList([]);
@@ -61,7 +60,7 @@ export default function FileUploader() {
 
       setFileList(files);
 
-      let loadedRows: RowWord[][] = [];
+      const loadedRows: RowWord[][] = [];
 
       files.forEach((file, idx) => {
         if (file.originFileObj) {
@@ -126,6 +125,7 @@ export default function FileUploader() {
       // Initialize dictionary with actual loaded rows
       initDictSenID(rows1, rows2, dispatch);
     } catch (error) {
+      console.error(error);
       message.error(t('error_loading_files'));
     } finally {
       setLoading(false);
