@@ -1,12 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Table, Typography } from 'antd';
+import { Table } from 'antd';
 import { RowWord } from '@/types/row-word.type';
-import { Point } from '@/types/point.type';
-import { useTranslation } from "react-i18next";
-
-const { Text } = Typography;
+// import { useTranslation } from "react-i18next";
 
 const columns = [
   { title: 'Left', dataIndex: 'Left', key: 'Left' },
@@ -19,7 +16,7 @@ type TagTableProps = {
 }
 
 export default function TagTable({ data }: TagTableProps) {
-  const { t } = useTranslation();
+  // const { t } = useTranslation();
 
   return (
     <div style={{ padding: 16 }}>
