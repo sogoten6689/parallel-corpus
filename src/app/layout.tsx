@@ -8,6 +8,8 @@ import '@ant-design/v5-patch-for-react-19';
 import AppLayout from "@/components/ui/app-layout";
 import ThemeProvider from "./theme-provider";
 import ReduxProvider from '@/redux/provider';
+import '@ant-design/v5-patch-for-react-19';
+import { App as AntdApp } from 'antd';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,13 +35,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AntdRegistry>
-          <ThemeProvider>
-            <ReduxProvider>
-              <AppLayout>{children}</AppLayout>
-            </ReduxProvider>
-          </ThemeProvider>
-        </AntdRegistry>
+        <AntdApp>
+          <AntdRegistry>
+            <ThemeProvider>
+              <ReduxProvider>
+                <AppLayout>{children}</AppLayout>
+              </ReduxProvider>
+            </ThemeProvider>
+          </AntdRegistry>
+        </AntdApp>
       </body>
     </html>
   );

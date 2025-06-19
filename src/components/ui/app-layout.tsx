@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Image, Layout, Menu, theme, Typography } from 'antd';
+import { Image, Layout, Menu, theme, Typography, Flex, Divider } from 'antd';
 import {
   SunOutlined,
   MoonOutlined,
@@ -10,6 +10,7 @@ import {
   TagOutlined,
   TagsOutlined,
   StockOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useTheme } from '@/app/theme-provider';
@@ -46,25 +47,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {
               key: '1',
               icon: <FontColorsOutlined />,
-              label: <Link href="/">{t('word')}</Link>,
+              label: <Link href="/">{t('home')}</Link>,
             },
             {
-              key: '2',
+              key: '12',
+              icon: <SearchOutlined />,
+              label: <Link href="/search-word">{t('search_word')}</Link>,
+            },
+            {
+              key: '3',
               icon: <TagOutlined />,
               label: <Link href="/tag">{t('tag')}</Link>,
             },
             {
-              key: '3',
+              key: '4',
               icon: <TagsOutlined />,
               label: <Link href="/word-tag">{t('word_tag')}</Link>,
             },
             {
-              key: '4',
+              key: '5',
               icon: <StockOutlined />,
               label: <Link href="/statistical">{t('statistical')}</Link>,
             },
             {
-              key: '5',
+              key: '6',
               icon: <InfoOutlined />,
               label: <Link href="/introduction">{t('introduction')}</Link>,
             },
@@ -73,35 +79,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </Menu>
       </Sider>
       <Layout>
-        <Header style={{ padding: 0, background: colorBgContainer }}>
-          <div className='flex-end'>
-
-            <div style={{ float: 'right', padding: '0 16px' }}>
-              <span
-                className="cursor-pointer select-none"
-                onClick={toggleTheme}
-              >
-                {t('toggleTheme')}
-              </span>{' '}
-              {mode === 'light' ? (
-                <SunOutlined onClick={toggleTheme} />
-              ) : (
-                <MoonOutlined onClick={toggleTheme} />
-              )}
-            </div>
-            <div style={{ float: 'right', padding: '0 16px' }}>
-              <LanguageSwitcher />
-            </div>
-            <div style={{ float: 'right', padding: '0 16px' }}>
+        <Header style={{ background: colorBgContainer }}>
+          <Flex gap='middle' align="center" style={{ width: '100%' }}>
+            <Flex gap="middle" align="center" style={{ flex: 1, justifyContent: 'center' }}>
               <FileUploader />
-            </div>
-
-          </div>
+            </Flex>
+            
+            <Flex gap="middle" align="center" style={{ justifyContent: 'flex-end', marginRight: 20 }}>
+              {mode === 'light' ? (
+                <SunOutlined onClick={toggleTheme} style={{ fontSize: 20, verticalAlign: 'middle' }} />
+              ) : (
+                <MoonOutlined onClick={toggleTheme} style={{ fontSize: 20, verticalAlign: 'middle' }} />
+              )}
+              <Divider type="vertical" />
+              <LanguageSwitcher />
+            </Flex>
+          </Flex>
         </Header>
         <Content style={{ margin: '16px' }}>
-          <div style={{ padding: 24, minHeight: 360, background: colorBgContainer }}>
             {children}
-          </div>
         </Content>
       </Layout>
     </Layout>
