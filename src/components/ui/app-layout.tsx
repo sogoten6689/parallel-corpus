@@ -47,7 +47,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {
               key: '1',
               icon: <FontColorsOutlined />,
-              label: <Link href="/">{t('word')}</Link>,
+              label: <Link href="/">{t('home')}</Link>,
             },
             {
               key: '12',
