@@ -4,6 +4,7 @@ import React from 'react';
 import { Table, Typography } from 'antd';
 import { RowWord } from '@/types/row-word.type';
 import { Point } from '@/types/point.type';
+import { useTranslation } from "react-i18next";
 
 const { Text } = Typography;
 
@@ -27,10 +28,12 @@ type CorpusTableProps = {
 }
 
 export default function CorpusTable({ data, sentences }: CorpusTableProps) {
+  const { t } = useTranslation();
+
   return (
     <div style={{ padding: 16 }}>
       <div className="mb-4">
-        <Text strong>Total items: {data.length}, total sentences: {Object.entries(sentences).length}</Text>
+        <Text strong>{t('total_rows')}: {data.length}, {t('total_sentences')}: {Object.entries(sentences).length}</Text>
       </div>
       <Table
         dataSource={data}

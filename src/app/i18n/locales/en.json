@@ -20,5 +20,7 @@
   "selected_files": "Selected files",
   "loading_data": "Loading data...",
   "select_language": "Select view mode",
-  "upload_files": "Upload files"
+  "upload_files": "Upload files",
+  "total_rows": "Total rows",
+  "total_sentences": "Total sentences"
 }

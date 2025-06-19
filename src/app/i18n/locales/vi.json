@@ -20,5 +20,7 @@
   "select_files": "Chọn tệp",
   "loading_data": "Đang tải dữ liệu...",
   "select_language": "Chọn chế độ xem",
-  "upload_files": "Tải lên tệp"
+  "upload_files": "Tải lên tệp",
+  "total_rows": "Tổng số hàng",
+  "total_sentences": "Tổng số câu"
 }
