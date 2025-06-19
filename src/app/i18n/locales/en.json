@@ -3,9 +3,10 @@
   "welcome": "Welcome to Parallel Corpus",
   "toggleTheme": "Toggle theme",
   "language": "Language",
-  "word": "Word",
-  "tag": "Tag",
-  "word_tag": "Word Tag",
+  "home": "Home",
+  "word": "Search Word",
+  "tag": "Search Tag",
+  "word_tag": "Search Word Tag",
   "in_develop": "In develop",
   "statistical": "Statistical",
   "introduction": "Introduction",
@@ -22,5 +23,7 @@
   "select_language": "Select view mode",
   "upload_files": "Upload files",
   "total_rows": "Total rows",
-  "total_sentences": "Total sentences"
+  "total_sentences": "Total sentences",
+  "source_language": "Source Language",
+  "target_language": "Target Language"
 }

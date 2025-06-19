@@ -3,9 +3,10 @@
   "welcome": "Chào mừng đến với Parallel Corpus",
   "toggleTheme": "Chuyển giao diện",
   "language": "Ngôn ngữ",
-  "word": "Từ",
-  "tag": "Nhãn từ loại",
-  "word_tag": "Từ và nhãn từ loại",
+  "home": "Trang chủ",
+  "word": "Tìm kiếm Từ",
+  "tag": "Tìm kiếm Nhãn từ loại",
+  "word_tag": "Tìm kiếm Từ và nhãn từ loại",
   "in_develop": "Đang phát triển",
   "statistical": "Thống kê",
   "introduction": "Giới thiệu",
@@ -22,5 +23,7 @@
   "select_language": "Chọn chế độ xem",
   "upload_files": "Tải lên tệp",
   "total_rows": "Tổng số hàng",
-  "total_sentences": "Tổng số câu"
+  "total_sentences": "Tổng số câu",
+  "source_language": "Ngôn ngữ nguồn",
+  "target_language": "Ngôn ngữ đích"
 }

@@ -10,6 +10,7 @@ import {
   TagOutlined,
   TagsOutlined,
   StockOutlined,
+  HomeOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useTheme } from '@/app/theme-provider';
@@ -29,7 +30,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
+      <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)} width={260}>
         <div
           className=' flex items-center justify-center p-2 align-center space-x-2'
         >
@@ -45,26 +46,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           [
             {
               key: '1',
+              icon: <HomeOutlined />,
+              label: <Link href="/">{t('home')}</Link>,
+            }, {
+              key: '2',
               icon: <FontColorsOutlined />,
-              label: <Link href="/">{t('word')}</Link>,
+              label: <Link href="/word">{t('word')}</Link>,
             },
             {
-              key: '2',
+              key: '3',
               icon: <TagOutlined />,
               label: <Link href="/tag">{t('tag')}</Link>,
             },
             {
-              key: '3',
+              key: '4',
               icon: <TagsOutlined />,
               label: <Link href="/word-tag">{t('word_tag')}</Link>,
             },
             {
-              key: '4',
+              key: '5',
               icon: <StockOutlined />,
               label: <Link href="/statistical">{t('statistical')}</Link>,
             },
             {
-              key: '5',
+              key: '6',
               icon: <InfoOutlined />,
               label: <Link href="/introduction">{t('introduction')}</Link>,
             },
@@ -78,7 +83,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Flex gap="middle" align="center" style={{ flex: 1, justifyContent: 'center' }}>
               <FileUploader />
             </Flex>
-            
+
             <Flex gap="middle" align="center" style={{ justifyContent: 'flex-end', marginRight: 20 }}>
               {mode === 'light' ? (
                 <SunOutlined onClick={toggleTheme} style={{ fontSize: 20, verticalAlign: 'middle' }} />
