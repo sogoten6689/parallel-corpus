@@ -1,6 +1,6 @@
 'use client';
 
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setRows_1, setRows_2 } from '@/redux/slices/dataSlice';
 import { RowWord } from '@/types/row-word.type';
 import { useState } from 'react';
@@ -8,6 +8,8 @@ import { Button, Upload, App, Spin, Dropdown } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
+import { initDictSenID } from '@/dao/data-util';
+import { RootState } from "@/redux";
 
 const sampleFiles = [
   { label: 'Tiếng Anh-Việt (sample)', value_1: 'sample_en.txt', value_2: 'sample_vn.txt' },
@@ -23,48 +25,22 @@ export default function FileUploader() {
 
   const parseLine = (line: string): RowWord => {
     const fields = line.split('\t');
+    if (fields.length !== 10) {
+      return {} as RowWord;
+    }
     return {
       ID: fields[0],
-      ID_sen: fields[1],
-      Word: fields[2],
-      Lemma: fields[3],
-      Links: fields[4],
-      Morph: fields[5],
-      POS: fields[6],
-      Phrase: fields[7],
-      Grm: fields[8],
-      NER: fields[9],
-      Semantic: fields[10],
+      ID_sen: fields[0].slice(2, -2),
+      Word: fields[1],
+      Lemma: fields[2],
+      Links: fields[3],
+      Morph: fields[4],
+      POS: fields[5],
+      Phrase: fields[6],
+      Grm: fields[7],
+      NER: fields[8],
+      Semantic: fields[9],
     };
-  };
-
-  const handleUpload = (file: File): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const text = reader.result as string;
-          const lines = text.split('\n').filter((l) => l.trim() !== '');
-          const rows: RowWord[] = lines.map(parseLine);
-          if (rows.length === 0) {
-            message.error(t('no_valid_data'));
-            reject(new Error('No valid data'));
-            return;
-          }
-          // Dispatch based on file order
-          if (fileList.length === 0) {
-            dispatch(setRows_1(rows));
-          } else {
-            dispatch(setRows_2(rows));
-          }
-          resolve();
-        } catch (error) {
-          message.error(t('error_parsing_file'));
-          reject(error);
-        }
-      };
-      reader.readAsText(file);
-    });
   };
 
   const uploadProps: UploadProps = {
@@ -72,20 +48,20 @@ export default function FileUploader() {
     fileList,
     multiple: true,
     showUploadList: false,
-    beforeUpload: () => false, // Prevent auto upload
+    beforeUpload: () => false,
     onChange: (info) => {
       let files = info.fileList.slice(-2);
 
       if (files.length < 2) {
-        setFileList([]); // Clear fileList so next selection is fresh
+        setFileList([]);
         message.warning(t('please_upload_two_files'));
-        // Optionally clear redux state here if needed
         return;
       }
 
       setFileList(files);
 
-      // Process files only if exactly two are selected
+      let loadedRows: RowWord[][] = [];
+
       files.forEach((file, idx) => {
         if (file.originFileObj) {
           const reader = new FileReader();
@@ -98,10 +74,16 @@ export default function FileUploader() {
                 message.error(t('no_valid_data'));
                 return;
               }
+              loadedRows[idx] = rows;
               if (idx === 0) {
                 dispatch(setRows_1(rows));
               } else {
                 dispatch(setRows_2(rows));
+              }
+
+              // Initialize dictionary only after both files are processed
+              if (loadedRows[0] && loadedRows[1]) {
+                initDictSenID(loadedRows[0], loadedRows[1], dispatch);
               }
             } catch {
               message.error(t('error_parsing_file'));
@@ -113,29 +95,40 @@ export default function FileUploader() {
     }
   };
 
-  const parseTextAndDispatch = (text: string, action: any) => {
-    const lines = text.split('\n').filter((l) => l.trim() !== '');
-    const rows: RowWord[] = lines.map(parseLine);
-    dispatch(action(rows));
-  };
-
   const handleLoadSample = async () => {
     setLoading(true);
     const idx = Number(selectedSample);
     const file_1 = sampleFiles[idx].value_1,
       file_2 = sampleFiles[idx].value_2;
-    const response_dt1 = await fetch('/data/' + file_1),
-      response_dt2 = await fetch('/data/' + file_2);
-    if (!response_dt1.ok || !response_dt2.ok) {
-      message.error(t('failed_to_load_sample_files') || 'Failed to load sample files');
+    try {
+      const [response_dt1, response_dt2] = await Promise.all([
+        fetch('/data/' + file_1),
+        fetch('/data/' + file_2)
+      ]);
+
+      if (!response_dt1.ok || !response_dt2.ok) {
+        message.error(t('failed_to_load_sample_files'));
+        return;
+      }
+
+      const [text_1, text_2] = await Promise.all([
+        response_dt1.text(),
+        response_dt2.text()
+      ]);
+
+      const rows1 = text_1.split('\n').filter(l => l.trim()).map(parseLine);
+      const rows2 = text_2.split('\n').filter(l => l.trim()).map(parseLine);
+
+      dispatch(setRows_1(rows1));
+      dispatch(setRows_2(rows2));
+      
+      // Initialize dictionary with actual loaded rows
+      initDictSenID(rows1, rows2, dispatch);
+    } catch (error) {
+      message.error(t('error_loading_files'));
+    } finally {
       setLoading(false);
-      return;
     }
-    const text_1 = await response_dt1.text(),
-      text_2 = await response_dt2.text();
-    parseTextAndDispatch(text_1, setRows_1);
-    parseTextAndDispatch(text_2, setRows_2);
-    setLoading(false);
   };
 
   // Dropdown menu for sample files
@@ -178,3 +171,4 @@ export default function FileUploader() {
     </>
   );
 }
+
