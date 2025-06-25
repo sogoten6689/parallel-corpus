@@ -17,6 +17,7 @@ import { useTheme } from '@/app/theme-provider';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './language-switcher';
 import FileUploader from './file-uploader';
+import { usePathname } from 'next/navigation';
 
 const { Header, Sider, Content } = Layout;
 
@@ -28,6 +29,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const { mode, toggleTheme } = useTheme();
   const { t } = useTranslation();
+  const pathname = usePathname();
+
+  // Map routes to menu keys
+  const menuKeyMap: Record<string, string> = {
+    '/': '1',
+    '/word': '12',
+    '/tag': '3',
+    '/word-tag': '4',
+    '/statistical': '5',
+    '/introduction': '6',
+  };
+
+  // Find the key that matches the current pathname
+  const selectedKey = menuKeyMap[pathname] || '1';
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
@@ -42,8 +58,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           />
           {!collapsed && <Typography.Text style={{ color: 'white' }} color='white' className='font-bold color-white text-2xl text-white py-2 my-2'>{t("app_name")}</Typography.Text>}
         </div>
-        <Menu theme="dark" mode="inline" defaultSelectedKeys={['1']} items={
-          [
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={[selectedKey]}
+          items={[
             {
               key: '1',
               icon: <FontColorsOutlined />,
@@ -52,7 +71,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {
               key: '12',
               icon: <SearchOutlined />,
-              label: <Link href="/search-word">{t('search_word')}</Link>,
+              label: <Link href="/word">{t('word')}</Link>,
             },
             {
               key: '3',
@@ -74,8 +93,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               icon: <InfoOutlined />,
               label: <Link href="/introduction">{t('introduction')}</Link>,
             },
-          ]
-        }>
+          ]}
+        >
         </Menu>
       </Sider>
       <Layout>

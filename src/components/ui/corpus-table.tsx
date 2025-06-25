@@ -87,7 +87,7 @@ const columns = columnKeys.map((key) => {
   };
 
   return (
-    <div style={{ padding: 16 }}>
+    <div>
       <div className="mb-4">
         <Text strong>{t('total_rows')}: {data.length}, {t('total_sentences')}: {Object.entries(sentences).length}</Text>
       </div>
@@ -97,6 +97,7 @@ const columns = columnKeys.map((key) => {
         rowKey="ID"
         scroll={{ x: 'max-content' }}
         className='w-full'
+        bordered
       />
        <Modal
         title={`Chi tiết từ: ${selectedWord?.Word}`}

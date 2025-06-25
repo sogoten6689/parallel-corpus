@@ -1,7 +1,7 @@
 'use client';
 
 import { useDispatch } from 'react-redux';
-import { setRows_1, setRows_2 } from '@/redux/slices/dataSlice';
+import { setRows_1, setRows_2, setLang_1, setLang_2 } from '@/redux/slices/dataSlice';
 import { RowWord } from '@/types/row-word.type';
 import { useState } from 'react';
 import { Button, Upload, App, Spin, Dropdown } from 'antd';
@@ -11,12 +11,12 @@ import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 import { initDictSenID } from '@/dao/data-util';
 
 const sampleFiles = [
-  { label: 'Tiếng Anh-Việt (sample)', value_1: 'sample_en.txt', value_2: 'sample_vn.txt' },
-  { label: 'Tiếng Trung-Việt', value_1: 'Book301_cn.txt', value_2: 'Book301_vn.txt' },
+  { label: 'Tiếng Anh-Việt (sample)', value_1: 'sample_en.txt', value_2: 'sample_vn.txt', name_1: 'en', name_2: 'vn' },
+  { label: 'Tiếng Trung-Việt', value_1: 'Book301_cn.txt', value_2: 'Book301_vn.txt', name_1: 'cn', name_2: 'vn' },
 ];
 
 export default function FileUploader() {
-  const { message } = App.useApp(); // Add this line to get message from App context
+  const { message } = App.useApp();
   const { t } = useTranslation();
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
@@ -28,6 +28,7 @@ export default function FileUploader() {
     if (fields.length !== 10) {
       return {} as RowWord;
     }
+
     return {
       ID: fields[0],
       ID_sen: fields[0].slice(2, -2),
@@ -52,7 +53,7 @@ export default function FileUploader() {
     onChange: (info) => {
       const files = info.fileList.slice(-2);
 
-      if (files.length < 2) {
+      if (files.length < 2 || files.length > 2) {
         setFileList([]);
         message.warning(t('please_upload_two_files'));
         return;
@@ -122,6 +123,8 @@ export default function FileUploader() {
       dispatch(setRows_1(rows1));
       dispatch(setRows_2(rows2));
       
+      dispatch(setLang_1(sampleFiles[idx].name_1));
+      dispatch(setLang_2(sampleFiles[idx].name_2));
       // Initialize dictionary with actual loaded rows
       initDictSenID(rows1, rows2, dispatch);
     } catch (error) {
