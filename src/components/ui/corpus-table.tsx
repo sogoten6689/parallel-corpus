@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import Modal from 'antd/es/modal/Modal';
 
 const { Text } = Typography;
+
 type CorpusTableProps = {
   data: RowWord[],
   sentences: Record<string, Point>
@@ -40,39 +41,36 @@ const getColumnKey = (key: string) => {
   }
 }
 
-
 export default function CorpusTable({ data, sentences }: CorpusTableProps) {
   const { t } = useTranslation();
 
+  const getColumnWithTooltip = (key: string) => ({
+    title: <Tooltip title={t(`${key}_tooltip`)}>{t(key)}</Tooltip>,
+    dataIndex: getColumnKey(key),
+    key: getColumnKey(key),
+  });
 
-// Giả sử bạn dùng i18n
-const getColumnWithTooltip = (key: string) => ({
-  title: <Tooltip title={t(`${key}_tooltip`)}>{t(key)}</Tooltip>,
-  dataIndex: getColumnKey(key),
-  key: getColumnKey(key),
-});
+  // Danh sách các cột
+  const columnKeys = ['id', 'word', 'lemma', 'links', 'morph', 'pos', 'phrase', 'grm', 'ner', 'semantic'];
 
-// Danh sách các cột
-const columnKeys = ['id', 'word', 'lemma', 'links', 'morph', 'pos', 'phrase', 'grm', 'ner', 'semantic'];
+  // Tạo columns
+  const columns = columnKeys.map((key) => {
+    const column = getColumnWithTooltip(key);
 
-// Tạo columns
-const columns = columnKeys.map((key) => {
-  const column = getColumnWithTooltip(key);
+    // Thêm render nếu là 'Word' (hoặc 'ID')
+    if (key === 'id') {
+      const render = (text: string, record: RowWord) => (
+        <a onClick={() => showModal(record)}>{text}</a>
+      );
+      return {
+        ...column,
+        render,
+      };
+    }
 
-  // Thêm render nếu là 'Word' (hoặc 'ID')
-  if (key === 'id') {
-    const render = (text: string, record: RowWord) => (
-      <a onClick={() => showModal(record)}>{text}</a>
-    );
-    return {
-      ...column,
-      render,
-    };
-  }
+    return column;
 
-  return column;
-
-});
+  });
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedWord, setSelectedWord] = useState<RowWord | null>(null);
 
@@ -99,22 +97,41 @@ const columns = columnKeys.map((key) => {
         className='w-full'
         bordered
       />
-       <Modal
-        title={`Chi tiết từ: ${selectedWord?.Word}`}
+      <Modal
+        title={`${t('word_detail')}: '${selectedWord?.Word}'`}
         open={isModalVisible}
         onCancel={handleCancel}
         footer={null}
       >
         {selectedWord && (
-          <div>
-            <p><strong>Word:</strong> {selectedWord.Word}</p>
-            <p><strong>Lemma:</strong> {selectedWord.Lemma}</p>
-            <p><strong>POS:</strong> {selectedWord.POS}</p>
-            <p><strong>Morph:</strong> {selectedWord.Morph}</p>
-            <p><strong>NER:</strong> {selectedWord.NER}</p>
-            <p><strong>Semantic:</strong> {selectedWord.Semantic}</p>
-            {/* Add more fields as needed */}
-          </div>
+          <table style={{ width: '100%', fontSize: '14px' }}>
+            <tbody>
+              <tr>
+                <td><strong>{t('word')}:</strong></td>
+                <td>{selectedWord.Word}</td>
+              </tr>
+              <tr>
+                <td><strong>{t('lemma')}:</strong></td>
+                <td>{selectedWord.Lemma}</td>
+              </tr>
+              <tr>
+                <td><strong>{t('pos')}:</strong></td>
+                <td>{selectedWord.POS}</td>
+              </tr>
+              <tr>
+                <td><strong>{t('morph')}:</strong></td>
+                <td>{selectedWord.Morph}</td>
+              </tr>
+              <tr>
+                <td><strong>{t('ner')}:</strong></td>
+                <td>{selectedWord.NER}</td>
+              </tr>
+              <tr>
+                <td><strong>{t('semantic')}:</strong></td>
+                <td>{selectedWord.Semantic}</td>
+              </tr>
+            </tbody>
+          </table>
         )}
       </Modal>
     </div>

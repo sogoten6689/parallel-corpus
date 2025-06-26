@@ -1,5 +1,5 @@
 import { RowWord } from "@/types/row-word.type";
-import { containsSublistUnordered } from "@/utils/util";
+import { containsSublistUnordered } from "@/dao/utils";
 
 export function searchWord(key: string, isMorph: boolean, corpus: RowWord[]): Record<string, RowWord> {
   key = key.trim().replace(' ', '_');

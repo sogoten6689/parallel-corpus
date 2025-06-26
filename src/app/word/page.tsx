@@ -7,7 +7,7 @@ import { useState } from "react";
 import { RowWord } from "@/types/row-word.type";
 import { searchPhrase, searchWord } from "@/dao/search-utils";
 import { Sentence } from "@/types/sentence.type";
-import { getSentence, getSentenceOther } from "@/dao/data-util";
+import { getSentence, getSentenceOther } from "@/dao/data-utils";
 import { useSelector } from 'react-redux';
 import { RootState } from "@/redux";
 

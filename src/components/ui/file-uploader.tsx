@@ -8,7 +8,8 @@ import { Button, Upload, App, Spin, Dropdown } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
-import { initDictSenID } from '@/dao/data-util';
+import { initDictSenID } from '@/dao/data-utils';
+import { parseLine } from '@/dao/utils';
 
 const sampleFiles = [
   { label: 'Tiếng Anh-Việt (sample)', value_1: 'sample_en.txt', value_2: 'sample_vn.txt', name_1: 'en', name_2: 'vn' },
@@ -22,27 +23,6 @@ export default function FileUploader() {
   const [loading, setLoading] = useState(false);
   const [selectedSample, setSelectedSample] = useState("0");
   const [fileList, setFileList] = useState<UploadFile[]>([]);
-
-  const parseLine = (line: string): RowWord => {
-    const fields = line.split('\t');
-    if (fields.length !== 10) {
-      return {} as RowWord;
-    }
-
-    return {
-      ID: fields[0],
-      ID_sen: fields[0].slice(2, -2),
-      Word: fields[1],
-      Lemma: fields[2],
-      Links: fields[3],
-      Morph: fields[4],
-      POS: fields[5],
-      Phrase: fields[6],
-      Grm: fields[7],
-      NER: fields[8],
-      Semantic: fields[9],
-    };
-  };
 
   const uploadProps: UploadProps = {
     accept: '.txt',
