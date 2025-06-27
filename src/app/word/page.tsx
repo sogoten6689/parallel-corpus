@@ -95,7 +95,6 @@ const Word: React.FC = () => {
   // Handler for table 2
   const handleRowSelect2 = (row: Sentence | null, index: number | null) => {
     setSelectedRow2(row);
-    setSelectedIndex(index);
     if (index !== null && data_1[index]) {
       setSelectedRow1(data_1[index]);
       // Set page1 to the page containing the selected index

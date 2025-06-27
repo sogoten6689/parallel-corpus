@@ -1,5 +1,7 @@
 import { RowWord } from "@/types/row-word.type";
 import { containsSublistUnordered } from "@/dao/utils";
+import { Point } from "@/types/point.type";
+import { CorpusAlignment, SentenceAlignment } from "@/types/alignment.type";
 
 export function searchWord(key: string, isMorph: boolean, corpus: RowWord[]): Record<string, RowWord> {
   key = key.trim().replace(' ', '_');
@@ -101,3 +103,43 @@ export function searchPhrase(key: string, corpus: RowWord[]) {
   });
   return result;
 }
+
+export function alignSentence(idSentence: string, rows_1: RowWord[], rows_2: RowWord[], dict_1: Record<string, Point>, dict_2: Record<string, Point>) {
+  const lang_1: Point = dict_1[idSentence],
+    lang_2: Point = dict_2[idSentence];
+  const sentence_1: CorpusAlignment[] = [],
+    sentence_2: CorpusAlignment[] = [];
+
+  for (let i = lang_1.start, idx = 0; i <= lang_1.end; i++, idx++) {
+    const corpus = new CorpusAlignment();
+    corpus.id = idx;
+    corpus.word = rows_1[i].Word;
+    corpus.tag_pos = rows_1[i].POS;
+    sentence_1.push(corpus);
+  }
+
+  for (let i = lang_2.start, idx = 0; i <= lang_2.end; i++, idx++) {
+    const corpus = new CorpusAlignment();
+    corpus.id = idx;
+    corpus.word = rows_2[i].Word;
+    corpus.tag_pos = rows_2[i].POS;
+    sentence_2.push(corpus);
+  }
+
+  for (let i = lang_1.start; i <= lang_1.end; i++) {
+    const row = rows_1[i];
+    if (row.Links !== '-') {
+      const aligned_indices = row.Links.split(',');
+      aligned_indices.map(aligned_index => {
+        const id_target = sentence_2[Number(aligned_index)].id;
+        sentence_1[i].id_target = id_target;
+      });
+    }
+  }
+
+  const result: SentenceAlignment = {
+    sentence_1: sentence_1,
+    sentence_2: sentence_2
+  };
+  return result;
+} 
