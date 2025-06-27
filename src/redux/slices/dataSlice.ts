@@ -7,6 +7,8 @@ interface DataState {
   rows_2: RowWord[];
   dicId_1: Record<string, Point>;
   dicId_2: Record<string, Point>;
+  lang_1: string;
+  lang_2: string;
 }
 
 const initialState: DataState = {
@@ -14,6 +16,8 @@ const initialState: DataState = {
   rows_2: [],
   dicId_1: {},
   dicId_2: {},
+  lang_1: '',
+  lang_2: ''
 };
 
 interface UpdateDicIdPayload {
@@ -37,6 +41,12 @@ const dataSlice = createSlice({
     setDicId_2(state, action: PayloadAction<Record<string, Point>>) {
       state.dicId_2 = action.payload;
     },
+    setLang_1(state, action: PayloadAction<string>) {
+      state.lang_1 = action.payload;
+    },
+    setLang_2(state, action: PayloadAction<string>) {
+      state.lang_2 = action.payload;
+    },
     addToDicId_1(state, action: PayloadAction<UpdateDicIdPayload>) {
       const { key, point } = action.payload;
       state.dicId_1[key] = point;
@@ -44,7 +54,7 @@ const dataSlice = createSlice({
     addToDicId_2(state, action: PayloadAction<UpdateDicIdPayload>) {
       const { key, point } = action.payload;
       state.dicId_2[key] = point;
-    }
+    },
   }
 });
 
@@ -53,6 +63,8 @@ export const {
   setRows_2,
   setDicId_1,
   setDicId_2,
+  setLang_1,
+  setLang_2,
   addToDicId_1,
   addToDicId_2
 } = dataSlice.actions;
