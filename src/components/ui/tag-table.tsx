@@ -5,13 +5,6 @@ import { Table } from 'antd';
 import { useTranslation } from "react-i18next";
 import { Sentence } from '@/types/sentence.type';
 import type { ColumnsType } from 'antd/es/table';
-import { RowWord } from '@/types/row-word.type';
-
-const columns = [
-  { title: 'Left', dataIndex: 'Left', key: 'Left' },
-  { title: 'Key', dataIndex: 'Key', key: 'Key' },
-  { title: 'Right', dataIndex: 'Right', key: 'Right' },
-];
 
 type TagTableProps = {
   data: Sentence[],
