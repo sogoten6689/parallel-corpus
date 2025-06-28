@@ -130,9 +130,18 @@ export function alignSentence(idSentence: string, rows_1: RowWord[], rows_2: Row
     const row = rows_1[i];
     if (row.Links !== '-') {
       const aligned_indices = row.Links.split(',');
-      aligned_indices.map(aligned_index => {
-        const id_target = sentence_2[Number(aligned_index)].id;
-        sentence_1[i].id_target = id_target;
+      aligned_indices.forEach(aligned_index => {
+        const idx_target = Number(aligned_index) - 1;
+        if (idx_target >= 0 && idx_target < sentence_2.length) {
+          const id_target = sentence_2[idx_target].id;
+          const idx_source = i - lang_1.start;
+          if (
+            sentence_1[idx_source] &&
+            Array.isArray(sentence_1[idx_source].id_target)
+          ) {
+            sentence_1[idx_source].id_target.push(id_target);
+          }
+        }
       });
     }
   }
@@ -142,4 +151,4 @@ export function alignSentence(idSentence: string, rows_1: RowWord[], rows_2: Row
     sentence_2: sentence_2
   };
   return result;
-} 
+}
