@@ -2,13 +2,13 @@ export class CorpusAlignment {
   id: number;
   word: string;
   tag_pos: string;
-  id_target: number;
+  id_target: number[];
 
   constructor() {
     this.id = 0;
     this.word = '';
     this.tag_pos = '';
-    this.id_target = 0;
+    this.id_target = [];
   }
 }
 

@@ -58,5 +58,7 @@
   "left": "Left",
   "right": "Right",
   "key": "Key",
-  "word_detail": "Word detail"
+  "word_detail": "Word detail",
+  "view": "View",
+  "view_align": "View alignment"
 }
