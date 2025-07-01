@@ -1,6 +1,5 @@
 'use client';
 import './i18n/config';
-// import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AntdRegistry } from '@ant-design/nextjs-registry';

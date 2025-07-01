@@ -6,9 +6,9 @@ import { Dispatch } from "react";
 import { Sentence } from "@/types/sentence.type";
 
 export function initDictSenID(rows_1: RowWord[], rows_2: RowWord[], dispatch: Dispatch<UnknownAction>) {
-  dispatch(setDicId_1({})); // Initialize dicId_1
-  dispatch(setDicId_2({})); // Initialize dicId_2
-  // Initialize the dictionary for sentence IDs in rows_1
+  dispatch(setDicId_1({}));
+  dispatch(setDicId_2({}));
+
   let idSen = "", start = 0;
   for (let i = 0; i < rows_1.length; i++) {
     if (i == 0) {
@@ -29,7 +29,6 @@ export function initDictSenID(rows_1: RowWord[], rows_2: RowWord[], dispatch: Di
     }
   }
 
-  // Initialize the dictionary for sentence IDs in rows_2
   idSen = "";
   start = 0;
   for (let i = 0; i < rows_2.length; i++) {
@@ -85,7 +84,7 @@ export function getSentenceOther(row: RowWord, corpus: RowWord[], dicId: Record<
     sentence: Sentence = new Sentence();
 
   if (!p) {
-    return sentence; // Return empty sentence if point is not found
+    return sentence;
   }
 
   sentence.ID_sen = row.ID_sen;

@@ -33,7 +33,7 @@ export default function TagTable({
     rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2),
     dicId_1 = useSelector((state: RootState) => state.dataSlice.dicId_1),
     dicId_2 = useSelector((state: RootState) => state.dataSlice.dicId_2);
-  // Modal state
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modalRow, setModalRow] = useState<Sentence | null>(null);
   const [aligned, setAligned] = useState<SentenceAlignment | null>(null);
@@ -51,10 +51,8 @@ export default function TagTable({
     setAligned(null);
   };
 
-  // Canvas drawing logic
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Define these outside the useEffect and use them everywhere
   const padding = 40;
   const wordWidth = 40;
   const gap = 40;
@@ -66,23 +64,20 @@ export default function TagTable({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Layout for horizontal sentences with shorter lines
     const topY = padding;
     const bottomY = canvas.height - padding;
     const sentence1 = aligned.sentence_1;
     const sentence2 = aligned.sentence_2;
 
-    // Draw words for sentence 1 (top, horizontal)
     sentence1.forEach((word, i) => {
       const x = padding + i * (wordWidth + gap);
       ctx.fillStyle = '#333';
       ctx.font = '14px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(word.word, x + wordWidth / 2, topY - 10);
-      // Draw id circle
+
       ctx.beginPath();
       ctx.arc(x + wordWidth / 2, topY, 12, 0, 2 * Math.PI);
       ctx.fillStyle = '#1976d2';
@@ -92,14 +87,13 @@ export default function TagTable({
       ctx.fillText(String(word.id), x + wordWidth / 2, topY + 4);
     });
 
-    // Draw words for sentence 2 (bottom, horizontal)
     sentence2.forEach((word, i) => {
       const x = padding + i * (wordWidth + gap);
       ctx.fillStyle = '#333';
       ctx.font = '14px Arial';
       ctx.textAlign = 'center';
       ctx.fillText(word.word, x + wordWidth / 2, bottomY + 30);
-      // Draw id circle
+
       ctx.beginPath();
       ctx.arc(x + wordWidth / 2, bottomY, 12, 0, 2 * Math.PI);
       ctx.fillStyle = '#388e3c';
@@ -109,7 +103,6 @@ export default function TagTable({
       ctx.fillText(String(word.id), x + wordWidth / 2, bottomY + 4);
     });
 
-    // Draw alignment lines (shorter, not touching the circles)
     sentence1.forEach((word, i) => {
       const x1 = padding + i * (wordWidth + gap) + wordWidth / 2;
       word.id_target.forEach(targetId => {
@@ -117,8 +110,8 @@ export default function TagTable({
         if (targetIdx !== -1) {
           const x2 = padding + targetIdx * (wordWidth + gap) + wordWidth / 2;
           ctx.beginPath();
-          ctx.moveTo(x1, topY + 18); // Start a bit below the top circle
-          ctx.lineTo(x2, bottomY - 18); // End a bit above the bottom circle
+          ctx.moveTo(x1, topY + 18);
+          ctx.lineTo(x2, bottomY - 18);
           ctx.strokeStyle = '#f50057';
           ctx.lineWidth = 2;
           ctx.stroke();
@@ -126,7 +119,6 @@ export default function TagTable({
       });
     });
 
-    // Draw border
     ctx.strokeStyle = '#ccc';
     ctx.strokeRect(0, 0, canvas.width, canvas.height);
   }, [aligned, modalOpen]);
@@ -194,7 +186,7 @@ export default function TagTable({
         onOk={handleCloseModal}
         title={t('view_align')}
         footer={null}
-        width={900} // Fixed modal width
+        width={900}
         styles={{ body: { overflowX: 'auto' } }}
       >
         {modalRow && (

@@ -50,14 +50,11 @@ export default function CorpusTable({ data, sentences }: CorpusTableProps) {
     key: getColumnKey(key),
   });
 
-  // Danh sách các cột
   const columnKeys = ['id', 'word', 'lemma', 'links', 'morph', 'pos', 'phrase', 'grm', 'ner', 'semantic'];
 
-  // Tạo columns
   const columns = columnKeys.map((key) => {
     const column = getColumnWithTooltip(key);
 
-    // Thêm render nếu là 'Word' (hoặc 'ID')
     if (key === 'id') {
       const render = (text: string, record: RowWord) => (
         <a onClick={() => showModal(record)}>{text}</a>

@@ -37,15 +37,14 @@ export function createPharse(key: string) {
   if (words.length >= 2) {
     let num_word = 2;
     while (num_word <= 4) {
-      // iterate through the number of words
       for (let k = 0; k < words.length; k++) {
         const temp: string[] = [];
         let h: number, i: number;
-        // if the word is stand alone then add it to the temp
+
         for (h = 0; h < k; h++) {
           temp.push(words[h]);
         }
-        // create pharse with number of words in pharse equal to num_word and start from k
+
         for (i = k; i < words.length - num_word + 1; i += num_word) {
           let j = 0, phrase = '';
           while (j < num_word) {
@@ -57,23 +56,23 @@ export function createPharse(key: string) {
               break;
             }
           }
-          temp.push(phrase.trim()); // add the phrase to the temp
+          temp.push(phrase.trim());
         }
-        // add the remaining words to the temp
+
         while (i < words.length) {
           temp.push(words[i]);
           i++;
         }
-        // check if the temp already exists in the result
+
         if (!containsSublistUnordered(result, temp)) {
-          result.push(...temp); // add the temp to the result
+          result.push(...temp);
         }
       }
-      num_word++; // increase the number of words in pharse
+      num_word++;
     }
   }
   else {
-    result.push(key); // if the key is a single word, add it to the result
+    result.push(key);
   }
   return result;
 }
@@ -87,7 +86,7 @@ export function searchPhrase(key: string, corpus: RowWord[]) {
     for (let i = 0; corpus && i < corpus.length; i++) {
       for (let j = 0; j < phrase.length; j++) {
         if (corpus[i + j].Word.toLowerCase() !== phrase[j].toLowerCase()) {
-          break; // If any word does not match, break the inner loop
+          break;
         }
         if (j === phrase.length - 1) {
           const list: RowWord[] = [];

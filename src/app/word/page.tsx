@@ -78,26 +78,22 @@ const Word: React.FC = () => {
     }
   }
 
-  const pageSize = 6; // Should match your TagTable pagination
+  const pageSize = 6;
 
-  // Handler for table 1
   const handleRowSelect1 = (row: Sentence | null, index: number | null) => {
     setSelectedRow1(row);
     if (index !== null && data_2[index]) {
       setSelectedRow2(data_2[index]);
-      // Set page2 to the page containing the selected index
       setPage2(Math.floor(index / pageSize) + 1);
     } else {
       setSelectedRow2(null);
     }
   };
 
-  // Handler for table 2
   const handleRowSelect2 = (row: Sentence | null, index: number | null) => {
     setSelectedRow2(row);
     if (index !== null && data_1[index]) {
       setSelectedRow1(data_1[index]);
-      // Set page1 to the page containing the selected index
       setPage1(Math.floor(index / pageSize) + 1);
     } else {
       setSelectedRow1(null);
@@ -110,20 +106,14 @@ const Word: React.FC = () => {
         <div className="p-3">
           <Space direction="vertical" className="w-full" align="center">
             <Space direction="horizontal" className="w-full">
-              {
-                /* Dòng 1: Input + Search button */}
               <Space wrap className="w-full">
                 <Input
                   placeholder={t('input')}
                   style={{ flex: 1 }}
                   width={700}
                   value={searchText}
-                  onChange={e => setSearchText(e.target.value)} // Only updates state, does not trigger search
-                />
-              </Space>
-
-              {/* Dòng 2: Language Select + Search type Radio Group */}
-              <Space wrap className="w-full">
+                  onChange={e => setSearchText(e.target.value)} />
+              </Space><Space wrap className="w-full">
                 <Select style={{ width: 120 }} value={language} onChange={setLanguage}>
                   <Option value="1">{lang_1 ? t(lang_1) : t('lang1')}</Option>
                   <Option value="2">{lang_2 ? t(lang_2) : t('lang2')}</Option>
@@ -135,8 +125,7 @@ const Word: React.FC = () => {
                     { label: t('matches'), value: 'matches' },
                     { label: t('phrase'), value: 'phrase' },
                     { label: t('morphological'), value: 'morphological' },
-                  ]}
-                />
+                  ]} />
                 <Button type="primary" onClick={handleSearch}>Search</Button>
               </Space>
             </Space>
@@ -194,7 +183,7 @@ const Word: React.FC = () => {
             </>
           )}
         </div>
-      </div>
+      </div >
     </>
   );
 };
