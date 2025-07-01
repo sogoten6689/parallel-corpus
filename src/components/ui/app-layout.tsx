@@ -47,63 +47,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
-        <div
-          className=' flex items-center justify-center p-2 align-center space-x-2'
-        >
-          <Image
-            width={32}
-            height={32}
-            src="/hcmus-icon.png"
-            alt="logo"
-          />
-          {!collapsed && <Typography.Text style={{ color: 'white' }} color='white' className='font-bold color-white text-2xl text-white py-2 my-2'>{t("app_name")}</Typography.Text>}
+        <div className="flex items-center justify-center p-2 align-center space-x-2">
+          <Image width={32} height={32} src="/CLC_logo.png" alt="logo" />
+          {!collapsed && (
+            <Typography.Text
+              style={{ color: 'white' }}
+              className="font-bold text-2xl py-2 my-2"
+            >
+              {t("app_name")}
+            </Typography.Text>
+          )}
         </div>
         <Menu
           theme="dark"
           mode="inline"
           selectedKeys={[selectedKey]}
           items={[
-            {
-              key: '1',
-              icon: <FontColorsOutlined />,
-              label: <Link href="/">{t('home')}</Link>,
-            },
-            {
-              key: '12',
-              icon: <SearchOutlined />,
-              label: <Link href="/word">{t('word')}</Link>,
-            },
-            {
-              key: '3',
-              icon: <TagOutlined />,
-              label: <Link href="/tag">{t('tag')}</Link>,
-            },
-            {
-              key: '4',
-              icon: <TagsOutlined />,
-              label: <Link href="/word-tag">{t('word_tag')}</Link>,
-            },
-            {
-              key: '5',
-              icon: <StockOutlined />,
-              label: <Link href="/statistical">{t('statistical')}</Link>,
-            },
-            {
-              key: '6',
-              icon: <InfoOutlined />,
-              label: <Link href="/introduction">{t('introduction')}</Link>,
-            },
+            { key: '1', icon: <FontColorsOutlined />, label: <Link href="/">{t('home')}</Link> },
+            { key: '12', icon: <SearchOutlined />, label: <Link href="/word">{t('word')}</Link> },
+            { key: '3', icon: <TagOutlined />, label: <Link href="/tag">{t('tag')}</Link> },
+            { key: '4', icon: <TagsOutlined />, label: <Link href="/word-tag">{t('word_tag')}</Link> },
+            { key: '5', icon: <StockOutlined />, label: <Link href="/statistical">{t('statistical')}</Link> },
+            { key: '6', icon: <InfoOutlined />, label: <Link href="/introduction">{t('introduction')}</Link> },
           ]}
-        >
-        </Menu>
+        />
       </Sider>
       <Layout>
         <Header style={{ background: colorBgContainer }}>
-          <Flex gap='middle' align="center" style={{ width: '100%' }}>
+          <Flex gap="middle" align="center" style={{ width: '100%' }}>
             <Flex gap="middle" align="center" style={{ flex: 1, justifyContent: 'center' }}>
               <FileUploader />
             </Flex>
-            
             <Flex gap="middle" align="center" style={{ justifyContent: 'flex-end', marginRight: 20 }}>
               {mode === 'light' ? (
                 <SunOutlined onClick={toggleTheme} style={{ fontSize: 20, verticalAlign: 'middle' }} />
@@ -116,8 +90,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </Flex>
         </Header>
         <Content style={{ margin: '16px' }}>
-            {children}
+          {children}
         </Content>
+        {/* Thêm footer */}
+        <div
+          id="footer"
+          className="footer fixed-bottom"
+          style={{
+            backgroundColor: mode === 'dark' ? '#333' : 'aliceblue', // Thay đổi màu theo chế độ
+            color: mode === 'dark' ? '#fff' : '#222', // Thay đổi màu chữ theo chế độ
+            padding: '20px 5%',
+            textAlign: 'center',
+          }}
+        >
+          <p>
+            Công trình này được thực hiện bởi một số học viên cao học và giảng viên
+            <a target="_blank" href="https://www.fit.hcmus.edu.vn"> Khoa Công nghệ Thông tin</a> và
+            <a target="_blank" href="https://www.clc.hcmus.edu.vn/"> Trung tâm Ngôn ngữ học Tính toán</a> thuộc
+            <a target="_blank" href="https://www.hcmus.edu.vn/"> Trường ĐH Khoa học Tự nhiên - ĐHQG - HCM</a> trong khuôn khổ đề tài nghiên cứu khoa học của
+            <a target="_blank" href="https://dost.hochiminhcity.gov.vn"> Sở Khoa học & Công nghệ TpHCM</a>.
+          </p>
+        </div>
       </Layout>
     </Layout>
   );
