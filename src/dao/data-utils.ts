@@ -118,8 +118,7 @@ export function getSentenceOther(row: RowWord, corpus: RowWord[], dicId: Record<
   return sentence;
 }
 
-export function getPOSSet(type: number, listRwEng: RowWord[], listRwVie: RowWord[]): string[] {
-  const corpus: RowWord[] = type === 1 ? listRwEng : listRwVie;
+export function getPOSSet(corpus: RowWord[]): string[] {
   const POSSet: string[] = [];
 
   for (const rw of corpus) {
@@ -130,11 +129,10 @@ export function getPOSSet(type: number, listRwEng: RowWord[], listRwVie: RowWord
     }
   }
 
-  return POSSet;
+  return POSSet.sort();
 }
 
-export function getNERSet(type: number, listRwEng: RowWord[], listRwVie: RowWord[]): string[] {
-  const corpus: RowWord[] = type === 1 ? listRwEng : listRwVie;
+export function getNERSet(corpus: RowWord[]): string[] {
   const NERSet: string[] = [];
 
   for (const rw of corpus) {
@@ -145,11 +143,10 @@ export function getNERSet(type: number, listRwEng: RowWord[], listRwVie: RowWord
     }
   }
 
-  return NERSet;
+  return NERSet.sort();
 }
 
-export function getSEMSet(type: number, listRwEng: RowWord[], listRwVie: RowWord[]): string[] {
-  const corpus: RowWord[] = type === 1 ? listRwEng : listRwVie;
+export function getSEMSet(corpus: RowWord[]): string[] {
   const SEMSet: string[] = [];
 
   for (const rw of corpus) {
@@ -160,39 +157,5 @@ export function getSEMSet(type: number, listRwEng: RowWord[], listRwVie: RowWord
     }
   }
 
-  return SEMSet;
-}
-
-export function getSentence2(
-  rws: RowWord[],
-  type: number,
-  listRwEng: RowWord[],
-  listRwVie: RowWord[],
-  getPoint: (idSentence: string, type: number) => Point,
-): Sentence {
-  const corpus: RowWord[] = type === 1 ? listRwEng : listRwVie;
-  const p: Point = getPoint(rws[0].ID_sen, type);
-  const sen: Sentence = new Sentence();
-
-  let j = 0;
-  for (let i = p.start; i <= p.end; i++) {
-    const r = corpus[i];
-    if (r.ID_sen === rws[j].ID_sen) {
-      sen.ID_sen = r.ID_sen;
-      if (r.ID < rws[j].ID) {
-        sen.Left += r.Word + " ";
-      }
-      if (r.ID === rws[j].ID) {
-        sen.Center += r.Word + " ";
-        if (j < rws.length - 1) {
-          j++;
-        }
-      }
-      if (r.ID > rws[j].ID) {
-        sen.Right += r.Word + " ";
-      }
-    }
-  }
-  sen.formatSpace();
-  return sen;
+  return SEMSet.sort();
 }

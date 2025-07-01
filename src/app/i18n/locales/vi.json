@@ -60,5 +60,15 @@
   "key": "Khóa",
   "word_detail": "Chi tiết từ",
   "view_align": "Xem gióng từ",
-  "view": "Xem"
+  "view": "Xem",
+  "count": "Đếm",
+  "percent": "Phần trăm",
+  "F": "F = -log(n/N)",
+  "total_types": "Tổng số từ loại",
+  "total_tokens": "Tổng số từ",
+  "all": "Tất cả",
+  "select_top": "Xem top N kết quả",
+  "filter_tag": "Lọc kết quả theo nhãn",
+  "please_select": "Vui lòng chọn",
+  "page": "Trang"
 }

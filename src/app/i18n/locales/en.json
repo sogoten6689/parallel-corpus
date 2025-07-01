@@ -8,7 +8,7 @@
   "tag": "Search Tag",
   "word_tag": "Search Word Tag",
   "in_develop": "In develop",
-  "statistical": "Statistical",
+  "statistical": "Statistics",
   "introduction": "Introduction",
   "lang1": "Language 1",
   "lang2": "Language 2",
@@ -60,5 +60,15 @@
   "key": "Key",
   "word_detail": "Word detail",
   "view": "View",
-  "view_align": "View alignment"
+  "view_align": "View alignment",
+  "count": "Count",
+  "percent": "Percent",
+  "F": "F = -log(n/N)",
+  "total_types": "Total word types",
+  "total_tokens": "Total word tokens",
+  "all": "All",
+  "select_top": "Select top N results",
+  "filter_tag": "Filter results by tag",
+  "please_select": "Please select",
+  "page": "Page"
 }
