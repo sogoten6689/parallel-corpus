@@ -76,6 +76,7 @@
   "help": "Help",
   "select_tag": "Select tag to view meaning",
   "search": "Search",
+  "save": "Save",
   "tags": {
     "en_pos_tag": "English POS Tag",
     "vn_pos_tag": "Vietnamese POS Tag",

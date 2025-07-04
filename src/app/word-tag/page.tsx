@@ -2,7 +2,7 @@
 
 import TagTable from "@/components/ui/tag-table";
 import { useTranslation } from "react-i18next";
-import { Divider, Button, Select, App, Cascader, Typography, Input, Radio, Form } from 'antd';
+import { Divider, Button, Select, App, Cascader, Typography, Input, Radio, Form, CascaderProps } from 'antd';
 import { useState } from "react";
 import { RowWord } from "@/types/row-word.type";
 import { searchWord, searchWordTag } from "@/dao/search-utils";
@@ -65,7 +65,7 @@ const WordTag: React.FC = () => {
       form.validateFields(['searchText']);
       return;
     }
-    // Tag selection is optional, but if present, must be valid
+
     if (!tagSelect || (tagSelect.length !== 2 && !(tagSelect.length === 1 && tagSelect[0] === 'none'))) {
       message.warning(t('missing_tag'));
       return;
@@ -132,6 +132,37 @@ const WordTag: React.FC = () => {
       setSelectedRow1(null);
     }
   };
+
+  const handleSaveButton = () => {
+    if (data_1.length === 0 || data_2.length === 0) {
+      return;
+    }
+
+    const lines = data_1.map((row1, idx) => {
+      const row2 = data_2[idx];;
+      const sentence1 =
+        row1.Center === '-' ?
+          row1.Left.trim() + ' ' + row1.Right.trim() :
+          row1.Left.trim() + ' ' + row1.Center + ' ' + row1.Right.trim(),
+        sentence2 =
+          row2.Center === '-' ?
+            row2.Left.trim() + ' ' + row2.Right.trim() :
+            row2.Left.trim() + ' ' + row2.Center + ' ' + row2.Right.trim();
+      return `* ${sentence1}\n+ ${sentence2}`;
+    });
+    const content = lines.join('\n\n');
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'parallel_corpus.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    message.success(t('download_ready'));
+  }
 
   return (
     <>
@@ -202,7 +233,12 @@ const WordTag: React.FC = () => {
               </Form.Item>
               <Form.Item>
                 <Button type="primary" htmlType="submit" className="flex items-center">
-                  {t('search') || 'Search'}
+                  {t('search')}
+                </Button>
+              </Form.Item>
+              <Form.Item>
+                <Button color="cyan" variant="solid" onClick={handleSaveButton}>
+                  {t('save')}
                 </Button>
               </Form.Item>
             </div>

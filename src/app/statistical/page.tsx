@@ -117,11 +117,33 @@ const Statistical: React.FC = () => {
     showData(data);
   };
 
+  const handleSaveButton = () => {
+    if (!data || data.length === 0) {
+      return;
+    }
+
+    const header = "Word\tCount\tPercent\tF=-log(n/N)";
+    const rows = data.map(row =>
+      `${row.Word}\t${row.Count}\t${row.Percent.toFixed(2)}\t${row.F.toFixed(4)}`
+    );
+    const content = [header, ...rows].join('\n');
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'statistical_data.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <>
       <div className="grid grid-rows-[auto_1fr]">
         <div className="p-3">
-          <Row gutter={24}> {/* Add gutter for column spacing */}
+          <Row gutter={24}>
             <Col span={16}>
               <StatisticsTable data={data}></StatisticsTable>
             </Col>
@@ -162,7 +184,14 @@ const Statistical: React.FC = () => {
                   <Typography.Title level={5}>{t('filter_tag')}</Typography.Title>
                   <Cascader options={options} onChange={handleTagSelect} placeholder={t('please_select')} value={tagSelect} />
                 </Flex>
-                <Button type='primary' onClick={handleViewButton}>{t('view')}</Button>
+                <Flex gap='middle' justify="center">
+                  <Button type='primary' onClick={handleViewButton}>
+                    {t('view')}
+                  </Button>
+                  <Button color="cyan" variant="solid" onClick={handleSaveButton}>
+                    {t('save')}
+                  </Button>
+                </Flex>
               </Flex>
             </Col>
           </Row>

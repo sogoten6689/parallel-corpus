@@ -119,6 +119,37 @@ const Word: React.FC = () => {
     handleSearch();
   };
 
+  const handleSaveButton = () => {
+    if (data_1.length === 0 || data_2.length === 0) {
+      return;
+    }
+
+    const lines = data_1.map((row1, idx) => {
+      const row2 = data_2[idx];;
+      const sentence1 =
+        row1.Center === '-' ?
+          row1.Left.trim() + ' ' + row1.Right.trim() :
+          row1.Left.trim() + ' ' + row1.Center + ' ' + row1.Right.trim(),
+        sentence2 =
+          row2.Center === '-' ?
+            row2.Left.trim() + ' ' + row2.Right.trim() :
+            row2.Left.trim() + ' ' + row2.Center + ' ' + row2.Right.trim();
+      return `* ${sentence1}\n+ ${sentence2}`;
+    });
+    const content = lines.join('\n\n');
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'parallel_corpus.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    message.success(t('download_ready'));
+  }
+
   return (
     <>
       <div className="grid grid-rows-[auto_1fr]">
@@ -171,6 +202,11 @@ const Word: React.FC = () => {
             <Form.Item>
               <Button type="primary" htmlType="submit">
                 {t('search')}
+              </Button>
+            </Form.Item>
+            <Form.Item>
+              <Button color="cyan" variant="solid" onClick={handleSaveButton}>
+                {t('save')}
               </Button>
             </Form.Item>
           </Form>

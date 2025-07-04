@@ -76,6 +76,7 @@
   "help": "Trợ giúp",
   "select_tag": "Chọn nhãn để xem ý nghĩa",
   "search": "Tìm kiếm",
+  "save": "Lưu",
   "tags": {
     "en_pos_tag": "Nhãn từ loại tiếng Anh",
     "vn_pos_tag": "Nhãn từ loại tiếng Việt",

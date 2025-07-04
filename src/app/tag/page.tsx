@@ -26,7 +26,7 @@ const Tag: React.FC = () => {
   const [selectedRow2, setSelectedRow2] = useState<Sentence | null>(null);
   const [page1, setPage1] = useState(1);
   const [page2, setPage2] = useState(1);
-  const [language, setLanguage] = useState('1'); // add this for select
+  const [language, setLanguage] = useState('1');
 
   const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1),
     rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2),
@@ -37,7 +37,6 @@ const Tag: React.FC = () => {
 
   const [tagSelect, setTagSelect] = useState(['none']);
 
-  // Update sets to use language
   const posSet = language === '1' ? getPOSSet(rows_1) : getPOSSet(rows_2),
     nerSet = language === '1' ? getNERSet(rows_1) : getNERSet(rows_2),
     semSet = language === '1' ? getSEMSet(rows_1) : getSEMSet(rows_2);
@@ -109,6 +108,37 @@ const Tag: React.FC = () => {
     }
   };
 
+  const handleSaveButton = () => {
+    if (data_1.length === 0 || data_2.length === 0) {
+      return;
+    }
+
+    const lines = data_1.map((row1, idx) => {
+      const row2 = data_2[idx];;
+      const sentence1 =
+        row1.Center === '-' ?
+          row1.Left.trim() + ' ' + row1.Right.trim() :
+          row1.Left.trim() + ' ' + row1.Center + ' ' + row1.Right.trim(),
+        sentence2 =
+          row2.Center === '-' ?
+            row2.Left.trim() + ' ' + row2.Right.trim() :
+            row2.Left.trim() + ' ' + row2.Center + ' ' + row2.Right.trim();
+      return `* ${sentence1}\n+ ${sentence2}`;
+    });
+    const content = lines.join('\n\n');
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'parallel_corpus.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    message.success(t('download_ready'));
+  }
+
   return (
     <>
       <div className="grid grid-rows-[auto_1fr]">
@@ -149,8 +179,13 @@ const Tag: React.FC = () => {
               </Select>
             </Form.Item>
             <Form.Item>
-              <Button type="primary" htmlType="submit" className="flex items-center">
+              <Button type="primary" htmlType="submit">
                 Search
+              </Button>
+            </Form.Item>
+            <Form.Item>
+              <Button color="cyan" variant="solid" onClick={handleSaveButton}>
+                {t('save')}
               </Button>
             </Form.Item>
           </Form>
