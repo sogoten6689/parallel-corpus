@@ -4,16 +4,11 @@ import StatisticsTable from "@/components/ui/statistics-table";
 import { getNERSet, getPOSSet, getSEMSet } from "@/dao/data-utils";
 import { RootState } from "@/redux";
 import { RowStat } from "@/types/row-stat.type";
+import { Option } from '@/types/option.type';
 import { Button, Cascader, CascaderProps, Col, Flex, Row, Select, Switch, Typography } from "antd";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
-
-interface Option {
-  value: string;
-  label: string;
-  children?: Option[];
-}
 
 const Statistical: React.FC = () => {
   const { t } = useTranslation();
@@ -165,7 +160,7 @@ const Statistical: React.FC = () => {
                 </Flex>
                 <Flex gap='middle'>
                   <Typography.Title level={5}>{t('filter_tag')}</Typography.Title>
-                  <Cascader options={options} onChange={handleTagSelect} placeholder={t('please_select')} defaultValue={tagSelect} />
+                  <Cascader options={options} onChange={handleTagSelect} placeholder={t('please_select')} value={tagSelect} />
                 </Flex>
                 <Button type='primary' onClick={handleViewButton}>{t('view')}</Button>
               </Flex>

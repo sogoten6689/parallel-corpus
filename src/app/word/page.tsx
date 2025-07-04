@@ -100,6 +100,12 @@ const Word: React.FC = () => {
     }
   };
 
+  const handleLanguageChange = (value: string) => {
+    setData_1([]);
+    setData_2([]);
+    setLanguage(value);
+  };
+
   return (
     <>
       <div className="grid grid-rows-[auto_1fr]">
@@ -113,8 +119,13 @@ const Word: React.FC = () => {
                   width={700}
                   value={searchText}
                   onChange={e => setSearchText(e.target.value)} />
-              </Space><Space wrap className="w-full">
-                <Select style={{ width: 120 }} value={language} onChange={setLanguage}>
+              </Space>
+              <Space wrap className="w-full">
+                <Select
+                  style={{ width: 120 }}
+                  value={language}
+                  onChange={handleLanguageChange}
+                >
                   <Option value="1">{lang_1 ? t(lang_1) : t('lang1')}</Option>
                   <Option value="2">{lang_2 ? t(lang_2) : t('lang2')}</Option>
                 </Select>
