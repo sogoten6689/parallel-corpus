@@ -9,24 +9,26 @@ export const SEARCH_SEM = 'semantic';
 
 export function searchWord(key: string, isMorph: boolean, corpus: RowWord[]): Record<string, RowWord> {
   key = key.trim().replace(' ', '_');
+  const keyLower = key.toLowerCase();
   const result: Record<string, RowWord> = {};
 
   if (!isMorph) { // Match CASE
     for (let i = 0; corpus && i < corpus.length; i++) {
       const word = corpus[i].Word;
       if (word && word === key) {
-        if (!Object.keys(result).includes(corpus[i].ID_sen)) {
-          result[corpus[i].ID_sen] = corpus[i];
+        const id = corpus[i].ID_sen;
+        if (!(id in result)) {
+          result[id] = corpus[i];
         }
       }
-
     }
   } else { // MORPH CASE
     for (let i = 0; corpus && i < corpus.length; i++) {
       const word = corpus[i].Morph.toLowerCase();
-      if (word && word === key) {
-        if (!Object.keys(result).includes(corpus[i].ID_sen)) {
-          result[corpus[i].ID_sen] = corpus[i];
+      if (word && word === keyLower) {
+        const id = corpus[i].ID_sen;
+        if (!(id in result)) {
+          result[id] = corpus[i];
         }
       }
     }
@@ -83,27 +85,27 @@ export function createPharse(key: string) {
 
 export function searchPhrase(key: string, corpus: RowWord[]) {
   const result: Record<string, RowWord[]> = {};
-
   const phrases = createPharse(key);
 
-  phrases.forEach(phrase => {
-    for (let i = 0; corpus && i < corpus.length; i++) {
-      for (let j = 0; j < phrase.length; j++) {
-        if (corpus[i + j].Word.toLowerCase() !== phrase[j].toLowerCase()) {
+  for (const phrase of phrases) {
+    const phraseWords = phrase.split(' ');
+    const phraseLen = phraseWords.length;
+    for (let i = 0; corpus && i <= corpus.length - phraseLen; i++) {
+      let match = true;
+      for (let j = 0; j < phraseLen; j++) {
+        if (corpus[i + j].Word.toLowerCase() !== phraseWords[j].toLowerCase()) {
+          match = false;
           break;
         }
-        if (j === phrase.length - 1) {
-          const list: RowWord[] = [];
-          for (let h = i; h <= i + j; h++) {
-            list.push(corpus[h]);
-          }
-          if (!Object.keys(result).includes(corpus[i].ID_sen)) {
-            result[corpus[i].ID_sen] = list;
-          }
+      }
+      if (match) {
+        const id = corpus[i].ID_sen;
+        if (!(id in result)) {
+          result[id] = corpus.slice(i, i + phraseLen);
         }
       }
     }
-  });
+  }
   return result;
 }
 
@@ -194,81 +196,106 @@ export function searchTag(key: string, tag: string, corpus: RowWord[]) {
   return result;
 }
 
-export function seachWordTag(keySearch: string, typeMorph: boolean, keyTag: string, typeTag: string, corpus: RowWord[]) {
+export function searchWordTag(
+  keySearch: string,
+  typeMorph: boolean,
+  keyTag: string,
+  typeTag: string,
+  corpus: RowWord[]
+) {
   if (!keyTag) {
     return searchWord(keySearch, typeMorph, corpus);
   }
 
   const result: Record<string, RowWord> = {};
+  const keySearchLower = keySearch.toLowerCase();
+  const keyTagLower = keyTag.toLowerCase();
 
   if (!typeMorph) {
     switch (typeTag) {
       case SEARCH_POS:
-        for (let i = 0; i < corpus.length; i++) {
-          if (corpus[i].Word.toLowerCase() === keySearch &&
-            corpus[i].POS.toLowerCase() === keyTag) {
-            if (!Object.keys(result).includes(corpus[i].ID_sen)) {
-              result[corpus[i].ID_sen] = corpus[i];
+        for (const row of corpus) {
+          if (
+            row.Word.toLowerCase() === keySearchLower &&
+            row.POS.toLowerCase() === keyTagLower
+          ) {
+            const id = row.ID_sen;
+            if (!(id in result)) {
+              result[id] = row;
             }
           }
         }
         break;
       case SEARCH_NER:
-        for (let i = 0; i < corpus.length; i++) {
-          if (corpus[i].Word.toLowerCase() === keySearch &&
-            corpus[i].NER.toLowerCase() === keyTag) {
-            if (!Object.keys(result).includes(corpus[i].ID_sen)) {
-              result[corpus[i].ID_sen] = corpus[i];
+        for (const row of corpus) {
+          if (
+            row.Word.toLowerCase() === keySearchLower &&
+            row.NER.toLowerCase() === keyTagLower
+          ) {
+            const id = row.ID_sen;
+            if (!(id in result)) {
+              result[id] = row;
             }
           }
         }
         break;
       case SEARCH_SEM:
-        for (let i = 0; i < corpus.length; i++) {
-          if (corpus[i].Word.toLowerCase() === keySearch &&
-            corpus[i].Semantic.toLowerCase() === keyTag) {
-            if (!Object.keys(result).includes(corpus[i].ID_sen)) {
-              result[corpus[i].ID_sen] = corpus[i];
+        for (const row of corpus) {
+          if (
+            row.Word.toLowerCase() === keySearchLower &&
+            row.Semantic.toLowerCase() === keyTagLower
+          ) {
+            const id = row.ID_sen;
+            if (!(id in result)) {
+              result[id] = row;
             }
           }
         }
         break;
     }
   } else {
+    const lemma = convertLemma(keySearch);
     switch (typeTag) {
       case SEARCH_POS:
-        for (let i = 0; i < corpus.length; i++) {
-          const m_i = corpus[i].Morph.toLowerCase();
-          const l = convertLemma(keySearch);
-          if (m_i === l && corpus[i].POS.toLowerCase() === keyTag) {
-            if (!Object.keys(result).includes(corpus[i].ID_sen)) {
-              result[corpus[i].ID_sen] = corpus[i];
+        for (const row of corpus) {
+          if (
+            row.Morph.toLowerCase() === lemma &&
+            row.POS.toLowerCase() === keyTagLower
+          ) {
+            const id = row.ID_sen;
+            if (!(id in result)) {
+              result[id] = row;
             }
           }
         }
         break;
       case SEARCH_NER:
-        for (let i = 0; i < corpus.length; i++) {
-          const m_i = corpus[i].Morph.toLowerCase();
-          const l = convertLemma(keySearch);
-          if (m_i === l && corpus[i].NER.toLowerCase() === keyTag) {
-            if (!Object.keys(result).includes(corpus[i].ID_sen)) {
-              result[corpus[i].ID_sen] = corpus[i];
+        for (const row of corpus) {
+          if (
+            row.Morph.toLowerCase() === lemma &&
+            row.NER.toLowerCase() === keyTagLower
+          ) {
+            const id = row.ID_sen;
+            if (!(id in result)) {
+              result[id] = row;
             }
           }
         }
         break;
       case SEARCH_SEM:
-        for (let i = 0; i < corpus.length; i++) {
-          const m_i = corpus[i].Morph.toLowerCase();
-          const l = convertLemma(keySearch);
-          if (m_i === l && corpus[i].Semantic.toLowerCase() === keyTag) {
-            if (!Object.keys(result).includes(corpus[i].ID_sen)) {
-              result[corpus[i].ID_sen] = corpus[i];
+        for (const row of corpus) {
+          if (
+            row.Morph.toLowerCase() === lemma &&
+            row.Semantic.toLowerCase() === keyTagLower
+          ) {
+            const id = row.ID_sen;
+            if (!(id in result)) {
+              result[id] = row;
             }
           }
         }
         break;
     }
   }
+  return result;
 }

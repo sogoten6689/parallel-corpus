@@ -2,7 +2,7 @@
 
 import TagTable from "@/components/ui/tag-table";
 import { useTranslation } from "react-i18next";
-import { Divider, Space, Input, Button, Select, Radio, App } from 'antd';
+import { Divider, Input, Button, Select, Radio, App, Form, Typography } from 'antd';
 import { useState } from "react";
 import { RowWord } from "@/types/row-word.type";
 import { searchPhrase, searchWord } from "@/dao/search-utils";
@@ -25,6 +25,7 @@ const Word: React.FC = () => {
   const [selectedRow2, setSelectedRow2] = useState<Sentence | null>(null);
   const [page1, setPage1] = useState(1);
   const [page2, setPage2] = useState(1);
+  const [form] = Form.useForm();
 
   const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1),
     rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2),
@@ -41,7 +42,7 @@ const Word: React.FC = () => {
       message.warning(t('missing_data'));
       return;
     }
-    else if (searchText.trim() === '') {
+    else if (!searchText.trim()) {
       message.warning(t('missing_input'))
       return;
     }
@@ -106,41 +107,73 @@ const Word: React.FC = () => {
     setLanguage(value);
   };
 
+  const handleFormFinish = () => {
+    if (rows_1.length === 0 || rows_2.length === 0) {
+      message.warning(t('missing_data'));
+      return;
+    }
+    if (!searchText.trim()) {
+      form.validateFields(['searchText']);
+      return;
+    }
+    handleSearch();
+  };
+
   return (
     <>
       <div className="grid grid-rows-[auto_1fr]">
         <div className="p-3">
-          <Space direction="vertical" className="w-full" align="center">
-            <Space direction="horizontal" className="w-full">
-              <Space wrap className="w-full">
-                <Input
-                  placeholder={t('input')}
-                  style={{ flex: 1 }}
-                  width={700}
-                  value={searchText}
-                  onChange={e => setSearchText(e.target.value)} />
-              </Space>
-              <Space wrap className="w-full">
-                <Select
-                  style={{ width: 120 }}
-                  value={language}
-                  onChange={handleLanguageChange}
-                >
-                  <Option value="1">{lang_1 ? t(lang_1) : t('lang1')}</Option>
-                  <Option value="2">{lang_2 ? t(lang_2) : t('lang2')}</Option>
-                </Select>
-                <Radio.Group
-                  value={searchType}
-                  onChange={(e) => setSearchType(e.target.value)}
-                  options={[
-                    { label: t('matches'), value: 'matches' },
-                    { label: t('phrase'), value: 'phrase' },
-                    { label: t('morphological'), value: 'morphological' },
-                  ]} />
-                <Button type="primary" onClick={handleSearch}>Search</Button>
-              </Space>
-            </Space>
-          </Space>
+          <Form
+            form={form}
+            layout="inline"
+            onFinish={handleFormFinish}
+            className="w-full flex flex-row flex-wrap gap-2 items-center justify-center"
+          >
+            <Typography.Title level={5} className="font-semibold !mb-0 flex items-center">
+              {t("input_keyword")}
+            </Typography.Title>
+            <Form.Item
+              name="searchText"
+              className="flex-1 min-w-[200px]"
+              initialValue={searchText}
+              rules={[{ required: true, message: t('missing_input') }]}
+            >
+              <Input
+                placeholder={t('input')}
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+              />
+            </Form.Item>
+            <Typography.Title level={5} className="font-semibold !mb-0 flex items-center">
+              {t("select_language")}
+            </Typography.Title>
+            <Form.Item name="language" initialValue={language}>
+              <Select
+                style={{ width: 120 }}
+                value={language}
+                onChange={handleLanguageChange}
+              >
+                <Option value="1">{lang_1 ? t(lang_1) : t('lang1')}</Option>
+                <Option value="2">{lang_2 ? t(lang_2) : t('lang2')}</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item name="searchType" initialValue={searchType}>
+              <Radio.Group
+                value={searchType}
+                onChange={(e) => setSearchType(e.target.value)}
+                options={[
+                  { label: t('matches'), value: 'matches' },
+                  { label: t('phrase'), value: 'phrase' },
+                  { label: t('morphological'), value: 'morphological' },
+                ]}
+              />
+            </Form.Item>
+            <Form.Item>
+              <Button type="primary" htmlType="submit">
+                {t('search')}
+              </Button>
+            </Form.Item>
+          </Form>
           {language === '1' && (
             <>
               <Divider>

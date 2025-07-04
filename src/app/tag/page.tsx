@@ -2,7 +2,7 @@
 
 import TagTable from "@/components/ui/tag-table";
 import { useTranslation } from "react-i18next";
-import { Divider, Space, Button, Select, App, Cascader, CascaderProps, Switch, Typography } from 'antd';
+import { Divider, Button, Select, App, Cascader, Typography, Form } from 'antd';
 import { useState } from "react";
 import { RowWord } from "@/types/row-word.type";
 import { searchTag } from "@/dao/search-utils";
@@ -12,18 +12,21 @@ import { useSelector } from 'react-redux';
 import { RootState } from "@/redux";
 import { getNERSet, getPOSSet, getSEMSet } from "@/dao/data-utils";
 import type { Option } from '@/types/option.type';
+import { getTagOptions } from "@/dao/tag-options";
 
 const { Option } = Select;
 
 const Tag: React.FC = () => {
   const { message } = App.useApp();
   const { t } = useTranslation();
+  const [form] = Form.useForm();
   const [data_1, setData_1] = useState<Sentence[]>([]);
   const [data_2, setData_2] = useState<Sentence[]>([]);
   const [selectedRow1, setSelectedRow1] = useState<Sentence | null>(null);
   const [selectedRow2, setSelectedRow2] = useState<Sentence | null>(null);
   const [page1, setPage1] = useState(1);
   const [page2, setPage2] = useState(1);
+  const [language, setLanguage] = useState('1'); // add this for select
 
   const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1),
     rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2),
@@ -32,82 +35,57 @@ const Tag: React.FC = () => {
     lang_1 = useSelector((state: RootState) => state.dataSlice.lang_1),
     lang_2 = useSelector((state: RootState) => state.dataSlice.lang_2);
 
-  const [showFirst, setShowFirst] = useState(true),
-    [tagSelect, setTagSelect] = useState(['none']);
+  const [tagSelect, setTagSelect] = useState(['none']);
 
-  let listSentences: Record<string, RowWord> = {};
-  const posSet = showFirst ? getPOSSet(rows_1) : getPOSSet(rows_2),
-    nerSet = showFirst ? getNERSet(rows_1) : getNERSet(rows_2),
-    semSet = showFirst ? getSEMSet(rows_1) : getSEMSet(rows_2);
+  // Update sets to use language
+  const posSet = language === '1' ? getPOSSet(rows_1) : getPOSSet(rows_2),
+    nerSet = language === '1' ? getNERSet(rows_1) : getNERSet(rows_2),
+    semSet = language === '1' ? getSEMSet(rows_1) : getSEMSet(rows_2);
 
-  const options: Option[] = [
-    {
-      value: 'none',
-      label: t('none'),
-    },
-    {
-      value: 'pos',
-      label: t('pos'),
-      children: posSet.map((pos: string) => ({
-        value: pos,
-        label: pos,
-      })),
-    },
-    {
-      value: 'ner',
-      label: t('ner'),
-      children: nerSet.map((ner: string) => ({
-        value: ner,
-        label: ner
-      })),
-    },
-    {
-      value: 'semantic',
-      label: t('semantic'),
-      children: semSet.map((sem: string) => ({
-        value: sem,
-        label: sem
-      })),
-    }
-  ];
+  const options: Option[] = getTagOptions(t, posSet, nerSet, semSet);
 
-  const handleTagSelect: CascaderProps<Option>['onChange'] = (value) => {
-    setTagSelect(value);
-  };
-
-  const handleSwitch = (checked: boolean) => {
+  const handleLanguageChange = (value: string) => {
     setData_1([]);
     setData_2([]);
     setTagSelect(['none']);
-    setShowFirst(checked);
+    setLanguage(value);
   };
 
-  const handleSearch = () => {
+  const handleFormFinish = () => {
     if (rows_1.length === 0 || rows_2.length === 0) {
       message.warning(t('missing_data'));
       return;
     }
-
-    if (tagSelect.length == 2) {
-      listSentences = searchTag(tagSelect[1].toLowerCase(), tagSelect[0], showFirst ? rows_1 : rows_2);
-      searchComplete();
-    } else {
+    if (!tagSelect || tagSelect.length !== 2) {
       message.warning(t('missing_tag'));
+      return;
     }
+    const useRows = language === '1' ? rows_1 : rows_2;
+    let listSentences: Record<string, RowWord> = {};
+    listSentences = searchTag(tagSelect[1].toLowerCase(), tagSelect[0], useRows);
+    searchComplete(listSentences);
   };
 
-  const searchComplete = () => {
+  const searchComplete = (listSentences: Record<string, RowWord>) => {
     setData_1([]);
     setData_2([]);
 
     Object.keys(listSentences).forEach((key) => {
-      const sentence: Sentence = getSentence(listSentences[key], showFirst ? rows_1 : rows_2, showFirst ? dicId_1 : dicId_2);
+      const sentence: Sentence = getSentence(
+        listSentences[key],
+        language === '1' ? rows_1 : rows_2,
+        language === '1' ? dicId_1 : dicId_2
+      );
       setData_1(prev => [...prev, sentence]);
 
-      const sentence2: Sentence = getSentenceOther(listSentences[key], showFirst ? rows_2 : rows_1, showFirst ? dicId_2 : dicId_1);
+      const sentence2: Sentence = getSentenceOther(
+        listSentences[key],
+        language === '1' ? rows_2 : rows_1,
+        language === '1' ? dicId_2 : dicId_1
+      );
       setData_2(prev => [...prev, sentence2]);
     });
-  }
+  };
 
   const pageSize = 6;
 
@@ -135,38 +113,48 @@ const Tag: React.FC = () => {
     <>
       <div className="grid grid-rows-[auto_1fr]">
         <div className="p-3">
-          <Space direction="vertical" className="w-full" align="center">
-            <Space
-              direction="horizontal"
-              className="w-full flex items-center gap-3"
-              style={{ minHeight: 30 }}
+          <Form
+            form={form}
+            layout="inline"
+            onFinish={handleFormFinish}
+            className="w-full flex flex-row flex-wrap gap-3 items-center justify-center"
+          >
+            <Typography.Title level={5} className="font-semibold !mb-0 flex items-center">
+              {t("filter_tag")}
+            </Typography.Title>
+            <Form.Item
+              name="tagSelect"
+              className="flex items-center"
+              initialValue={tagSelect}
             >
-              <Typography.Title level={5} className="font-semibold !mb-0 flex items-center">
-                {t("filter_tag")}
-              </Typography.Title>
               <Cascader
                 options={options}
-                onChange={handleTagSelect}
+                onChange={value => setTagSelect(value)}
                 placeholder={t('please_select')}
                 value={tagSelect}
                 className="flex items-center"
               />
-              <Typography.Title level={5} className="font-semibold !mb-0 flex items-center">
-                {t("select_language")}
-              </Typography.Title>
-              <Switch
-                checked={showFirst}
-                onChange={handleSwitch}
-                checkedChildren={lang_1 ? t(lang_1) : t("lang1")}
-                unCheckedChildren={lang_2 ? t(lang_2) : t("lang2")}
-                className="flex items-center"
-              />
-              <Button type="primary" onClick={handleSearch} className="flex items-center">
+            </Form.Item>
+            <Typography.Title level={5} className="font-semibold !mb-0 flex items-center">
+              {t("select_language")}
+            </Typography.Title>
+            <Form.Item name="language" initialValue={language}>
+              <Select
+                style={{ width: 120 }}
+                value={language}
+                onChange={handleLanguageChange}
+              >
+                <Option value="1">{lang_1 ? t(lang_1) : t('lang1')}</Option>
+                <Option value="2">{lang_2 ? t(lang_2) : t('lang2')}</Option>
+              </Select>
+            </Form.Item>
+            <Form.Item>
+              <Button type="primary" htmlType="submit" className="flex items-center">
                 Search
               </Button>
-            </Space>
-          </Space>
-          {showFirst && (
+            </Form.Item>
+          </Form>
+          {language === '1' && (
             <>
               <Divider>
                 {lang_1 ? t(lang_1) : t('source_language')}
@@ -192,7 +180,7 @@ const Tag: React.FC = () => {
               />
             </>
           )}
-          {!showFirst && (
+          {language !== '1' && (
             <>
               <Divider>
                 {lang_2 ? t(lang_2) : t('source_language')}

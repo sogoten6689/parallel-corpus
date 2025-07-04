@@ -91,17 +91,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {
               key: '12',
               icon: <SearchOutlined />,
-              label: <Link href="/word">{t('word')}</Link>,
+              label: <Link href="/word">{t('menu_word')}</Link>,
             },
             {
               key: '3',
               icon: <TagOutlined />,
-              label: <Link href="/tag">{t('tag')}</Link>,
+              label: <Link href="/tag">{t('menu_tag')}</Link>,
             },
             {
               key: '4',
               icon: <TagsOutlined />,
-              label: <Link href="/word-tag">{t('word_tag')}</Link>,
+              label: <Link href="/word-tag">{t('menu_word_tag')}</Link>,
             },
             {
               key: '5',
