@@ -62,7 +62,6 @@ export default function FileUploader() {
                 dispatch(setRows_2(rows));
               }
 
-              // Initialize dictionary only after both files are processed
               if (loadedRows[0] && loadedRows[1]) {
                 initDictSenID(loadedRows[0], loadedRows[1], dispatch);
               }
@@ -105,7 +104,7 @@ export default function FileUploader() {
       
       dispatch(setLang_1(sampleFiles[idx].name_1));
       dispatch(setLang_2(sampleFiles[idx].name_2));
-      // Initialize dictionary with actual loaded rows
+
       initDictSenID(rows1, rows2, dispatch);
     } catch (error) {
       console.error(error);
@@ -115,7 +114,6 @@ export default function FileUploader() {
     }
   };
 
-  // Dropdown menu for sample files
   const sampleMenuItems = sampleFiles.map((file, idx) => ({
     key: String(idx),
     label: file.label,

@@ -15,10 +15,8 @@ export default function Home() {
     lang_1 = useSelector((state: RootState) => state.dataSlice.lang_1),
     lang_2 = useSelector((state: RootState) => state.dataSlice.lang_2);
 
-  // State to switch between tables
   const [showFirst, setShowFirst] = useState(true);
 
-  // Handler for switch button
   const handleSwitch = (checked: boolean) => {
     setShowFirst(checked);
   };

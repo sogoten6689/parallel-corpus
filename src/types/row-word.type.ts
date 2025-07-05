@@ -1,5 +1,3 @@
-// src/types/RowWord.ts
-
 export interface RowWord {
   ID: string;
   ID_sen: string;
