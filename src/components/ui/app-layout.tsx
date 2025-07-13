@@ -84,9 +84,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           selectedKeys={[selectedKey]}
           items={[
             { key: '1', icon: <FontColorsOutlined />, label: <Link href="/">{t('home')}</Link> },
-            { key: '2', icon: <SearchOutlined />, label: <Link href="/word">{t('word')}</Link> },
-            { key: '3', icon: <TagOutlined />, label: <Link href="/tag">{t('tag')}</Link> },
-            { key: '4', icon: <TagsOutlined />, label: <Link href="/word-tag">{t('word_tag')}</Link> },
+            { key: '2', icon: <SearchOutlined />, label: <Link href="/word">{t('menu_word')}</Link> },
+            { key: '3', icon: <TagOutlined />, label: <Link href="/tag">{t('menu_tag')}</Link> },
+            { key: '4', icon: <TagsOutlined />, label: <Link href="/word-tag">{t('menu_word_tag')}</Link> },
             { key: '5', icon: <StockOutlined />, label: <Link href="/statistical">{t('statistical')}</Link> },
             { key: '6', icon: <InfoOutlined />, label: <Link href="/introduction">{t('introduction')}</Link> },
           ]}
