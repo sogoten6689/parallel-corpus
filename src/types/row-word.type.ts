@@ -10,4 +10,5 @@ export interface RowWord {
   Grm: string;
   NER: string;
   Semantic: string;
+  Lang_code: string;
 }

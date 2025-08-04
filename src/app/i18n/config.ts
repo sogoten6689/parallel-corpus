@@ -10,7 +10,7 @@ i18n
   .use(initReactI18next)
   .init({
     lng: 'en', // Ngôn ngữ mặc định
-    fallbackLng: 'en', // Ngôn ngữ dự phòng
+    fallbackLng: 'vi', // Ngôn ngữ dự phòng
     supportedLngs: ['en', 'vi'],
     debug: process.env.NODE_ENV === 'development',
     interpolation: {

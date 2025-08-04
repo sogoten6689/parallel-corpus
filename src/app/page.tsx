@@ -33,9 +33,10 @@ export default function Home() {
             unCheckedChildren={lang_2 ? t(lang_2) : t("lang2")}
           />
         </div>
-        <div className="p-3">
+        {<CorpusTable  sentences={showFirst ? sentences_1 : sentences_2} />}
+        {/* <div className="p-3">
           <CorpusTable data={showFirst ? rows_1 : rows_2} sentences={showFirst ? sentences_1 : sentences_2} />
-        </div>
+        </div> */}
       </div>
     </>
   );
