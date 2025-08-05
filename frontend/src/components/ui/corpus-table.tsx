@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import Modal from 'antd/es/modal/Modal';
 
 import { useQuery } from "@tanstack/react-query";
-const apiUrl = process.env.NEXT_PUBLIC_BACKEND_API;
+// const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 //   const fetchRowWords = async (): Promise<{ data: RowWord[]}> => {
 //     const res = await fetch(`${apiUrl}/words`);
 //     if (!res.ok) throw new Error("Failed to fetch words");
@@ -28,11 +28,16 @@ const fetchRowWords = async (
   if (search) params.append("search", search);
   if (lang) params.append("lang", lang);
 
-  const res = await fetch(`${apiUrl}/words?${params.toString()}`);
+  // const res = await fetch(`${apiUrl}/words?${params.toString()}`);
   
-  if (!res.ok) throw new Error("Failed to fetch words");
+  // if (!res.ok) throw new Error("Failed to fetch words");
 
-  return res.json(); // expected format: { data: [...], total: number }
+  // return res.json(); // expected format: { data: [...], total: number }
+
+  return {
+    data: [],
+    total: 0,
+  };
 };
 
 
