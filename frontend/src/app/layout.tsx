@@ -9,6 +9,8 @@ import ThemeProvider from "./theme-provider";
 import ReduxProvider from '@/redux/provider';
 import '@ant-design/v5-patch-for-react-19';
 import { App as AntdApp } from 'antd';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useState } from 'react';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,6 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
 
+  const [queryClient] = useState(() => new QueryClient())
   return (
     <html lang="en" suppressHydrationWarning={false}>
       <head>
@@ -38,7 +41,9 @@ export default function RootLayout({
           <AntdRegistry>
             <ThemeProvider>
               <ReduxProvider>
-                <AppLayout>{children}</AppLayout>
+                <QueryClientProvider client={queryClient}>
+                  <AppLayout>{children}</AppLayout>
+                </QueryClientProvider>
               </ReduxProvider>
             </ThemeProvider>
           </AntdRegistry>
