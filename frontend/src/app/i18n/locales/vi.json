@@ -187,5 +187,33 @@
       "NUM": "Số lượng",
       "TRM": "Thuật ngữ"
     }
+  },
+  "auth": {
+    "login": "Đăng nhập",
+    "signup": "Đăng ký",
+    "logout": "Đăng xuất",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "confirmPassword": "Xác nhận mật khẩu",
+    "firstName": "Họ",
+    "lastName": "Tên",
+    "rememberMe": "Ghi nhớ đăng nhập",
+    "forgotPassword": "Quên mật khẩu?",
+    "loginButton": "Đăng nhập",
+    "signupButton": "Tạo tài khoản",
+    "haveAccount": "Đã có tài khoản?",
+    "noAccount": "Chưa có tài khoản?",
+    "loginSuccess": "Đăng nhập thành công!",
+    "signupSuccess": "Tạo tài khoản thành công!",
+    "loginFailed": "Đăng nhập thất bại. Vui lòng kiểm tra thông tin đăng nhập.",
+    "signupFailed": "Đăng ký thất bại. Vui lòng thử lại.",
+    "emailRequired": "Vui lòng nhập email!",
+    "emailInvalid": "Vui lòng nhập email hợp lệ!",
+    "passwordRequired": "Vui lòng nhập mật khẩu!",
+    "passwordMin": "Mật khẩu phải có ít nhất 6 ký tự!",
+    "confirmPasswordRequired": "Vui lòng xác nhận mật khẩu!",
+    "passwordMismatch": "Mật khẩu không khớp!",
+    "firstNameRequired": "Vui lòng nhập họ!",
+    "lastNameRequired": "Vui lòng nhập tên!"
   }
 }

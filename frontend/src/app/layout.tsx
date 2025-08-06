@@ -5,12 +5,15 @@ import "./globals.css";
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import '@ant-design/v5-patch-for-react-19';
 import AppLayout from "@/components/ui/app-layout";
+import AuthLayout from "@/components/ui/auth-layout";
 import ThemeProvider from "./theme-provider";
 import ReduxProvider from '@/redux/provider';
 import '@ant-design/v5-patch-for-react-19';
 import { App as AntdApp } from 'antd';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { usePathname } from 'next/navigation';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,6 +24,18 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+// Component to conditionally render layout based on pathname
+function ConditionalLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
+  
+  if (isAuthPage) {
+    return <AuthLayout>{children}</AuthLayout>;
+  }
+  
+  return <AppLayout>{children}</AppLayout>;
+}
 
 export default function RootLayout({
   children,
@@ -40,11 +55,13 @@ export default function RootLayout({
         <AntdApp>
           <AntdRegistry>
             <ThemeProvider>
-              <ReduxProvider>
-                <QueryClientProvider client={queryClient}>
-                  <AppLayout>{children}</AppLayout>
-                </QueryClientProvider>
-              </ReduxProvider>
+              <AuthProvider>
+                <ReduxProvider>
+                  <QueryClientProvider client={queryClient}>
+                    <ConditionalLayout>{children}</ConditionalLayout>
+                  </QueryClientProvider>
+                </ReduxProvider>
+              </AuthProvider>
             </ThemeProvider>
           </AntdRegistry>
         </AntdApp>

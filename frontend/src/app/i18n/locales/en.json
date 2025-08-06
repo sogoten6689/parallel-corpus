@@ -187,5 +187,33 @@
       "NUM": "Number",
       "TRM": "Terminology"
     }
+  },
+  "auth": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "loginButton": "Sign in",
+    "signupButton": "Create account",
+    "haveAccount": "Already have an account?",
+    "noAccount": "Don't have an account?",
+    "loginSuccess": "Login successful!",
+    "signupSuccess": "Account created successfully!",
+    "loginFailed": "Login failed. Please check your credentials.",
+    "signupFailed": "Sign up failed. Please try again.",
+    "emailRequired": "Please enter your email!",
+    "emailInvalid": "Please enter a valid email!",
+    "passwordRequired": "Please enter your password!",
+    "passwordMin": "Password must be at least 6 characters!",
+    "confirmPasswordRequired": "Please confirm your password!",
+    "passwordMismatch": "Passwords do not match!",
+    "firstNameRequired": "Please enter your first name!",
+    "lastNameRequired": "Please enter your last name!"
   }
 }

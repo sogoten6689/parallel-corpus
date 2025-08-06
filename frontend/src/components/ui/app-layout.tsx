@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Image, Layout, Menu, theme, Typography, Flex, Divider, FloatButton, Drawer, Radio, RadioChangeEvent } from 'antd';
+import { Image, Layout, Menu, theme, Typography, Flex, Divider, FloatButton, Drawer, Radio, RadioChangeEvent, Button, Dropdown, Avatar, Space } from 'antd';
 import {
   SunOutlined,
   MoonOutlined,
@@ -12,13 +12,19 @@ import {
   StockOutlined,
   SearchOutlined,
   QuestionCircleOutlined,
+  UserOutlined,
+  LoginOutlined,
+  LogoutOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useTheme } from '@/app/theme-provider';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './language-switcher';
 import FileUploader from './file-uploader';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { appRoute } from '@/config/appRoute';
 
 const { Header, Sider, Content } = Layout;
 
@@ -28,7 +34,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [radioValue, setRadioValue] = useState('1');
   const { t } = useTranslation();
   const { mode, toggleTheme } = useTheme();
+  const { user, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
 
   const showDrawer = () => {
     setOpen(true);
@@ -41,6 +49,33 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const handleRadioChange = (e: RadioChangeEvent) => {
     setRadioValue(e.target.value);
   };
+
+  const handleLogout = () => {
+    logout();
+    router.push(appRoute.home);
+  };
+
+  const userMenuItems = [
+    {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: 'Profile',
+    },
+    {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: 'Settings',
+    },
+    {
+      type: 'divider' as const,
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: t('auth.logout') || 'Logout',
+      onClick: handleLogout,
+    },
+  ];
 
   const {
     token: { colorBgContainer },
@@ -106,6 +141,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               )}
               <Divider type="vertical" />
               <LanguageSwitcher />
+              <Divider type="vertical" />
+              {isAuthenticated ? (
+                <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>
+                  <Space style={{ cursor: 'pointer' }}>
+                    <Avatar icon={<UserOutlined />} />
+                    <span>{user?.firstName} {user?.lastName}</span>
+                  </Space>
+                </Dropdown>
+              ) : (
+                <Space>
+                  <Link href={appRoute.login}>
+                    <Button type="text" icon={<LoginOutlined />}>
+                      {t('auth.login')}
+                    </Button>
+                  </Link>
+                  <Link href={appRoute.signup}>
+                    <Button type="primary" icon={<UserOutlined />}>
+                      {t('auth.signup')}
+                    </Button>
+                  </Link>
+                </Space>
+              )}
             </Flex>
           </Flex>
         </Header>
