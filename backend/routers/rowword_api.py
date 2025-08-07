@@ -139,13 +139,35 @@ async def import_corpus_file(file: UploadFile = File(...), db: Session = Depends
         content = await file.read()
         filename = file.filename.lower()
 
-        # Đọc file bằng Pandas
+        # Đọc file bằng Pandas hoặc xử lý text
         if filename.endswith(".csv"):
             df = pd.read_csv(io.StringIO(content.decode("utf-8")), sep=",")
         elif filename.endswith(".xlsx"):
             df = pd.read_excel(io.BytesIO(content), engine='openpyxl')
+        elif filename.endswith(".txt"):
+            # Xử lý file .txt với format tab-separated
+            lines = content.decode("utf-8").splitlines()
+            data = []
+            for line in lines:
+                if line.strip():  # Bỏ qua dòng trống
+                    fields = line.strip().split('\t')
+                    if len(fields) >= 11:  # Đảm bảo có đủ fields
+                        data.append({
+                            "ID": fields[0],
+                            "ID_sen": fields[1],
+                            "Word": fields[2],
+                            "Lemma": fields[3],
+                            "Links": fields[4],
+                            "Morph": fields[5],
+                            "POS": fields[6],
+                            "Phrase": fields[7],
+                            "Grm": fields[8],
+                            "NER": fields[9],
+                            "Semantic": fields[10] if len(fields) > 10 else ""
+                        })
+            df = pd.DataFrame(data)
         else:
-            raise HTTPException(status_code=400, detail="File must be .csv or .xlsx")
+            raise HTTPException(status_code=400, detail="File must be .csv, .xlsx, or .txt")
 
         # Kiểm tra cột cần thiết
         required_columns = ["ID", "ID_sen", "Word", "Lemma", "Links", "Morph", "POS", "Phrase", "Grm", "NER", "Semantic"]
@@ -173,7 +195,7 @@ async def import_corpus_file(file: UploadFile = File(...), db: Session = Depends
             count += 1
 
         db.commit()
-        return {"message": f" Imported {count} rows from {filename}"}
+        return {"message": f"Imported {count} rows from {filename}"}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
