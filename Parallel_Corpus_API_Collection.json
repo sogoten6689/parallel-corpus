@@ -1,0 +1,408 @@
+{
+	"info": {
+		"_postman_id": "parallel-corpus-api-collection",
+		"name": "Parallel Corpus API Collection",
+		"description": "Collection để test tất cả các API của hệ thống Parallel Corpus\n\nBase URL: http://localhost:8000\n\nCác API bao gồm:\n- Authentication (Đăng ký, Đăng nhập)\n- User Management (Quản lý người dùng)\n- Row Words (Quản lý từ vựng)\n- Sentences (Quản lý câu)\n- Points (Quản lý điểm đánh dấu)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Đăng ký tài khoản mới",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"testpass123\",\n  \"full_name\": \"Test User\",\n  \"date_of_birth\": \"1990-01-01\",\n  \"organization\": \"Test Organization\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/sign-up",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"sign-up"
+							]
+						},
+						"description": "Đăng ký tài khoản mới với thông tin đầy đủ"
+					},
+					"response": []
+				},
+				{
+					"name": "Đăng nhập",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "admin123",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Đăng nhập và nhận JWT token"
+					},
+					"response": []
+				},
+				{
+					"name": "Lấy thông tin user hiện tại",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						},
+						"description": "Lấy thông tin của user đang đăng nhập"
+					},
+					"response": []
+				},
+				{
+					"name": "Danh sách tất cả users (Admin only)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/users?skip=0&limit=100",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"users"
+							],
+							"query": [
+								{
+									"key": "skip",
+									"value": "0"
+								},
+								{
+									"key": "limit",
+									"value": "100"
+								}
+							]
+						},
+						"description": "Lấy danh sách tất cả users (chỉ admin mới có quyền)"
+					},
+					"response": []
+				}
+			],
+			"description": "Các API liên quan đến xác thực và quản lý người dùng"
+		},
+		{
+			"name": "Row Words",
+			"item": [
+				{
+					"name": "Tạo Row Word mới",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ID\": \"word_001\",\n  \"ID_sen\": \"sentence_001\",\n  \"Word\": \"hello\",\n  \"Lemma\": \"hello\",\n  \"Links\": \"1:2\",\n  \"Morph\": \"POS=INTJ\",\n  \"POS\": \"INTJ\",\n  \"Phrase\": \"NP\",\n  \"Grm\": \"root\",\n  \"NER\": \"O\",\n  \"Semantic\": \"greeting\",\n  \"Lang_code\": \"en\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/words/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"words",
+								""
+							]
+						},
+						"description": "Tạo một row word mới"
+					},
+					"response": []
+				},
+				{
+					"name": "Lấy tất cả Row Words",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/words/?page=1&limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"words",
+								""
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Lấy danh sách tất cả row words với phân trang"
+					},
+					"response": []
+				},
+				{
+					"name": "Import Row Words từ file",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "lang_code",
+									"value": "en",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/import-rowwords/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"import-rowwords",
+								""
+							]
+						},
+						"description": "Import row words từ file text"
+					},
+					"response": []
+				},
+				{
+					"name": "Export Row Words to Excel",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/export-rowwords-excel/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"export-rowwords-excel",
+								""
+							]
+						},
+						"description": "Export row words ra file Excel"
+					},
+					"response": []
+				}
+			],
+			"description": "Các API quản lý row words (từ vựng)"
+		},
+		{
+			"name": "Sentences",
+			"item": [
+				{
+					"name": "Lấy tất cả Sentences",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/sentences",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"sentences"
+							]
+						},
+						"description": "Lấy danh sách tất cả sentences từ row words"
+					},
+					"response": []
+				}
+			],
+			"description": "Các API quản lý sentences (câu) - được xử lý thông qua row words"
+		},
+		{
+			"name": "Corpus Management",
+			"item": [
+				{
+					"name": "Import Corpus File",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/import-corpus-file/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"import-corpus-file",
+								""
+							]
+						},
+						"description": "Import corpus file (hỗ trợ nhiều định dạng)"
+					},
+					"response": []
+				}
+			],
+			"description": "Các API quản lý corpus và import dữ liệu"
+		},
+		{
+			"name": "System Info",
+			"item": [
+				{
+					"name": "API Documentation",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/docs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"docs"
+							]
+						},
+						"description": "Truy cập Swagger UI documentation"
+					},
+					"response": []
+				},
+				{
+					"name": "OpenAPI Schema",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/openapi.json",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"openapi.json"
+							]
+						},
+						"description": "Lấy OpenAPI schema"
+					},
+					"response": []
+				},
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								""
+							]
+						},
+						"description": "Kiểm tra trạng thái API"
+					},
+					"response": []
+				}
+			],
+			"description": "Các API thông tin hệ thống"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+} 
