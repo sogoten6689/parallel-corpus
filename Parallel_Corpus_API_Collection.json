@@ -21,7 +21,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"testpass123\",\n  \"full_name\": \"Test User\",\n  \"date_of_birth\": \"1990-01-01\",\n  \"organization\": \"Test Organization\"\n}"
+							"raw": "{\n  \"email\": \"testuser@gmail.com\",\n  \"password\": \"testpass123\",\n  \"full_name\": \"Test User\",\n  \"date_of_birth\": \"1990-01-01\",\n  \"organization\": \"Test Organization\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/auth/sign-up",
@@ -51,8 +51,8 @@
 							"mode": "urlencoded",
 							"urlencoded": [
 								{
-									"key": "username",
-									"value": "admin",
+									"key": "email",
+									"value": "admin@gmail.com",
 									"type": "text"
 								},
 								{

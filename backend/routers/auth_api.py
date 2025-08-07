@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 from database import get_db
 from auth import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, get_current_active_user
-from crud import get_user_by_username, create_user, get_users
-from schemas.user import UserCreate, UserResponse, Token
+from crud import get_user_by_email, create_user, get_users
+from schemas.user import UserCreate, UserLogin, UserResponse, Token
 from models.user import UserRole, User
 
 router = APIRouter()
@@ -13,31 +13,32 @@ router = APIRouter()
 @router.post("/sign-up", response_model=UserResponse)
 def sign_up(user: UserCreate, db: Session = Depends(get_db)):
     """Đăng ký tài khoản mới / Register new account"""
-    # Kiểm tra username đã tồn tại chưa / Check if username already exists
-    db_user = get_user_by_username(db, username=user.username)
+    # Kiểm tra email đã tồn tại chưa / Check if email already exists
+    db_user = get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username đã tồn tại / Username already exists"
+            detail="email đã tồn tại / email already exists"
         )
     
     # Tạo user mới / Create new user
     return create_user(db=db, user=user)
 
 @router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+def login(body: UserLogin, db: Session = Depends(get_db)):
     """Đăng nhập / Login"""
-    user = authenticate_user(db, form_data.username, form_data.password)
+    # return body
+    user = authenticate_user(db, body.email, body.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Tên đăng nhập hoặc mật khẩu không đúng / Incorrect username or password",
+            detail="Tên email hoặc mật khẩu không đúng / Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": user.email}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
 

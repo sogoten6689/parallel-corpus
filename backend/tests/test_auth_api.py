@@ -21,7 +21,7 @@ class TestAuthAPI:
     def test_signup_new_user(self):
         """Test user registration with new user"""
         user_data = {
-            "username": "testuser_new",
+            "email": "testuser_new@gmail.com",
             "password": "testpass123",
             "full_name": "Test User New",
             "date_of_birth": "1990-01-01",
@@ -34,17 +34,17 @@ class TestAuthAPI:
         if response.status_code == 200:
             data = response.json()
             assert "id" in data
-            assert data["username"] == user_data["username"]
+            assert data["email"] == user_data["email"]
             assert data["full_name"] == user_data["full_name"]
             assert data["role"] == "user"
         elif response.status_code == 400:
             # User might already exist
-            assert "Username đã tồn tại" in response.text or "Username already exists" in response.text
+            assert "email đã tồn tại" in response.text or "email already exists" in response.text
     
     def test_signup_duplicate_user(self):
-        """Test user registration with existing username"""
+        """Test user registration with existing email"""
         user_data = {
-            "username": "admin",  # Existing user
+            "email": "admin@gmail.com",  # Existing user
             "password": "testpass123",
             "full_name": "Test User",
             "date_of_birth": "1990-01-01",
@@ -53,12 +53,12 @@ class TestAuthAPI:
         
         response = requests.post(f"{AUTH_BASE_URL}/sign-up", json=user_data)
         assert response.status_code == 400
-        assert "Username đã tồn tại" in response.text or "Username already exists" in response.text
+        assert "email đã tồn tại" in response.text or "email already exists" in response.text
     
     def test_login_valid_user(self):
         """Test login with valid credentials"""
         login_data = {
-            "username": "admin",
+            "email": "admin@gmail.com",
             "password": "admin123"
         }
         
@@ -73,7 +73,7 @@ class TestAuthAPI:
     def test_login_invalid_user(self):
         """Test login with invalid credentials"""
         login_data = {
-            "username": "nonexistent",
+            "email": "nonexistent@gmail.com",
             "password": "wrongpass"
         }
         
@@ -91,7 +91,7 @@ class TestAuthAPI:
         
         data = response.json()
         assert "id" in data
-        assert "username" in data
+        assert "email" in data
         assert "full_name" in data
         assert "role" in data
     
@@ -114,7 +114,7 @@ class TestAuthAPI:
         assert len(data) > 0
         
         # Check if admin user exists in the list
-        admin_users = [user for user in data if user["username"] == "admin"]
+        admin_users = [user for user in data if user["email"] == "admin@gmail.com"]
         assert len(admin_users) > 0
         assert admin_users[0]["role"] == "admin"
     

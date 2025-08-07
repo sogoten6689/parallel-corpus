@@ -16,7 +16,7 @@ echo -e "\n2. Testing User Registration..."
 REGISTER_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/sign-up" \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "testuser",
+    "email": "testuser"@gmail.com,
     "password": "testpass123",
     "full_name": "Test User",
     "date_of_birth": "1990-01-01",
@@ -28,7 +28,7 @@ echo $REGISTER_RESPONSE | jq '.' 2>/dev/null || echo $REGISTER_RESPONSE
 echo -e "\n3. Testing Login..."
 LOGIN_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/login" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=admin&password=admin123")
+  -d "email=admin@gmail.com&password=admin123")
 echo $LOGIN_RESPONSE | jq '.' 2>/dev/null || echo $LOGIN_RESPONSE
 
 # Extract access token

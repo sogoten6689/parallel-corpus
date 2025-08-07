@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database import get_db, SessionLocal
 from models import User, RowWord, Sentence, Point, UserRole
 from crud import (
-    get_user_by_username, get_user_by_id, get_users, create_user,
+    get_user_by_email, get_user_by_id, get_users, create_user,
     get_all_row_words, create_row_word
 )
 from schemas import UserCreate, RowWordCreate
@@ -35,7 +35,7 @@ class TestDatabase:
         """Test User model creation"""
         db = SessionLocal()
         test_user = User(
-            username="test_db_user",
+            email="test_db_user@gmail.com",
             hashed_password="hashed_password_123",
             full_name="Test DB User",
             date_of_birth=date(1990, 1, 1),
@@ -46,7 +46,7 @@ class TestDatabase:
         db.commit()
         db.refresh(test_user)
         assert test_user.id is not None
-        assert test_user.username == "test_db_user"
+        assert test_user.email == "test_db_user@gmail.com"
         assert test_user.role == UserRole.USER
         db.delete(test_user)
         db.commit()
@@ -118,17 +118,17 @@ class TestDatabase:
         """Test CRUD operations"""
         db = SessionLocal()
         user_create = UserCreate(
-            username="test_crud_user",
+            email="test_crud_user@gmail.com",
             password="testpass123",
             full_name="Test CRUD User",
             date_of_birth=date(1990, 1, 1),
             organization="Test Organization"
         )
         created_user = create_user(db, user_create)
-        assert created_user.username == "test_crud_user"
-        found_user = get_user_by_username(db, "test_crud_user")
+        assert created_user.email == "test_crud_user@gmail.com"
+        found_user = get_user_by_email(db, "test_crud_user")
         assert found_user is not None
-        assert found_user.username == "test_crud_user"
+        assert found_user.email == "test_crud_user@gmail.com"
         found_user_by_id = get_user_by_id(db, created_user.id)
         assert found_user_by_id is not None
         assert found_user_by_id.id == created_user.id

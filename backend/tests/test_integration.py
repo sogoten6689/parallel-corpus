@@ -14,10 +14,10 @@ AUTH_BASE_URL = f"{BASE_URL}/auth"
 class TestIntegration:
     """Integration tests for the entire system"""
     
-    def get_auth_token(self, username="admin", password="admin123"):
+    def get_auth_token(self, email="admin@gmail.com", password="admin123"):
         """Get authentication token"""
         login_data = {
-            "username": username,
+            "email": email,
             "password": password
         }
         
@@ -36,7 +36,7 @@ class TestIntegration:
     def test_full_user_workflow(self):
         """Test complete user workflow: signup -> login -> use APIs"""
         user_data = {
-            "username": "integration_test_user",
+            "email": "integration_test_user@gmail.com",
             "password": "testpass123",
             "full_name": "Integration Test User",
             "date_of_birth": "1990-01-01",
@@ -50,7 +50,7 @@ class TestIntegration:
         response = requests.get(f"{AUTH_BASE_URL}/me", headers=headers)
         assert response.status_code == 200, f"Get current user failed: {response.status_code} - {response.text}"
         user_info = response.json()
-        assert user_info["username"] == "integration_test_user"
+        assert user_info["email"] == "integration_test_user@gmail.com"
 
     def test_data_workflow(self):
         """Test complete data workflow: create -> read -> update"""
@@ -95,13 +95,13 @@ class TestIntegration:
         users = response.json()
         assert isinstance(users, list)
         assert len(users) > 0
-        admin_users = [u for u in users if u["username"] == "admin"]
+        admin_users = [u for u in users if u["email"] == "admin@gmail.com"]
         assert len(admin_users) > 0
         assert admin_users[0]["role"] == "admin"
 
     def test_error_handling(self):
         """Test error handling and edge cases"""
-        login_data = {"username": "nonexistent", "password": "wrongpass"}
+        login_data = {"email": "nonexistent@gmail.com", "password": "wrongpass"}
         response = requests.post(f"{AUTH_BASE_URL}/login", data=login_data)
         assert response.status_code == 401
         response = requests.get(f"{AUTH_BASE_URL}/me")

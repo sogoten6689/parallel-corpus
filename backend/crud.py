@@ -21,8 +21,8 @@ def get_all_row_words(db: Session):
     return db.query(RowWord).all()
 
 # User CRUD operations
-def get_user_by_username(db: Session, username: str):
-    return db.query(User).filter(User.username == username).first()
+def get_user_by_email(db: Session, email: str):
+    return db.query(User).filter(User.email == email).first()
 
 def get_user_by_id(db: Session, user_id: int):
     return db.query(User).filter(User.id == user_id).first()
@@ -33,7 +33,7 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
 def create_user(db: Session, user: UserCreate, role: UserRole = UserRole.USER):
     hashed_password = get_password_hash(user.password)
     db_user = User(
-        username=user.username,
+        email=user.email,
         hashed_password=hashed_password,
         full_name=user.full_name,
         date_of_birth=user.date_of_birth,
@@ -49,7 +49,7 @@ def create_initial_users(db: Session):
     """Create initial users: lananh, lam, thang, admin"""
     users_data = [
         {
-            "username": "lananh",
+            "email": "lananh@gmail.com",
             "password": "lananh123",
             "full_name": "Nguyễn Thị Lan Anh",
             "date_of_birth": "1995-05-15",
@@ -57,15 +57,15 @@ def create_initial_users(db: Session):
             "role": UserRole.USER
         },
         {
-            "username": "lam",
-            "password": "lam123",
+            "email": "sogoten6689@gmail.com",
+            "password": "Lam@123456",
             "full_name": "Nguyễn Ngọc Lâm",
-            "date_of_birth": "1990-08-20",
+            "date_of_birth": "1997-04-06",
             "organization": "HCMUS",
             "role": UserRole.USER
         },
         {
-            "username": "thang",
+            "email": "thang@gmail.com",
             "password": "thang123",
             "full_name": "La Quốc Thắng",
             "date_of_birth": "1988-12-10",
@@ -73,7 +73,7 @@ def create_initial_users(db: Session):
             "role": UserRole.USER
         },
         {
-            "username": "admin",
+            "email": "admin@gmail.com",
             "password": "admin123",
             "full_name": "Administrator",
             "date_of_birth": "1990-01-01",
@@ -83,10 +83,10 @@ def create_initial_users(db: Session):
     ]
     
     for user_data in users_data:
-        existing_user = get_user_by_username(db, user_data["username"])
+        existing_user = get_user_by_email(db, user_data["email"])
         if not existing_user:
             user_create = UserCreate(**user_data)
             create_user(db, user_create, user_data["role"])
-            print(f"Created user: {user_data['username']}")
+            print(f"Created user: {user_data['email']}")
         else:
-            print(f"User {user_data['username']} already exists")
+            print(f"User {user_data['email']} already exists")

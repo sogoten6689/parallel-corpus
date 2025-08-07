@@ -32,11 +32,11 @@ def get_db():
 app.include_router(rowword_api.router)
 app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 
-# @app.on_event("startup")
-# async def startup_event():
-#     """Create initial users on startup"""
-#     db = next(get_db())
-#     try:
-#         create_initial_users(db)
-#     finally:
-#         db.close()
+@app.on_event("startup")
+async def startup_event():
+    """Create initial users on startup"""
+    db = next(get_db())
+    try:
+        create_initial_users(db)
+    finally:
+        db.close()

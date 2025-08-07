@@ -14,7 +14,7 @@ def test_signup():
     print("Testing user registration...")
     
     user_data = {
-        "username": "testuser",
+        "email": "testuser@gmail.com",
         "password": "testpass123",
         "full_name": "Test User",
         "date_of_birth": "1990-01-01",
@@ -35,7 +35,7 @@ def test_login():
     print("\nTesting user login...")
     
     login_data = {
-        "username": "testuser",
+        "email": "testuser@gmail.com",
         "password": "testpass123"
     }
     
@@ -68,12 +68,12 @@ def test_login():
 #         print(f"Error: {e}")
 #         return False
 
-def test_duplicate_username():
-    """Test duplicate username registration"""
-    print("\nTesting duplicate username...")
+def test_duplicate_email():
+    """Test duplicate email registration"""
+    print("\nTesting duplicate email...")
     
     user_data = {
-        "username": "testuser",  # Same username as before
+        "email": "testuser@gmail.com",  # Same email as before
         "password": "anotherpass",
         "full_name": "Another User",
         "date_of_birth": "1995-01-01",
@@ -103,14 +103,14 @@ def main():
         # me_success = test_me_endpoint(token) # Commented out as per edit hint
         pass # Placeholder for future test_me_endpoint call
     
-    # Test 4: Duplicate username
-    duplicate_test = test_duplicate_username()
+    # Test 4: Duplicate email
+    duplicate_test = test_duplicate_email()
     
     print("\n=== Test Summary ===")
     print(f"Signup: {'PASS' if signup_success else 'FAIL'}")
     print(f"Login: {'PASS' if token else 'FAIL'}")
     print(f"Me endpoint: {'PASS' if token and False else 'FAIL'}") # Modified to reflect me_success is commented out
-    print(f"Duplicate username: {'PASS' if duplicate_test else 'FAIL'}")
+    print(f"Duplicate email: {'PASS' if duplicate_test else 'FAIL'}")
 
 if __name__ == "__main__":
     main() 

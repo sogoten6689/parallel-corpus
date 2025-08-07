@@ -11,7 +11,7 @@ This document describes the authentication system implemented for the Parallel C
 - **Request Body**:
 ```json
 {
-  "username": "string",
+  "email": "string",
   "password": "string", 
   "full_name": "string",
   "date_of_birth": "YYYY-MM-DD",
@@ -20,7 +20,7 @@ This document describes the authentication system implemented for the Parallel C
 ```
 - **Response**: User information (without password)
 - **Validation**:
-  - Checks for duplicate username
+  - Checks for duplicate email
   - Validates required fields
   - Hashes password using bcrypt
 
@@ -29,7 +29,7 @@ This document describes the authentication system implemented for the Parallel C
 - **Description**: Đăng nhập / Login
 - **Request Body** (form data):
 ```
-username: string
+email: string
 password: string
 ```
 - **Response**:
@@ -73,7 +73,7 @@ password: string
 ```sql
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
-    username VARCHAR UNIQUE NOT NULL,
+    email VARCHAR UNIQUE NOT NULL,
     hashed_password VARCHAR NOT NULL,
     full_name VARCHAR NOT NULL,
     date_of_birth DATE NOT NULL,
@@ -94,25 +94,25 @@ CREATE TYPE userrole AS ENUM ('admin', 'user');
 The system automatically creates 4 initial users on startup:
 
 1. **lananh** (User)
-   - Username: `lananh`
+   - email: `lananh@gmail.com`
    - Password: `lananh123`
    - Full Name: Nguyễn Thị Lan Anh
    - Organization: HCMUS
 
 2. **lam** (User)
-   - Username: `lam`
-   - Password: `lam123`
+   - email: `sogoten6689@gmail.com`
+   - Password: `LAm@123456`
    - Full Name: Nguyễn Ngọc Lâm
    - Organization: HCMUS
 
 3. **thang** (User)
-   - Username: `thang`
+   - email: `thang@gmail.com`
    - Password: `thang123`
    - Full Name: La Quốc Thắng
    - Organization: HCMUS
 
 4. **admin** (Admin)
-   - Username: `admin`
+   - email: `admin@gmail.com`
    - Password: `admin123`
    - Full Name: Administrator
    - Organization: HCMUS
@@ -127,7 +127,7 @@ The system automatically creates 4 initial users on startup:
 ### JWT Tokens
 - Access tokens expire after 30 minutes
 - Uses HS256 algorithm
-- Tokens contain user information (username)
+- Tokens contain user information (email)
 
 ### Input Validation
 - All inputs are validated using Pydantic schemas
@@ -141,7 +141,7 @@ The system automatically creates 4 initial users on startup:
 curl -X POST "http://localhost:8000/auth/sign-up" \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "newuser",
+    "email": "newuse@gmail.com",
     "password": "password123",
     "full_name": "New User",
     "date_of_birth": "1990-01-01",
@@ -153,7 +153,7 @@ curl -X POST "http://localhost:8000/auth/sign-up" \
 ```bash
 curl -X POST "http://localhost:8000/auth/login" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=newuser&password=password123"
+  -d "email=newuser@gmail.com&password=password123"
 ```
 
 ### Get current user info
@@ -175,14 +175,14 @@ curl -X GET "http://localhost:8000/auth/users" \
 **400 Bad Request** - Invalid input data
 ```json
 {
-  "detail": "Username đã tồn tại / Username already exists"
+  "detail": "email đã tồn tại / email already exists"
 }
 ```
 
 **401 Unauthorized** - Invalid credentials
 ```json
 {
-  "detail": "Tên đăng nhập hoặc mật khẩu không đúng / Incorrect username or password"
+  "detail": "Tên email hoặc mật khẩu không đúng / Incorrect email or password"
 }
 ```
 

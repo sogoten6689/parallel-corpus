@@ -4,7 +4,7 @@ from typing import Optional
 from models.user import UserRole
 
 class UserBase(BaseModel):
-    username: str
+    email: str
     full_name: str
     date_of_birth: date
     organization: str
@@ -13,7 +13,7 @@ class UserCreate(UserBase):
     password: str
 
 class UserLogin(BaseModel):
-    username: str
+    email: str
     password: str
 
 class UserResponse(UserBase):
@@ -30,4 +30,4 @@ class Token(BaseModel):
     token_type: str
 
 class TokenData(BaseModel):
-    username: Optional[str] = None 
+    email: Optional[str] = None 

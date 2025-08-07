@@ -18,7 +18,7 @@ class TestRowWordAPI:
     def get_auth_token(self):
         """Get authentication token for testing"""
         login_data = {
-            "username": "admin",
+            "email": "admin@gmail.com",
             "password": "admin123"
         }
         
