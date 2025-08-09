@@ -1,22 +1,25 @@
 'use client';
 
 import React from 'react';
-import { Button, Card, Form, Input, Typography, message, Divider } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
+import { Button, Card, Form, Input, Typography, Divider, DatePicker } from 'antd';
+import { UserOutlined, LockOutlined, MailOutlined, ClockCircleOutlined, BankOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { appRoute } from '@/config/appRoute';
 import { useAuth } from '@/contexts/AuthContext';
+import dayjs, { Dayjs } from 'dayjs';
+import useApp from 'antd/es/app/useApp';
 
 const { Title } = Typography;
 
 interface SignupFormValues {
-  firstName: string;
-  lastName: string;
+  fullName: string;
   email: string;
   password: string;
   confirmPassword: string;
+  organization: string;
+  dateOfBirth: Date;
 }
 
 export default function SignupPage() {
@@ -26,13 +29,29 @@ export default function SignupPage() {
   const { signup } = useAuth();
   const [loading, setLoading] = React.useState(false);
 
+  const { message } = useApp(); 
+
   const onFinish = async (values: SignupFormValues) => {
     setLoading(true);
     try {
+
       const { confirmPassword, ...signupData } = values;
-      await signup(signupData);
-      message.success(t('auth.signupSuccess'));
-      router.push(appRoute.login);
+      const dob = signupData.dateOfBirth ? signupData.dateOfBirth.toISOString().split('T')[0] : null // YYYY-MM-DD
+
+      if (!dob || !dayjs(dob).isValid()) {
+        // throw new Error('Date of birth is required');
+        message.error('Date of birth is required');
+        return;
+      }
+      const res = await signup({ ...signupData, dateOfBirth: dob ?? '', role: "user" });
+      console.log(res);
+      
+      if (!res.success) {
+        message.error(res.message);
+      } else {
+        message.success(t('auth.signupSuccess'));
+        router.push(appRoute.login);
+      }
     } catch (error) {
       message.error(t('auth.signupFailed'));
     } finally {
@@ -51,7 +70,7 @@ export default function SignupPage() {
             {t('welcome')}
           </Typography.Text>
         </div>
-        
+
         <Card className="shadow-lg">
           <Form
             form={form}
@@ -61,35 +80,19 @@ export default function SignupPage() {
             layout="vertical"
             size="large"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Form.Item
-                name="firstName"
-                label={t('auth.firstName')}
-                rules={[
-                  { required: true, message: t('auth.firstNameRequired') }
-                ]}
-              >
-                <Input 
-                  prefix={<UserOutlined />} 
-                  placeholder={t('auth.firstName')}
-                  autoComplete="given-name"
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="lastName"
-                label={t('auth.lastName')}
-                rules={[
-                  { required: true, message: t('auth.lastNameRequired') }
-                ]}
-              >
-                <Input 
-                  prefix={<UserOutlined />} 
-                  placeholder={t('auth.lastName')}
-                  autoComplete="family-name"
-                />
-              </Form.Item>
-            </div>
+            <Form.Item
+              name="fullName"
+              label={t('auth.fullName')}
+              rules={[
+                { required: true, message: t('auth.fullNameRequired') }
+              ]}
+            >
+              <Input
+                prefix={<UserOutlined />}
+                placeholder={t('auth.firstName')}
+                autoComplete="given-name"
+              />
+            </Form.Item>
 
             <Form.Item
               name="email"
@@ -99,13 +102,41 @@ export default function SignupPage() {
                 { type: 'email', message: t('auth.emailInvalid') }
               ]}
             >
-              <Input 
-                prefix={<MailOutlined />} 
+              <Input
+                prefix={<MailOutlined />}
                 placeholder={t('auth.email')}
                 autoComplete="email"
               />
             </Form.Item>
 
+            <Form.Item
+              name="organization"
+              label={t('auth.organization')}
+              rules={[
+                { required: true, message: t('auth.organizationRequired') }
+              ]}
+            >
+              <Input
+                prefix={<BankOutlined />}
+                placeholder={t('auth.organization')}
+                autoComplete="organization"
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="dateOfBirth"
+              label={t('auth.birthday')}
+              rules={[
+                { required: true, message: t('auth.birthdayRequired') }
+              ]}
+            >
+              <DatePicker
+                style={{ width: '100%' }}
+                format="YYYY-MM-DD"
+                placeholder={t('auth.birthday')}
+                prefix={<ClockCircleOutlined />}
+              />
+            </Form.Item>
             <Form.Item
               name="password"
               label={t('auth.password')}
@@ -114,8 +145,8 @@ export default function SignupPage() {
                 { min: 6, message: t('auth.passwordMin') }
               ]}
             >
-              <Input.Password 
-                prefix={<LockOutlined />} 
+              <Input.Password
+                prefix={<LockOutlined />}
                 placeholder={t('auth.password')}
                 autoComplete="new-password"
               />
@@ -137,17 +168,17 @@ export default function SignupPage() {
                 }),
               ]}
             >
-              <Input.Password 
-                prefix={<LockOutlined />} 
+              <Input.Password
+                prefix={<LockOutlined />}
                 placeholder={t('auth.confirmPassword')}
                 autoComplete="new-password"
               />
             </Form.Item>
 
             <Form.Item className="mb-0">
-              <Button 
-                type="primary" 
-                htmlType="submit" 
+              <Button
+                type="primary"
+                htmlType="submit"
                 className="w-full"
                 loading={loading}
                 size="large"

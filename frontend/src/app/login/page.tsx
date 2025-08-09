@@ -1,13 +1,14 @@
 'use client';
 
 import React from 'react';
-import { Button, Card, Form, Input, Checkbox, Typography, message, Divider } from 'antd';
+import { Button, Card, Form, Input, Checkbox, Typography, Divider } from 'antd';
 import { LockOutlined, MailOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { appRoute } from '@/config/appRoute';
 import { useAuth } from '@/contexts/AuthContext';
+import useApp from 'antd/es/app/useApp';
 
 const { Title } = Typography;
 
@@ -23,6 +24,7 @@ export default function LoginPage() {
   const { t } = useTranslation();
   const { login } = useAuth();
   const [loading, setLoading] = React.useState(false);
+  const { message } = useApp();
 
   const onFinish = async (values: LoginFormValues) => {
     setLoading(true);

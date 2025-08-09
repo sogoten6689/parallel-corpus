@@ -25,6 +25,7 @@ import FileUploader from './file-uploader';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { appRoute } from '@/config/appRoute';
+import { getKeyName } from '../helper/helper-ui';
 
 const { Header, Sider, Content } = Layout;
 
@@ -146,7 +147,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>
                   <Space style={{ cursor: 'pointer' }}>
                     <Avatar icon={<UserOutlined />} />
-                    <span>{user?.firstName} {user?.lastName}</span>
+                    <span>{getKeyName(user?.fullName ?? "Unknown")}</span>
                   </Space>
                 </Dropdown>
               ) : (

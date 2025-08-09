@@ -45,6 +45,9 @@
   "grm": "Grm",
   "ner": "NER",
   "semantic": "Semantic",
+  "langCode_tooltip": "Language",
+  "langCode": "Language",
+  "loading": "Loading",
   "id_tooltip": "ID",
   "word_tooltip": "Word",
   "lemma_tooltip": "Lemma",
@@ -195,6 +198,7 @@
     "email": "Email",
     "password": "Password",
     "confirmPassword": "Confirm Password",
+    "fullName": "Full Name",
     "firstName": "First Name",
     "lastName": "Last Name",
     "rememberMe": "Remember me",
@@ -213,7 +217,12 @@
     "passwordMin": "Password must be at least 6 characters!",
     "confirmPasswordRequired": "Please confirm your password!",
     "passwordMismatch": "Passwords do not match!",
+    "fullNameRequired": "Please enter your fulll name!",
     "firstNameRequired": "Please enter your first name!",
-    "lastNameRequired": "Please enter your last name!"
+    "lastNameRequired": "Please enter your last name!",
+    "organizationRequired": "Please enter your organization name!",
+    "organization": "Organization",
+    "birthday": "Birthday",
+    "birthdayRequired": "Please enter your birthday!"
   }
 }

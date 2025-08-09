@@ -45,6 +45,9 @@
   "grm": "Ngữ pháp",
   "ner": "Thực thể",
   "semantic": "Ngữ nghĩa",
+  "langCode_tooltip": "Ngôn ngữ",
+  "loading": "Đang tải",
+  "langCode": "Ngôn ngữ",
   "id_tooltip": "ID",
   "word_tooltip": "Từ gốc trong câu đầu vào.",
   "lemma_tooltip": "Dạng gốc hoặc nguyên thể",
@@ -195,6 +198,7 @@
     "email": "Email",
     "password": "Mật khẩu",
     "confirmPassword": "Xác nhận mật khẩu",
+    "fullName": "Họ và Tên",
     "firstName": "Họ",
     "lastName": "Tên",
     "rememberMe": "Ghi nhớ đăng nhập",
@@ -213,7 +217,12 @@
     "passwordMin": "Mật khẩu phải có ít nhất 6 ký tự!",
     "confirmPasswordRequired": "Vui lòng xác nhận mật khẩu!",
     "passwordMismatch": "Mật khẩu không khớp!",
+    "fullNameRequired": "Vui lòng nhập họ và tên!",
     "firstNameRequired": "Vui lòng nhập họ!",
-    "lastNameRequired": "Vui lòng nhập tên!"
+    "lastNameRequired": "Vui lòng nhập tên!",
+    "organizationRequired": "Vui lòng nhập tổ chức!",
+    "organization": "Tổ chức",
+    "birthday": "Ngày sinh",
+    "birthdayRequired": "Vui lòng nhập ngày sinh"
   }
 }
