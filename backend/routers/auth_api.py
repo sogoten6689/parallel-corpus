@@ -46,14 +46,3 @@ def login(body: UserLogin, db: Session = Depends(get_db)):
 def read_users_me(current_user: User = Depends(get_current_active_user)):
     """Lấy thông tin user hiện tại / Get current user information"""
     return current_user
-
-@router.get("/users", response_model=list[UserResponse])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    """Lấy danh sách users (chỉ admin) / Get list of users (admin only)"""
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Không có quyền truy cập / Access denied"
-        )
-    users = get_users(db, skip=skip, limit=limit)
-    return users 
