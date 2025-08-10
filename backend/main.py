@@ -3,13 +3,16 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 # from routers import api
 from fastapi.middleware.cors import CORSMiddleware
-from routers import rowword_api, auth_router, user_api
+from routers import rowword_api, auth_router, user_api, import_api
 from init_db import create_database_if_not_exists
 from crud import create_initial_users
 from database import get_db
 create_database_if_not_exists()
 
-app = FastAPI(title="Parallel Corpus API", version="1.0.0")
+app = FastAPI(
+    title="Parallel Corpus API",
+    version="1.0.0",
+)
 
 # 👇 Add this block to allow frontend to talk to backend
 app.add_middleware(
@@ -29,9 +32,10 @@ def get_db():
         db.close()
 
 # app.include_router(api.router)
-app.include_router(rowword_api.router)
+app.include_router(rowword_api.router, tags=["row-words"])
 app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 app.include_router(user_api, tags=["users"])
+app.include_router(import_api.router, prefix="/api", tags=["import"])
 
 # @app.on_event("startup")
 # async def startup_event():
