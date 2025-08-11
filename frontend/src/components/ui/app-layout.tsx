@@ -38,6 +38,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+  
 
   const showDrawer = () => {
     setOpen(true);
@@ -89,6 +90,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     '/word-tag': '4',
     '/statistical': '5',
     '/introduction': '6',
+    '/users': '6',
   };
 
   const selectedKey = menuKeyMap[pathname] || '1';
@@ -124,7 +126,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             { key: '3', icon: <TagOutlined />, label: <Link href="/tag">{t('menu_tag')}</Link> },
             { key: '4', icon: <TagsOutlined />, label: <Link href="/word-tag">{t('menu_word_tag')}</Link> },
             { key: '5', icon: <StockOutlined />, label: <Link href="/statistical">{t('statistical')}</Link> },
-            { key: '6', icon: <InfoOutlined />, label: <Link href="/introduction">{t('introduction')}</Link> },
+             user?.role === 'admin' ? { key: '6', icon: <SettingOutlined />, label: <Link href="/users">{t('user')}</Link> } : null,  
+            { key: '7', icon: <InfoOutlined />, label: <Link href="/introduction">{t('introduction')}</Link> },
           ]}
         />
       </Sider>

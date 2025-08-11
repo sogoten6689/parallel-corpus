@@ -7,6 +7,7 @@ export interface API_PROPS {
     },
     USER: {
         MY_PROFILE: string
+        LIST: string
     },
 }
 
@@ -18,6 +19,7 @@ export const API: API_PROPS = {
         ME: "/auth/me"
     },
     USER: {
-        MY_PROFILE: "/user/my-profile"
+        MY_PROFILE: "/user/my-profile",
+        LIST: "/users"
     }
 }

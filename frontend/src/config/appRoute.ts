@@ -5,6 +5,7 @@ export const appRoute = {
   wordTag: '/word-tag',
   statistical: '/statistical',
   introduction: '/introduction',
+  user: '/users',
   login: '/login',
   signup: '/signup',
   notFound: '/404',
