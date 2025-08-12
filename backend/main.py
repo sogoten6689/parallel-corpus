@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 # from routers import api
 from fastapi.middleware.cors import CORSMiddleware
-from routers import rowword_api, auth_router, user_api, import_api
+from routers import rowword_api, auth_router, user_api, import_api, export_api
 from init_db import create_database_if_not_exists
 from crud import create_initial_users
 from database import get_db
@@ -36,6 +36,7 @@ app.include_router(rowword_api.router, tags=["row-words"])
 app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 app.include_router(user_api, tags=["users"])
 app.include_router(import_api.router, prefix="/api", tags=["import"])
+app.include_router(export_api.router, prefix="/api", tags=["export"])
 
 # @app.on_event("startup")
 # async def startup_event():

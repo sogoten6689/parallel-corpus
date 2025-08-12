@@ -8,6 +8,7 @@ alembic
 python-dotenv
 pandas
 openpyxl
+xlrd
 passlib[bcrypt]
 python-jose[cryptography]
 python-multipart
