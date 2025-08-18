@@ -26,8 +26,20 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { appRoute } from '@/config/appRoute';
 import { getKeyName } from '../helper/helper-ui';
+import { useAppLanguage } from '@/contexts/AppLanguageContext';
 
 const { Header, Sider, Content } = Layout;
+
+const languageGroup = [
+  {
+    key: 'en_vi',
+    label: 'English - Vietnamese',
+  },
+  {
+    key: 'vi_cn',
+    label: 'Tiếng Việt - Hán ngữ',
+  },
+]
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -38,7 +50,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-  
+  const { appLanguage } = useAppLanguage();
 
   const showDrawer = () => {
     setOpen(true);
@@ -78,6 +90,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       onClick: handleLogout,
     },
   ];
+
+  const languageGroupItems = [
+    {
+      key: 'en_vi',
+      label: t('en_vi'),
+      onClick: handleSetLanguageGroup,
+    },
+  ];
+
+
+  const handleSetLanguageGroup = (languageGroup: string) => {
+    setLanguage
+  };
 
   const {
     token: { colorBgContainer },
@@ -135,7 +160,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Header style={{ background: colorBgContainer }}>
           <Flex gap="middle" align="center" style={{ width: '100%' }}>
             <Flex gap="middle" align="center" style={{ flex: 1, justifyContent: 'center' }}>
-              <FileUploader />
+              {/* <FileUploader /> */}
+              Chọn cặp ngôn ngữ:
+
+                <Dropdown menu={{ items: languageGroupItems }} trigger={['click']}>
+                  <Space style={{ cursor: 'pointer' }}>
+                    {appLanguage?.languagePair ? appLanguage?.languagePair : "English - Vietnamese"}
+                  </Space>
+                </Dropdown>
             </Flex>
             <Flex gap="middle" align="center" style={{ justifyContent: 'flex-end', marginRight: 20 }}>
               {mode === 'light' ? (

@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, File, Depends, Form, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from database import get_db
+from responses.row_word_list_response import RowWordListResponse
 from schemas import RowWordCreate, RowWordRead
 from crud import create_row_word, get_all_row_words
 from models import RowWord, Sentence, Point
@@ -11,12 +12,12 @@ from collections import defaultdict
 
 router = APIRouter()
 
-@router.post("/words/", response_model=RowWordRead)
+# @router.post("/word", response_model=RowWordRead)
 def create(word: RowWordCreate, db: Session = Depends(get_db)):
     return create_row_word(db, word)
 
-@router.get("/words/")
-def get_all(db: Session = Depends(get_db),lang_code: str = '', search: str = '', page: int = 1, limit: int = 10):
+@router.get("/words")
+def get_all(db: Session = Depends(get_db), response_model=RowWordListResponse ,lang_code: str = '', search: str = '', page: int = 1, limit: int = 10):
     query = db.query(RowWord)
 
     if lang_code != '':
@@ -34,7 +35,7 @@ def get_all(db: Session = Depends(get_db),lang_code: str = '', search: str = '',
 
     # return get_all_row_words(db)
 
-@router.post("/import-rowwords/")
+# @router.post("/import-rowwords/")
 async def import_row_words(
     file: UploadFile = File(...),
     lang_code: str = Form(...),

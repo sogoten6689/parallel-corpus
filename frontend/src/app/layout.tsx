@@ -13,6 +13,7 @@ import { App as AntdApp } from 'antd';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { AppLanguageProvider } from '@/contexts/AppLanguageContext';
 import { usePathname } from 'next/navigation';
 
 const geistSans = Geist({
@@ -55,13 +56,15 @@ export default function RootLayout({
         <AntdApp>
           <AntdRegistry>
             <ThemeProvider>
-              <AuthProvider>
-                <ReduxProvider>
-                  <QueryClientProvider client={queryClient}>
-                    <ConditionalLayout>{children}</ConditionalLayout>
-                  </QueryClientProvider>
-                </ReduxProvider>
-              </AuthProvider>
+              <AppLanguageProvider>
+                <AuthProvider>
+                  <ReduxProvider>
+                    <QueryClientProvider client={queryClient}>
+                      <ConditionalLayout>{children}</ConditionalLayout>
+                    </QueryClientProvider>
+                  </ReduxProvider>
+                </AuthProvider>
+              </AppLanguageProvider>
             </ThemeProvider>
           </AntdRegistry>
         </AntdApp>
