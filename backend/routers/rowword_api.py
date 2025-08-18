@@ -35,7 +35,7 @@ def get_all(db: Session = Depends(get_db), response_model=RowWordListResponse ,l
 
     # return get_all_row_words(db)
 
-# @router.post("/import-rowwords/")
+@router.post("/import-rowwords/")
 async def import_row_words(
     file: UploadFile = File(...),
     lang_code: str = Form(...),

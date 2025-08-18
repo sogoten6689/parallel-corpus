@@ -39,6 +39,10 @@ const languageGroup = [
     key: 'vi_cn',
     label: 'Tiếng Việt - Hán ngữ',
   },
+  {
+    key: 'cn_vi',
+    label: 'Chinese - Vietnamese',
+  },
 ]
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -91,6 +95,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     },
   ];
 
+  const handleSetLanguageGroup = (languageGroup: string) => {
+    // Implementation for setting language group
+    console.log('Setting language group:', languageGroup);
+  };
+
   const languageGroupItems = [
     {
       key: 'en_vi',
@@ -98,11 +107,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       onClick: handleSetLanguageGroup,
     },
   ];
-
-
-  const handleSetLanguageGroup = (languageGroup: string) => {
-    setLanguage
-  };
 
   const {
     token: { colorBgContainer },

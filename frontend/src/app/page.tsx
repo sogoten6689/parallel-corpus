@@ -29,11 +29,15 @@ export default function Home() {
           <Switch
             checked={showFirst}
             onChange={handleSwitch}
-            checkedChildren={lang_1 ? t(lang_1) : t("lang1")}
-            unCheckedChildren={lang_2 ? t(lang_2) : t("lang2")}
+            checkedChildren={lang_1 ? t(lang_1) : t("en")}
+            unCheckedChildren={lang_2 ? t(lang_2) : t("vn")}
           />
         </div>
-        {<CorpusTable  sentences={showFirst ? sentences_1 : sentences_2} />}
+        {<CorpusTable 
+          sentences={showFirst ? sentences_1 : sentences_2} 
+          useWordRowMaster={true}
+          langCode={showFirst ? (lang_1 || 'en') : (lang_2 || 'vn')}
+        />}
         {/* <div className="p-3">
           <CorpusTable data={showFirst ? rows_1 : rows_2} sentences={showFirst ? sentences_1 : sentences_2} />
         </div> */}

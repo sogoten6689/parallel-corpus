@@ -2,12 +2,15 @@ from sqlalchemy.orm import Session
 from models.sentence import Sentence
 from models.point import Point
 from models.rowword import RowWord
+from models.word_row_master import WordRowMaster
 from models.user import User, UserRole
 from schemas.sentence import SentenceCreate
 from schemas.point import PointCreate
 from schemas.rowword import RowWordCreate
+from schemas.word_row_master import WordRowMasterCreate
 from schemas.user import UserCreate
 from auth import get_password_hash
+from datetime import datetime
 
 
 def create_row_word(db: Session, word: RowWordCreate):
@@ -90,3 +93,50 @@ def create_initial_users(db: Session):
             print(f"Created user: {user_data['email']}")
         else:
             print(f"User {user_data['email']} already exists")
+
+# WordRowMaster CRUD operations
+def create_word_row_master(db: Session, word_data: WordRowMasterCreate, creator_id: int = None):
+    db_word = WordRowMaster(**word_data.dict())
+    db_word.create_by = creator_id
+    db_word.created_at = datetime.now()
+    db.add(db_word)
+    db.commit()
+    db.refresh(db_word)
+    return db_word
+
+def get_all_word_row_masters(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(WordRowMaster).offset(skip).limit(limit).all()
+
+def get_word_row_masters_by_lang(db: Session, lang_code: str, skip: int = 0, limit: int = 100):
+    return db.query(WordRowMaster).filter(WordRowMaster.lang_code == lang_code).offset(skip).limit(limit).all()
+
+def migrate_row_words_to_word_row_master(db: Session, creator_id: int = None):
+    """Migrate all data from row_words to word_row_master"""
+    row_words = db.query(RowWord).all()
+    migrated_count = 0
+    
+    for row_word in row_words:
+        # Check if already exists
+        existing = db.query(WordRowMaster).filter(WordRowMaster.row_word_id == row_word.ID).first()
+        if not existing:
+            word_master = WordRowMaster(
+                row_word_id=row_word.ID,
+                id_sen=row_word.ID_sen,
+                word=row_word.Word,
+                lemma=row_word.Lemma,
+                links=row_word.Links,
+                morph=row_word.Morph,
+                pos=row_word.POS,
+                phrase=row_word.Phrase,
+                grm=row_word.Grm,
+                ner=row_word.NER,
+                semantic=row_word.Semantic,
+                lang_code=row_word.Lang_code,
+                create_by=creator_id,
+                created_at=datetime.now()
+            )
+            db.add(word_master)
+            migrated_count += 1
+    
+    db.commit()
+    return migrated_count
