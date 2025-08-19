@@ -9,6 +9,7 @@ from schemas.user import UserCreate, UserLogin, UserResponse, Token
 from models.user import UserRole, User
 from sqlalchemy import or_
 
+
 router = APIRouter()
 
 @router.get("/users",)
@@ -32,6 +33,10 @@ def read_users(limit: int = 10, search: str = '', page: int = 1, db: Session = D
     total_pages = (total + limit - 1) // limit
 
     data = query.offset((page - 1) * limit).limit(limit).all()
+
+    for u in data:
+        if hasattr(u, 'hashed_password'):
+            del u.__dict__['hashed_password']
 
     return {"data": data, "page": page, "limit": limit, "total": total, "total_pages": total_pages}
     # users = get_users(db, skip=skip, limit=limit)
