@@ -1,0 +1,89 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from models.word_row_master import WordRowMaster
+from database import get_db
+from fastapi import APIRouter, UploadFile, File, Depends, Form, HTTPException
+from sqlalchemy.orm import Session
+from models import RowWord
+import pandas as pd
+import io
+from auth import get_current_user
+from models.user import User, UserRole
+from typing import Optional
+router = APIRouter(prefix="/master", tags=["master"])
+
+@router.post("/import")
+async def import_corpus_file(current_user: Optional[User] = Depends(get_current_user),file: UploadFile = File(...), db: Session = Depends(get_db)):
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="No Permission. Only admin can import master data")
+    try:
+        # Đọc file content
+        content = await file.read()
+        filename = file.filename.lower()
+
+        # Đọc file bằng Pandas hoặc xử lý text
+        if filename.endswith(".csv"):
+            df = pd.read_csv(io.StringIO(content.decode("utf-8")), sep=",")
+        elif filename.endswith(".xlsx"):
+            df = pd.read_excel(io.BytesIO(content), engine='openpyxl')
+        elif filename.endswith(".txt"):
+            # Xử lý file .txt với format tab-separated
+            lines = content.decode("utf-8").splitlines()
+            # return lines
+            data = []
+            for line in lines:
+                # return line
+                if line.strip():  # Bỏ qua dòng trống
+                    fields = line.strip().split('\t')
+                    if len(fields) >= 9:  # Đảm bảo có đủ fields
+                        data.append({
+                            "ID": fields[0],
+                            "ID_sen": "",
+                            "Word": fields[1],
+                            "Lemma": fields[2],
+                            "Links": fields[3],
+                            "Morph": fields[4],
+                            "POS": fields[5],
+                            "Phrase": fields[6],
+                            "Grm": fields[7],
+                            "NER": fields[8],
+                            "Semantic": fields[9] if len(fields) > 9 else ""
+                        })
+            df = pd.DataFrame(data)
+        else:
+            raise HTTPException(status_code=400, detail="File must be .csv, .xlsx, or .txt")
+
+        # # Kiểm tra cột cần thiết
+        # required_columns = ["ID", "ID_sen", "Word", "Lemma", "Links", "Morph", "POS", "Phrase", "Grm", "NER", "Semantic"]
+        # missing = set(required_columns) - set(df.columns)
+        # if missing:
+        #     raise HTTPException(status_code=422, detail=f"Missing columns: {', '.join(missing)}")
+
+        # Thêm vào DB
+        count = 0
+        for _, row in df.iterrows():
+            if row["ID"].strip() == "":
+                continue
+            item = WordRowMaster(
+                id=row["ID"],
+                id_sen=row["ID_sen"],
+                word=row["Word"],
+                lemma=row["Lemma"],
+                links=row["Links"],
+                morph=row["Morph"],
+                pos=row["POS"],
+                phrase=row["Phrase"],
+                grm=row["Grm"],
+                ner=row["NER"],
+                semantic=row["Semantic"],
+            )
+            db.merge(item)
+            count += 1
+
+        db.commit()
+        return {"message": f"Imported {count} rows from {filename}"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")

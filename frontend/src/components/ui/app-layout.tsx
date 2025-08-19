@@ -28,6 +28,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { appRoute } from '@/config/appRoute';
 import { getKeyName } from '../helper/helper-ui';
 import { useAppLanguage } from '@/contexts/AppLanguageContext';
+import FileUploaderMaster from './file-uploader-master';
 
 const { Header, Sider, Content } = Layout;
 
@@ -188,13 +189,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </Space>
                 </Dropdown>
 
-          <span className="font-semibold">{t("current_language")}</span>
-          <Switch
-            checked={appLanguage?.lang_1 === appLanguage?.currentLanguage}
-            onChange={handleSwitch}
-            checkedChildren={appLanguage?.lang_1 === appLanguage?.currentLanguage ? t(appLanguage?.lang_1 ?? "null") : t("null") }
-            unCheckedChildren={appLanguage?.lang_2 === appLanguage?.currentLanguage ? t(appLanguage?.lang_2 ?? "null") : t("null") }
-          />
+            <span className="font-semibold">{t("current_language")}</span>
+            <Switch
+              checked={appLanguage?.lang_1 === appLanguage?.currentLanguage}
+              onChange={handleSwitch}
+              checkedChildren={appLanguage?.lang_1 === appLanguage?.currentLanguage ? t(appLanguage?.lang_1 ?? "null") : t("null") }
+              unCheckedChildren={appLanguage?.lang_2 === appLanguage?.currentLanguage ? t(appLanguage?.lang_2 ?? "null") : t("null") }
+            />
+            <FileUploaderMaster />
+
             </Flex>
             <Flex gap="middle" align="center" style={{ justifyContent: 'flex-end', marginRight: 20 }}>
               {mode === 'light' ? (
