@@ -21,7 +21,7 @@ export default function Home() {
   const [showFirst, setShowFirst] = useState(true);
 
   const handleSwitch = (checked: boolean) => {
-    
+    const currentLanguage = appLanguage?.lang_1 === appLanguage?.currentLanguage ? appLanguage?.lang_2 : appLanguage?.lang_1;
     setCurrentLanguage(currentLanguage ?? 'en', appLanguage ?? {languagePair: 'en_vi', currentLanguage: 'en', lang_1: 'en', lang_2: 'vi'});
   };
 
