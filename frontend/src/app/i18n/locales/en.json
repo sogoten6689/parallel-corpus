@@ -31,6 +31,8 @@
   "vi_en": "Vietnamese-English",
   "cn_vi": "Chinese-Vietnamese",
   "vi_cn": "Vietnamese-Chinese",
+  "profile": "Profile",
+  "current_language": "Current language",
   "null": "N/A",
   "view_sample": "View data sample",
   "display_lang": "Language",

@@ -9,5 +9,7 @@ export const appRoute = {
   login: '/login',
   signup: '/signup',
   notFound: '/404',
+  myProfile: '/my-profile',
+
 }
 
