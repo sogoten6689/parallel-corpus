@@ -9,11 +9,15 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 interface AppLanguage {
   languagePair: string;
   currentLanguage: string;  
+  lang_1: string;
+  lang_2: string;
 }
 
 interface AppLanguageContextType {
   appLanguage: AppLanguage | null;
   isLoading: boolean;
+  setLanguageGroup: (languagePair: string) => void
+  setCurrentLanguage: (language: string, appLanguage: AppLanguage) => void
 }
 
 const AppLanguageContext = createContext<AppLanguageContextType | undefined>(undefined);
@@ -41,6 +45,8 @@ export const AppLanguageProvider: React.FC<AppLanguageProviderProps> = ({ childr
       const appLanguage = localStorage.getItem('appLanaguge');
       if (appLanguage) {
         setAppLanguage(JSON.parse(appLanguage));
+      } else {
+        setAppLanguage({languagePair: 'en_vi', currentLanguage: 'en', lang_1: 'en', lang_2: 'vi'});
       }
       setIsLoading(false);
     };
@@ -49,12 +55,23 @@ export const AppLanguageProvider: React.FC<AppLanguageProviderProps> = ({ childr
   }, []);
 
     const setLanguageGroup = (languagePair: string) => {
-      set
+      const appLanguageState: AppLanguage = {
+        languagePair: languagePair,
+        currentLanguage: languagePair.split('_')[0], 
+        lang_1: languagePair.split('_')[0],
+        lang_2: languagePair.split('_')[1]}
+      setAppLanguage(appLanguageState);
+      localStorage.setItem('appLanaguge', JSON.stringify(appLanguageState));
     }
-
+    const setCurrentLanguage = (language: string, appLanguage: AppLanguage) => {
+      setAppLanguage({...appLanguage, currentLanguage: language});
+      localStorage.setItem('appLanaguge', JSON.stringify({...appLanguage, currentLanguage: language}));
+    }
   const value: AppLanguageContextType = {
     appLanguage,
     isLoading,
+    setLanguageGroup,
+    setCurrentLanguage,
   };
 
   return (

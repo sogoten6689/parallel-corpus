@@ -30,20 +30,6 @@ import { useAppLanguage } from '@/contexts/AppLanguageContext';
 
 const { Header, Sider, Content } = Layout;
 
-const languageGroup = [
-  {
-    key: 'en_vi',
-    label: 'English - Vietnamese',
-  },
-  {
-    key: 'vi_cn',
-    label: 'Tiếng Việt - Hán ngữ',
-  },
-  {
-    key: 'cn_vi',
-    label: 'Chinese - Vietnamese',
-  },
-]
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -54,7 +40,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-  const { appLanguage } = useAppLanguage();
+  const { appLanguage, setLanguageGroup } = useAppLanguage();
 
   const showDrawer = () => {
     setOpen(true);
@@ -98,13 +84,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const handleSetLanguageGroup = (languageGroup: string) => {
     // Implementation for setting language group
     console.log('Setting language group:', languageGroup);
+    setLanguageGroup(languageGroup);
   };
 
   const languageGroupItems = [
     {
       key: 'en_vi',
       label: t('en_vi'),
-      onClick: handleSetLanguageGroup,
+      onClick: () => {
+        handleSetLanguageGroup('en_vi');
+      },
+    },
+    {
+      key: 'vi_cn',
+      label: t('vi_cn'),
+      onClick: () => {
+        handleSetLanguageGroup('vi_cn');
+      },
+    },
+    {
+      key: 'cn_vi',
+      label: t('cn_vi'),
+      onClick: () => {
+        handleSetLanguageGroup('cn_vi');
+      },
     },
   ];
 
@@ -169,7 +172,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
                 <Dropdown menu={{ items: languageGroupItems }} trigger={['click']}>
                   <Space style={{ cursor: 'pointer' }}>
-                    {appLanguage?.languagePair ? appLanguage?.languagePair : "English - Vietnamese"}
+                    {appLanguage?.languagePair ? t(appLanguage?.languagePair) : t('en_vi')}
                   </Space>
                 </Dropdown>
             </Flex>

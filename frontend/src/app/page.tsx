@@ -5,9 +5,12 @@ import { Switch } from "antd";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
 import { useState } from "react";
+import { useAppLanguage } from "@/contexts/AppLanguageContext";
 
 export default function Home() {
   const { t } = useTranslation();
+  const { appLanguage, setCurrentLanguage } = useAppLanguage();
+
   const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1),
     rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2),
     sentences_1 = useSelector((state: RootState) => state.dataSlice.dicId_1),
@@ -18,7 +21,8 @@ export default function Home() {
   const [showFirst, setShowFirst] = useState(true);
 
   const handleSwitch = (checked: boolean) => {
-    setShowFirst(checked);
+    
+    setCurrentLanguage(currentLanguage ?? 'en', appLanguage ?? {languagePair: 'en_vi', currentLanguage: 'en', lang_1: 'en', lang_2: 'vi'});
   };
 
   return (
@@ -27,10 +31,10 @@ export default function Home() {
         <div className="p-3 flex items-center gap-4">
           <span className="font-semibold">{t("select_language")}</span>
           <Switch
-            checked={showFirst}
+            checked={appLanguage?.lang_1 === appLanguage?.currentLanguage}
             onChange={handleSwitch}
-            checkedChildren={lang_1 ? t(lang_1) : t("en")}
-            unCheckedChildren={lang_2 ? t(lang_2) : t("vn")}
+            checkedChildren={appLanguage?.lang_1 === appLanguage?.currentLanguage ? t(appLanguage?.lang_1 ?? "null") : t("null") }
+            unCheckedChildren={appLanguage?.lang_2 === appLanguage?.currentLanguage ? t(appLanguage?.lang_2 ?? "null") : t("null") }
           />
         </div>
         {<CorpusTable 
