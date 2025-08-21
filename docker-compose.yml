@@ -11,8 +11,8 @@ services:
       - ./backend:/app
     env_file:
       - ./backend/.env
-    depends_on:
-      - db
+    # depends_on:
+    #   - db
     restart: unless-stopped
 
   frontend:
@@ -26,15 +26,15 @@ services:
     env_file:
       - ./frontend/.env.local
     restart: unless-stopped
-  db:
-    image: postgres:15
-    container_name: paracor-db
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    env_file:
-      - ./backend/.env
-volumes:
-  postgres_data:
+#   db:
+#     image: postgres:15
+#     container_name: paracor-db
+#     restart: unless-stopped
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+#     env_file:
+#       - ./backend/.env
+# volumes:
+#   postgres_data:
