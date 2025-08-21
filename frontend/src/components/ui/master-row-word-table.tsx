@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { message, Space, Table, Tooltip, Typography } from 'antd';
-import { RowWord } from '@/types/row-word.type';
+import { Form, Input, message, Select, Space, Table, Tooltip, Typography } from 'antd';
 import { useTranslation } from "react-i18next";
 import Modal from 'antd/es/modal/Modal';
 import { useQuery } from "@tanstack/react-query";
@@ -10,6 +9,7 @@ import { fetchMasterRowWords } from '@/services/master/master-api';
 import { MasterRowWord } from '@/types/master-row-word.type';
 import Card from 'antd/es/card/Card';
 import Dropdown from 'antd/es/dropdown/dropdown';
+const { Option } = Select;
 
 
 const { Text } = Typography;
@@ -21,7 +21,7 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
   const { t } = useTranslation();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedWord, setSelectedWord] = useState<MasterRowWord | null>(null);
-  const [langCode, setLangCode] = useState<string | undefined>();
+  const [langCode, setLangCode] = useState<string | undefined>('');
   const [search, setSearch] = useState<string | undefined>();
   const [pagination, setPagination] = useState({
     current: 1,
@@ -56,9 +56,9 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
 
   // Query for WordRowMaster
   const { data: wordRowMasterData, isLoading: isLoadingMaster, error: errorMaster } = useQuery({
-    queryKey: ['master-row-word', pagination.current, pagination.pageSize, langCode],
+    queryKey: ['master-row-word', pagination.current, pagination.pageSize, langCode, search],
     queryFn: async () => {
-      const res = await fetchMasterRowWords(pagination.current, pagination.pageSize, langCode);
+      const res = await fetchMasterRowWords(pagination.current, pagination.pageSize, langCode, search);
       console.log(res);
       if (res.status !== 200) {
         message.error(res.statusText);
@@ -108,6 +108,13 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
   
   const langCodes = [
     {
+      key: 'all',
+      label: t('all'),
+      onClick: () => {
+        setLangCode('');
+      },
+    },
+    {
       key: 'vi',
       label: t('vi'),
       onClick: () => {
@@ -145,30 +152,34 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
   ];
   return (
     <div>
-      <Card title={t('all_words')} className="mb-10">
+      <Card title={t('all_words').toUpperCase()} className="mb-10">
         <div className="mb-4">
-          <Text strong>{t('total_words')}: {( wordRowMasterData?.total|| '--')}</Text>
-        </div>
-        <div className="mb-4">
-          <Text strong>{t('lang_code')}: {( wordRowMasterData?.langCode || '--')}</Text>
-        </div>
-        <div className="mb-4">
-          <Text strong>{t('search')}: {( wordRowMasterData?.search || '--')}</Text>
+          <Text strong>{t('total_words')}: {( wordRowMasterData?.total.toLocaleString() || '--')}</Text>
         </div>
         <div>
           <Text strong>{t('language')}: </Text>
-          <Dropdown menu={{ items: langCodes }} trigger={['click']} className='cursor-pointer'>
+          <Dropdown menu={{ items: langCodes }} trigger={['click']} className='cursor-pointer primary btn'>
             <Space style={{ cursor: 'pointer' }}>
               {langCode ? t(langCode) : t('all')}
             </Space>
           </Dropdown>
+
+            <Typography.Title level={5} className="font-semibold !mb-0 flex items-center">
+              {t("input_keyword")}
+            </Typography.Title>
+              <Input
+                placeholder={t('input')}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
         </div>
       </Card>
       {isLoading && <p>{t('loading')}</p>}
       <Table
+        key={"master-row-word"}
         dataSource={tableData}
         columns={columns}
-        rowKey="ID"
+        rowKey="id"
         scroll={{ x: 'max-content' }}
         className='w-full'
         bordered
@@ -192,32 +203,14 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
         footer={null}
       >
         {selectedWord && (
-          <table style={{ width: '100%', fontSize: '14px' }}>
-            <tbody>
-              <tr>
-                <td><strong>{t('word')}:</strong></td>
-                <td>{selectedWord.word}</td>
-              </tr>
-              <tr>
-                <td><strong>{t('lemma')}:</strong></td>
-                <td>{selectedWord.lemma}</td>
-              </tr>
-              <tr>
-                <td><strong>{t('pos')}:</strong></td>
-                <td>{selectedWord.pos}</td>
-              </tr>
-              <tr>
-                <td><strong>{t('morph')}:</strong></td>
-                <td>{selectedWord.morph}</td>
-              </tr>
-              <tr>
-                <td><strong>{t('ner')}:</strong></td>
-                <td>{selectedWord.ner}</td>
-              </tr>
-              <tr>
-                <td><strong>{t('semantic')}:</strong></td>
-                <td>{selectedWord.semantic}</td>
-              </tr>
+          <table style={{ width: '100%', fontSize: '14px' }} key={selectedWord?.id + "modal"}>
+            <tbody key={selectedWord?.id + "modal-tbody"}>
+                {columns.map(({ key, title }) => (
+                    <tr key={key + "modal"}>
+                      <td><strong>{title}:</strong></td>
+                      <td>{(selectedWord as any)[key]}</td>
+                    </tr>
+                  ))}
             </tbody>
           </table>
         )}

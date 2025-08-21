@@ -181,8 +181,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Flex gap="middle" align="center" style={{ width: '100%' }}>
             <Flex gap="middle" align="center" style={{ flex: 1, justifyContent: 'center' }}>
               {/* <FileUploader /> */}
-              Chọn cặp ngôn ngữ:
-
+                {t('language_pair')}:
                 <Dropdown menu={{ items: languageGroupItems }} trigger={['click']}>
                   <Space style={{ cursor: 'pointer' }}>
                     {appLanguage?.languagePair ? t(appLanguage?.languagePair) : t('en_vi')}
