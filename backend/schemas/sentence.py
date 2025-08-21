@@ -3,6 +3,7 @@ from typing import Optional
 
 
 class SentenceBase(BaseModel):
+    # Mirrors backend/utils/data-utils.py SentenceView
     ID_sen: str
     Left: Optional[str] = ""
     Center: Optional[str] = ""

@@ -5,9 +5,9 @@ import { useTranslation } from "react-i18next";
 import { Divider, Input, Button, Select, Radio, App, Form, Typography } from 'antd';
 import { useState } from "react";
 import { RowWord } from "@/types/row-word.type";
-import { searchPhrase, searchWord } from "@/dao/search-utils";
+import { searchPhraseAPI, searchWordAPI } from "@/services/rowword/rowword-api";
 import { Sentence } from "@/types/sentence.type";
-import { getSentence, getSentenceOther } from "@/dao/data-utils";
+import { getSentencePairAPI } from "@/services/rowword/rowword-api";
 import { useSelector } from 'react-redux';
 import { RootState } from "@/redux";
 
@@ -27,55 +27,62 @@ const Word: React.FC = () => {
   const [page2, setPage2] = useState(1);
   const [form] = Form.useForm();
 
-  const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1),
-    rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2),
-    dicId_1 = useSelector((state: RootState) => state.dataSlice.dicId_1),
-    dicId_2 = useSelector((state: RootState) => state.dataSlice.dicId_2),
-    lang_1 = useSelector((state: RootState) => state.dataSlice.lang_1),
+  const lang_1 = useSelector((state: RootState) => state.dataSlice.lang_1),
     lang_2 = useSelector((state: RootState) => state.dataSlice.lang_2);
 
   let listSentences: Record<string, RowWord> = {},
     listSenPhrase: Record<string, RowWord[]> = {};
 
-  const handleSearch = () => {
-    if (rows_1.length === 0 || rows_2.length === 0) {
-      message.warning(t('missing_data'));
-      return;
-    }
-    else if (!searchText.trim()) {
+  const handleSearch = async () => {
+  if (!searchText.trim()) {
       message.warning(t('missing_input'))
       return;
     }
 
-    if (searchType !== 'phrase') {
-      listSentences = searchWord(searchText.trim(), searchType === 'morphological', language === '1' ? rows_1 : rows_2);
+    try {
+      const langCode = language === '1' ? (lang_1 || '') : (lang_2 || '');
+      if (searchType !== 'phrase') {
+        listSentences = await searchWordAPI(
+          searchText.trim(),
+          searchType === 'morphological',
+          langCode
+        );
+      }
+      else {
+        listSenPhrase = await searchPhraseAPI(
+          searchText.trim(),
+          langCode
+        );
+      }
+      searchComplete();
+    } catch (err) {
+      message.error(t('something_wrong'));
     }
-    else {
-      listSenPhrase = searchPhrase(searchText.trim(), language === '1' ? rows_1 : rows_2);
-    }
-    searchComplete();
   };
 
-  const searchComplete = () => {
+  const searchComplete = async () => {
     setData_1([]);
     setData_2([]);
 
+    const langSrc = language === '1' ? (lang_1 || '') : (lang_2 || '');
+    const langTgt = language === '1' ? (lang_2 || '') : (lang_1 || '');
+
     if (searchType !== 'phrase') {
-      Object.keys(listSentences).forEach((key) => {
-        const sentence: Sentence = getSentence(listSentences[key], language === '1' ? rows_1 : rows_2, language === '1' ? dicId_1 : dicId_2);
-        setData_1(prev => [...prev, sentence]);
-
-        const sentence2: Sentence = getSentenceOther(listSentences[key], language === '1' ? rows_2 : rows_1, language === '1' ? dicId_2 : dicId_1);
-        setData_2(prev => [...prev, sentence2]);
-      });
+      const ids = Object.keys(listSentences);
+      for (const sid of ids) {
+        const row = listSentences[sid];
+        const pair = await getSentencePairAPI(row.ID, langSrc, langTgt);
+        setData_1(prev => [...prev, pair.sentence_1]);
+        setData_2(prev => [...prev, pair.sentence_2]);
+      }
     } else {
-      Object.keys(listSenPhrase).forEach((key) => {
-        const sentence: Sentence = getSentence(listSenPhrase[key][0], language === '1' ? rows_1 : rows_2, language === '1' ? dicId_1 : dicId_2);
-        setData_1(prev => [...prev, sentence]);
-
-        const sentence2: Sentence = getSentenceOther(listSenPhrase[key][0], language === '1' ? rows_2 : rows_1, language === '1' ? dicId_2 : dicId_1);
-        setData_2(prev => [...prev, sentence2]);
-      });
+      const ids = Object.keys(listSenPhrase);
+      for (const sid of ids) {
+        const row = listSenPhrase[sid][0];
+        const pair = await getSentencePairAPI(row.ID, langSrc, langTgt);
+        setData_1(prev => [...prev, pair.sentence_1]);
+        setData_2(prev => [...prev, pair.sentence_2]);
+      }
     }
   }
 
@@ -108,10 +115,6 @@ const Word: React.FC = () => {
   };
 
   const handleFormFinish = () => {
-    if (rows_1.length === 0 || rows_2.length === 0) {
-      message.warning(t('missing_data'));
-      return;
-    }
     if (!searchText.trim()) {
       form.validateFields(['searchText']);
       return;

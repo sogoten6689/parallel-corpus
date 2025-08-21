@@ -2,9 +2,9 @@ from pydantic import BaseModel
 
 
 class PointBase(BaseModel):
-    StartPos: int
-    EndPos: int
-    SentenceID: str
+    # Align with backend/utils/data-utils.py PointView
+    start: int
+    end: int
 
 
 class PointCreate(PointBase):
@@ -12,7 +12,7 @@ class PointCreate(PointBase):
 
 
 class PointRead(PointBase):
-    id: int
+    id: int | None = None
 
     class Config:
         orm_mode = True
