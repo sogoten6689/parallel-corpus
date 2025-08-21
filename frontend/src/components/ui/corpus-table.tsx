@@ -3,48 +3,21 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Tooltip, Typography } from 'antd';
 import { RowWord } from '@/types/row-word.type';
+import { WordRowMaster } from '@/types/word-row-master.type';
 import { Point } from '@/types/point.type';
 import { useTranslation } from "react-i18next";
 import Modal from 'antd/es/modal/Modal';
 
 import { useQuery } from "@tanstack/react-query";
-// const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-//   const fetchRowWords = async (): Promise<{ data: RowWord[]}> => {
-//     const res = await fetch(`${apiUrl}/words`);
-//     if (!res.ok) throw new Error("Failed to fetch words");
-//   return res.json();
-// };
-const fetchRowWords = async (
-  page: number,
-  limit: number,
-  search?: string,
-  lang?: string
-): Promise<{ data: RowWord[]; total: number }> => {
-  const params = new URLSearchParams({
-    page: String(page),
-    limit: String(limit),
-  });
-
-  if (search) params.append("search", search);
-  if (lang) params.append("lang", lang);
-
-  // const res = await fetch(`${apiUrl}/words?${params.toString()}`);
-  
-  // if (!res.ok) throw new Error("Failed to fetch words");
-
-  // return res.json(); // expected format: { data: [...], total: number }
-
-  return {
-    data: [],
-    total: 0,
-  };
-};
+import { fetchWordRowMasters, getWordRowMasterCount } from '@/services/word-row-master/word-row-master-api';
 
 
 const { Text } = Typography;
 
 type CorpusTableProps = {
-  sentences: Record<string, Point>
+  sentences?: Record<string, Point>;
+  langCode?: string;
+  useWordRowMaster?: boolean;
 }
 
 const getColumnKey = (key: string) => {
@@ -76,7 +49,7 @@ const getColumnKey = (key: string) => {
   }
 }
 
-export default function CorpusTable({ sentences }: CorpusTableProps) {
+export default function CorpusTable({ sentences, langCode, useWordRowMaster = false }: CorpusTableProps) {
   const { t } = useTranslation();
 
   const getColumnWithTooltip = (key: string) => ({
@@ -91,7 +64,7 @@ export default function CorpusTable({ sentences }: CorpusTableProps) {
     const column = getColumnWithTooltip(key);
 
     if (key === 'id') {
-      const render = (text: string, record: RowWord) => (
+      const render = (text: string, record: any) => (
         <a onClick={() => showModal(record)}>{text}</a>
       );
       return {
@@ -104,27 +77,48 @@ export default function CorpusTable({ sentences }: CorpusTableProps) {
 
   });
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [selectedWord, setSelectedWord] = useState<RowWord | null>(null);
+  const [selectedWord, setSelectedWord] = useState<any>(null);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
     total: 0,
   });
 
+  // Query for WordRowMaster
+  const { data: wordRowMasterData, isLoading: isLoadingMaster, error: errorMaster } = useQuery({
+    queryKey: ['word-row-master', pagination.current, pagination.pageSize, langCode],
+    queryFn: async () => {
+      const data = await fetchWordRowMasters(pagination.current, pagination.pageSize, langCode);
+      const count = await getWordRowMasterCount(langCode);
+      return { data, total: count.total };
+    },
+    enabled: useWordRowMaster,
+  });
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['words', pagination],
-    queryFn: () => fetchRowWords(pagination.current, pagination.pageSize),
+  // Convert WordRowMaster to RowWord format for display
+  const transformWordRowMasterToRowWord = (wordMaster: WordRowMaster): RowWord => ({
+    ID: wordMaster.row_word_id || '',
+    ID_sen: wordMaster.id_sen || '',
+    Word: wordMaster.word || '',
+    Lemma: wordMaster.lemma || '',
+    Links: wordMaster.links || '',
+    Morph: wordMaster.morph || '',
+    POS: wordMaster.pos || '',
+    Phrase: wordMaster.phrase || '',
+    Grm: wordMaster.grm || '',
+    NER: wordMaster.ner || '',
+    Semantic: wordMaster.semantic || '',
+    Lang_code: wordMaster.lang_code || '',
   });
 
   useEffect(() => {
-    if (data) {
-      setPagination({
-        ...pagination,
-        total: data.total,
-      });
+    if (useWordRowMaster && wordRowMasterData) {
+      setPagination(prev => ({
+        ...prev,
+        total: wordRowMasterData.total,
+      }));
     }
-  }, [data]);
+  }, [wordRowMasterData, useWordRowMaster]);
   
   const handleTableChange = (pagination: any, filters: any, sorter: any) => {
     setPagination({
@@ -143,35 +137,39 @@ export default function CorpusTable({ sentences }: CorpusTableProps) {
     setSelectedWord(null);
   };
 
+  // Determine data source and loading state
+  const isLoading = useWordRowMaster ? isLoadingMaster : false;
+  const tableData = useWordRowMaster ? 
+    (wordRowMasterData?.data?.map(transformWordRowMasterToRowWord) || []) :
+    (sentences ? Object.values(sentences).map(point => point as unknown as RowWord) : []);
+
   return (
     <div>
       <div className="mb-4">
-        <Text strong>{t('total_rows')}: {data?.total || '--'}</Text>
-        {/* <Text strong>{t('total_sentences')}: {Object.keys(sentences).length}</Text> */}
+        <Text strong>{t('total_rows')}: {useWordRowMaster ? (wordRowMasterData?.total || '--') : (tableData.length || '--')}</Text>
       </div>
       {isLoading && <p>{t('loading')}</p>}
-      {error && <p>{t('error')}: {error.message}</p>}
-      {data && (
-        <>
-          <Table
-            dataSource={data.data}
-            columns={columns}
-            rowKey="ID"
-            scroll={{ x: 'max-content' }}
-            className='w-full'
-            bordered
-            pagination={{
-              current: pagination.current,
-              pageSize: pagination.pageSize,
-              total: pagination.total,
-              showSizeChanger: true,
-            }}
-            onChange={(pagination, filters, sorter) => {
-              handleTableChange(pagination, filters, sorter);
-            }}
-          />
-        </>
-      )}
+      {(useWordRowMaster ? errorMaster : false) && <p>{t('error')}: {errorMaster?.message}</p>}
+      <Table
+        dataSource={tableData}
+        columns={columns}
+        rowKey="ID"
+        scroll={{ x: 'max-content' }}
+        className='w-full'
+        bordered
+        loading={isLoading}
+        pagination={useWordRowMaster ? {
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
+        } : false}
+        onChange={useWordRowMaster ? (pagination, filters, sorter) => {
+          handleTableChange(pagination, filters, sorter);
+        } : undefined}
+      />
       <Modal
         title={`${t('word_detail')}: '${selectedWord?.Word}'`}
         open={isModalVisible}

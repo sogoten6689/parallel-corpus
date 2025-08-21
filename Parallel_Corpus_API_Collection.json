@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "parallel-corpus-api-collection",
 		"name": "Parallel Corpus API Collection",
-		"description": "Collection để test tất cả các API của hệ thống Parallel Corpus\n\nBase URL: http://localhost:8000\n\nCác API bao gồm:\n- Authentication (Đăng ký, Đăng nhập)\n- User Management (Quản lý người dùng)\n- Row Words (Quản lý từ vựng)\n- Sentences (Quản lý câu)\n- Points (Quản lý điểm đánh dấu)",
+		"description": "Collection để test tất cả các API của hệ thống Parallel Corpus\n\nBase URL: http://localhost:8000\n\nCác API bao gồm:\n- Authentication (Đăng ký, Đăng nhập)\n- User Management (Quản lý người dùng)\n- Row Words (Quản lý từ vựng)\n- Import Management (Quản lý import với xác thực)\n- Export Management (Quản lý export với xác thực)\n- File Operations (Import/Export)\n- System Info (Thông tin hệ thống)",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -44,23 +44,12 @@
 						"header": [
 							{
 								"key": "Content-Type",
-								"value": "application/x-www-form-urlencoded"
+								"value": "application/json"
 							}
 						],
 						"body": {
-							"mode": "urlencoded",
-							"urlencoded": [
-								{
-									"key": "email",
-									"value": "admin@gmail.com",
-									"type": "text"
-								},
-								{
-									"key": "password",
-									"value": "admin123",
-									"type": "text"
-								}
-							]
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@gmail.com\",\n  \"password\": \"admin@123\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/auth/login",
@@ -101,7 +90,37 @@
 					"response": []
 				},
 				{
-					"name": "Danh sách tất cả users (Admin only)",
+					"name": "Đăng xuất",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Đăng xuất khỏi hệ thống (yêu cầu xác thực)"
+					},
+					"response": []
+				}
+			],
+			"description": "Các API liên quan đến xác thực và quản lý người dùng"
+		},
+		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Lấy tất cả Users",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -111,31 +130,75 @@
 							}
 						],
 						"url": {
-							"raw": "{{base_url}}/auth/users?skip=0&limit=100",
+							"raw": "{{base_url}}/users",
 							"host": [
 								"{{base_url}}"
 							],
 							"path": [
-								"auth",
 								"users"
-							],
-							"query": [
-								{
-									"key": "skip",
-									"value": "0"
-								},
-								{
-									"key": "limit",
-									"value": "100"
-								}
 							]
 						},
-						"description": "Lấy danh sách tất cả users (chỉ admin mới có quyền)"
+						"description": "Lấy danh sách tất cả users (yêu cầu đăng nhập)"
+					},
+					"response": []
+				},
+				{
+					"name": "Tạo User mới",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"newuser@gmail.com\",\n  \"password\": \"newpass123\",\n  \"full_name\": \"New User\",\n  \"role\": \"user\",\n  \"organization\": \"CLC\",\n  \"work_unit\": \"Department\",\n  \"status\": \"active\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users"
+							]
+						},
+						"description": "Tạo user mới (yêu cầu đăng nhập và quyền admin)"
+					},
+					"response": []
+				},
+				{
+					"name": "Lấy User theo ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/users/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"1"
+							]
+						},
+						"description": "Lấy thông tin user theo ID (yêu cầu đăng nhập)"
 					},
 					"response": []
 				}
 			],
-			"description": "Các API liên quan đến xác thực và quản lý người dùng"
+			"description": "Các API quản lý người dùng (yêu cầu xác thực)"
 		},
 		{
 			"name": "Row Words",
@@ -270,12 +333,300 @@
 								"sentences"
 							]
 						},
-						"description": "Lấy danh sách tất cả sentences từ row words"
+						"description": "Lấy danh sách tất cả sentences từ row words (Lưu ý: Table sentence đã được xóa, dữ liệu được quản lý thông qua word_row_master)"
 					},
 					"response": []
 				}
 			],
-			"description": "Các API quản lý sentences (câu) - được xử lý thông qua row words"
+			"description": "Các API quản lý sentences (câu) - được xử lý thông qua row words và word_row_master table"
+		},
+		{
+			"name": "Import Management",
+			"item": [
+				{
+					"name": "Check Import Authentication",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/import/check-auth",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"import",
+								"check-auth"
+							]
+						},
+						"description": "Kiểm tra trạng thái xác thực để sử dụng tính năng import. Yêu cầu đăng nhập."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Import Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/import/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"import",
+								"status"
+							]
+						},
+						"description": "Lấy trạng thái import và các tính năng có sẵn. Yêu cầu đăng nhập."
+					},
+					"response": []
+				},
+				{
+					"name": "Upload/Import Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "description",
+									"value": "Sample data import",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/import/upload",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"import",
+								"upload"
+							]
+						},
+						"description": "Upload và import dữ liệu. Yêu cầu đăng nhập."
+					},
+					"response": []
+				}
+			],
+			"description": "Các API quản lý import với xác thực người dùng"
+		},
+		{
+			"name": "Export Management",
+			"item": [
+				{
+					"name": "Check Export Authentication",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/export/check-auth",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"export",
+								"check-auth"
+							]
+						},
+						"description": "Kiểm tra trạng thái xác thực để sử dụng tính năng export. Yêu cầu đăng nhập."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Export Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/export/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"export",
+								"status"
+							]
+						},
+						"description": "Lấy trạng thái export và các tính năng có sẵn. Yêu cầu đăng nhập."
+					},
+					"response": []
+				},
+				{
+					"name": "Export Row Words Data",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/export/rowwords?format_type=csv&language=vi&limit=1000",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"export",
+								"rowwords"
+							],
+							"query": [
+								{
+									"key": "format_type",
+									"value": "csv",
+									"description": "Export format: txt, csv, xlsx, hoặc xls"
+								},
+								{
+									"key": "language",
+									"value": "vi",
+									"description": "Filter theo ngôn ngữ (vi, en, cn)"
+								},
+								{
+									"key": "pos_tag",
+									"value": "",
+									"description": "Filter theo POS tag (Vv, Pp, PU, etc.)"
+								},
+								{
+									"key": "limit",
+									"value": "1000",
+									"description": "Giới hạn số bản ghi (mặc định: 1000)"
+								}
+							]
+						},
+						"description": "Export dữ liệu từ vựng với các annotation ngôn ngữ học. Hỗ trợ format TXT, CSV, Excel."
+					},
+					"response": []
+				},
+				{
+					"name": "Export Sentences Data",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/export/sentences?format_type=xlsx&language=vi&source=Book301&limit=1000",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"export",
+								"sentences"
+							],
+							"query": [
+								{
+									"key": "format_type",
+									"value": "xlsx",
+									"description": "Export format: txt, csv, xlsx, hoặc xls"
+								},
+								{
+									"key": "language",
+									"value": "vi",
+									"description": "Filter theo ngôn ngữ"
+								},
+								{
+									"key": "source",
+									"value": "Book301",
+									"description": "Filter theo nguồn dữ liệu"
+								},
+								{
+									"key": "limit",
+									"value": "1000",
+									"description": "Giới hạn số bản ghi (mặc định: 1000)"
+								}
+							]
+						},
+						"description": "Export dữ liệu câu với metadata. Hỗ trợ format TXT, CSV, Excel."
+					},
+					"response": []
+				},
+				{
+					"name": "Export Points Data",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/export/points?format_type=txt&sentence_id=1&limit=1000",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"export",
+								"points"
+							],
+							"query": [
+								{
+									"key": "format_type",
+									"value": "txt",
+									"description": "Export format: txt, csv, xlsx, hoặc xls"
+								},
+								{
+									"key": "sentence_id",
+									"value": "1",
+									"description": "Filter theo ID câu"
+								},
+								{
+									"key": "limit",
+									"value": "1000",
+									"description": "Giới hạn số bản ghi (mặc định: 1000)"
+								}
+							]
+						},
+						"description": "Export dữ liệu annotation points và markers. Hỗ trợ format TXT, CSV, Excel."
+					},
+					"response": []
+				}
+			],
+			"description": "Các API quản lý export dữ liệu với xác thực người dùng. Hỗ trợ nhiều định dạng: TXT, CSV, Excel."
 		},
 		{
 			"name": "Corpus Management",

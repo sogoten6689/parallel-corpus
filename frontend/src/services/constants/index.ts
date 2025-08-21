@@ -9,6 +9,9 @@ export interface API_PROPS {
         MY_PROFILE: string
         LIST: string
     },
+    MASTER: {
+        IMPORT_UPLOAD: string
+    }
 }
 
 export const API: API_PROPS = {
@@ -21,5 +24,8 @@ export const API: API_PROPS = {
     USER: {
         MY_PROFILE: "/user/my-profile",
         LIST: "/users"
+    },
+    MASTER: {
+        IMPORT_UPLOAD: "/master/import"
     }
 }

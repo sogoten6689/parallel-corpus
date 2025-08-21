@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Image, Layout, Menu, theme, Typography, Flex, Divider, FloatButton, Drawer, Radio, RadioChangeEvent, Button, Dropdown, Avatar, Space } from 'antd';
+import { Image, Layout, Menu, theme, Typography, Flex, Divider, FloatButton, Drawer, Radio, RadioChangeEvent, Button, Dropdown, Avatar, Space, Switch } from 'antd';
 import {
   SunOutlined,
   MoonOutlined,
@@ -16,6 +16,7 @@ import {
   LoginOutlined,
   LogoutOutlined,
   SettingOutlined,
+  AccountBookOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useTheme } from '@/app/theme-provider';
@@ -26,8 +27,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { appRoute } from '@/config/appRoute';
 import { getKeyName } from '../helper/helper-ui';
+import { useAppLanguage } from '@/contexts/AppLanguageContext';
+import FileUploaderMaster from './file-uploader-master';
 
 const { Header, Sider, Content } = Layout;
+
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -38,7 +42,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-  
+  const { appLanguage, setLanguageGroup, setCurrentLanguage } = useAppLanguage();
 
   const showDrawer = () => {
     setOpen(true);
@@ -57,11 +61,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     router.push(appRoute.home);
   };
 
+  const handleMyProfile = () => {
+    router.push(appRoute.myProfile);
+  };
+
   const userMenuItems = [
     {
       key: 'profile',
       icon: <UserOutlined />,
       label: 'Profile',
+      onClick: handleMyProfile,
     },
     {
       key: 'settings',
@@ -79,6 +88,36 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     },
   ];
 
+  const handleSetLanguageGroup = (languageGroup: string) => {
+    // Implementation for setting language group
+    console.log('Setting language group:', languageGroup);
+    setLanguageGroup(languageGroup);
+  };
+
+  const languageGroupItems = [
+    {
+      key: 'en_vi',
+      label: t('en_vi'),
+      onClick: () => {
+        handleSetLanguageGroup('en_vi');
+      },
+    },
+    {
+      key: 'vi_cn',
+      label: t('vi_cn'),
+      onClick: () => {
+        handleSetLanguageGroup('vi_cn');
+      },
+    },
+    {
+      key: 'cn_vi',
+      label: t('cn_vi'),
+      onClick: () => {
+        handleSetLanguageGroup('cn_vi');
+      },
+    },
+  ];
+
   const {
     token: { colorBgContainer },
   } = theme.useToken();
@@ -89,8 +128,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     '/tag': '3',
     '/word-tag': '4',
     '/statistical': '5',
-    '/introduction': '6',
+    '/introduction': '7',
     '/users': '6',
+    '/my-profile': '8',
   };
 
   const selectedKey = menuKeyMap[pathname] || '1';
@@ -102,6 +142,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     "4": { group: "tags.VN_NER", label: "tags.vn_ner_tag" },
   };
 
+  const handleSwitch = (checked: boolean) => {
+    const currentLanguage = appLanguage?.lang_1 === appLanguage?.currentLanguage ? appLanguage?.lang_2 : appLanguage?.lang_1;
+    setCurrentLanguage(currentLanguage ?? 'en', appLanguage ?? {languagePair: 'en_vi', currentLanguage: 'en', lang_1: 'en', lang_2: 'vi'});
+  };
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
@@ -127,6 +171,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             { key: '4', icon: <TagsOutlined />, label: <Link href="/word-tag">{t('menu_word_tag')}</Link> },
             { key: '5', icon: <StockOutlined />, label: <Link href="/statistical">{t('statistical')}</Link> },
              user?.role === 'admin' ? { key: '6', icon: <SettingOutlined />, label: <Link href="/users">{t('user')}</Link> } : null,  
+             user?.id ? { key: '8', icon: <AccountBookOutlined />, label: <Link href="/my-profile">{t('profile')}</Link> } : null,  
             { key: '7', icon: <InfoOutlined />, label: <Link href="/introduction">{t('introduction')}</Link> },
           ]}
         />
@@ -135,7 +180,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Header style={{ background: colorBgContainer }}>
           <Flex gap="middle" align="center" style={{ width: '100%' }}>
             <Flex gap="middle" align="center" style={{ flex: 1, justifyContent: 'center' }}>
-              <FileUploader />
+              {/* <FileUploader /> */}
+              Chọn cặp ngôn ngữ:
+
+                <Dropdown menu={{ items: languageGroupItems }} trigger={['click']}>
+                  <Space style={{ cursor: 'pointer' }}>
+                    {appLanguage?.languagePair ? t(appLanguage?.languagePair) : t('en_vi')}
+                  </Space>
+                </Dropdown>
+
+            <span className="font-semibold">{t("current_language")}</span>
+            <Switch
+              checked={appLanguage?.lang_1 === appLanguage?.currentLanguage}
+              onChange={handleSwitch}
+              checkedChildren={appLanguage?.lang_1 === appLanguage?.currentLanguage ? t(appLanguage?.lang_1 ?? "null") : t("null") }
+              unCheckedChildren={appLanguage?.lang_2 === appLanguage?.currentLanguage ? t(appLanguage?.lang_2 ?? "null") : t("null") }
+            />
+            <FileUploaderMaster />
+
             </Flex>
             <Flex gap="middle" align="center" style={{ justifyContent: 'flex-end', marginRight: 20 }}>
               {mode === 'light' ? (
