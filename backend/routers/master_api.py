@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from models.word_row_master import WordRowMaster
+from crud import get_word_row_masters_by_lang
+from models.master_row_word import MasterRowWord
 from database import get_db
 from fastapi import APIRouter, UploadFile, File, Depends, Form, HTTPException
 from sqlalchemy.orm import Session
@@ -9,15 +10,23 @@ import pandas as pd
 import io
 from auth import get_current_user
 from models.user import User, UserRole
-from typing import Optional
+from typing import List, Optional
+
+from responses.master_row_word_list_response import MasterRowWordListResponse
+from responses.row_word_list_response import RowWordListResponse
 router = APIRouter(prefix="/master", tags=["master"])
 
 @router.post("/import")
-async def import_corpus_file(current_user: Optional[User] = Depends(get_current_user),file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def import_corpus_file(current_user: Optional[User] = Depends(get_current_user), file: UploadFile = File(...),
+                             lang_code: str = Form(...), db: Session = Depends(get_db)):
     if current_user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="No Permission. Only admin can import master data")
+    if file is None:
+        raise HTTPException(status_code=400, detail="No file uploaded")
+    if lang_code is None:
+        raise HTTPException(status_code=400, detail="Language code is required")
     try:
         # Đọc file content
         content = await file.read()
@@ -66,8 +75,8 @@ async def import_corpus_file(current_user: Optional[User] = Depends(get_current_
         for _, row in df.iterrows():
             if row["ID"].strip() == "":
                 continue
-            item = WordRowMaster(
-                id=row["ID"],
+            item = MasterRowWord(
+                id_string=row["ID"],
                 id_sen=row["ID_sen"],
                 word=row["Word"],
                 lemma=row["Lemma"],
@@ -78,6 +87,7 @@ async def import_corpus_file(current_user: Optional[User] = Depends(get_current_
                 grm=row["Grm"],
                 ner=row["NER"],
                 semantic=row["Semantic"],
+                lang_code=lang_code
             )
             db.merge(item)
             count += 1
@@ -87,3 +97,22 @@ async def import_corpus_file(current_user: Optional[User] = Depends(get_current_
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+    
+
+@router.get("/words")
+def get_all(db: Session = Depends(get_db), response_model=MasterRowWordListResponse,
+            page: int = 1, limit: int = 10, lang_code: str = '', search: str = ''):
+    query = db.query(MasterRowWord)
+
+    if lang_code != '':
+        query = query.filter(MasterRowWord.lang_code == lang_code)
+
+    if search != '':
+        query = query.filter(MasterRowWord.word.contains(search))
+
+    total = query.count()
+    total_pages = (total + limit - 1) // limit
+
+    data = query.offset((page - 1) * limit).limit(limit).all()
+
+    return {"data": data, "page": page, "limit": limit, "total": total, "total_pages": total_pages}

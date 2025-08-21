@@ -1,13 +1,9 @@
 from sqlalchemy.orm import Session
-from models.sentence import Sentence
-from models.point import Point
-from models.rowword import RowWord
-from models.word_row_master import WordRowMaster
+from models.row_word import RowWord
+from models.master_row_word import MasterRowWord
 from models.user import User, UserRole
-from schemas.sentence import SentenceCreate
-from schemas.point import PointCreate
 from schemas.rowword import RowWordCreate
-from schemas.word_row_master import WordRowMasterCreate
+from schemas.word_row_master import MasterRowWordCreate
 from schemas.user import UserCreate
 from auth import get_password_hash
 from datetime import datetime
@@ -94,9 +90,9 @@ def create_initial_users(db: Session):
         else:
             print(f"User {user_data['email']} already exists")
 
-# WordRowMaster CRUD operations
-def create_word_row_master(db: Session, word_data: WordRowMasterCreate, creator_id: int = None):
-    db_word = WordRowMaster(**word_data.dict())
+# MasterRowWord CRUD operations
+def create_word_row_master(db: Session, word_data: MasterRowWordCreate, creator_id: int = None):
+    db_word = MasterRowWord(**word_data.dict())
     db_word.create_by = creator_id
     db_word.created_at = datetime.now()
     db.add(db_word)
@@ -105,10 +101,10 @@ def create_word_row_master(db: Session, word_data: WordRowMasterCreate, creator_
     return db_word
 
 def get_all_word_row_masters(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(WordRowMaster).offset(skip).limit(limit).all()
+    return db.query(MasterRowWord).offset(skip).limit(limit).all()
 
 def get_word_row_masters_by_lang(db: Session, lang_code: str, skip: int = 0, limit: int = 100):
-    return db.query(WordRowMaster).filter(WordRowMaster.lang_code == lang_code).offset(skip).limit(limit).all()
+    return db.query(MasterRowWord).filter(MasterRowWord.lang_code == lang_code).offset(skip).limit(limit).all()
 
 def migrate_row_words_to_word_row_master(db: Session, creator_id: int = None):
     """Migrate all data from row_words to word_row_master"""
@@ -117,9 +113,9 @@ def migrate_row_words_to_word_row_master(db: Session, creator_id: int = None):
     
     for row_word in row_words:
         # Check if already exists
-        existing = db.query(WordRowMaster).filter(WordRowMaster.row_word_id == row_word.ID).first()
+        existing = db.query(MasterRowWord).filter(MasterRowWord.row_word_id == row_word.ID).first()
         if not existing:
-            word_master = WordRowMaster(
+            word_master = MasterRowWord(
                 row_word_id=row_word.ID,
                 id_sen=row_word.ID_sen,
                 word=row_word.Word,

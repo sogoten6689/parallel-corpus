@@ -13,7 +13,7 @@ import { parseLine } from '@/dao/utils';
 
 const sampleFiles = [
   { label: 'Tiếng Anh-Việt (sample)', value_1: 'sample_en.txt', value_2: 'sample_vn.txt', name_1: 'en', name_2: 'vn' },
-  { label: 'Tiếng Trung-Việt', value_1: 'Book301_cn.txt', value_2: 'Book301_vn.txt', name_1: 'cn', name_2: 'vn' },
+  { label: 'Tiếng Trung-Việt', value_1: 'Book301_zh.txt', value_2: 'Book301_vn.txt', name_1: 'cn', name_2: 'vn' },
 ];
 
 export default function FileUploader() {

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from schemas.word_row_master import WordRowMaster, WordRowMasterCreate
+from schemas.word_row_master import MasterRowWord, MasterRowWordCreate
 from crud import (
     create_word_row_master, 
     get_all_word_row_masters, 
@@ -12,7 +12,7 @@ from typing import List, Optional
 
 router = APIRouter(prefix="/word-row-master", tags=["word-row-master"])
 
-@router.get("/", response_model=List[WordRowMaster])
+@router.get("/", response_model=List[MasterRowWord])
 def get_word_row_masters(
     lang_code: Optional[str] = None,
     skip: int = 0, 
@@ -24,9 +24,9 @@ def get_word_row_masters(
         return get_word_row_masters_by_lang(db, lang_code, skip, limit)
     return get_all_word_row_masters(db, skip, limit)
 
-@router.post("/", response_model=WordRowMaster)
+@router.post("/", response_model=MasterRowWord)
 def create_word_row_master_endpoint(
-    word_data: WordRowMasterCreate, 
+    word_data: MasterRowWordCreate, 
     db: Session = Depends(get_db)
 ):
     """Create a new word row master"""
@@ -50,11 +50,11 @@ def get_word_row_master_count(
     db: Session = Depends(get_db)
 ):
     """Get count of records in word_row_master"""
-    from models.word_row_master import WordRowMaster
+    from models.master_row_word import MasterRowWord
     
-    query = db.query(WordRowMaster)
+    query = db.query(MasterRowWord)
     if lang_code:
-        query = query.filter(WordRowMaster.lang_code == lang_code)
+        query = query.filter(MasterRowWord.lang_code == lang_code)
     
     total = query.count()
     return {"total": total, "lang_code": lang_code}

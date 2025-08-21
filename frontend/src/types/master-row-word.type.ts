@@ -1,5 +1,6 @@
-export interface WordRowMaster {
+export interface MasterRowWord {
   id: number;
+  id_string?: string;
   row_word_id?: string;
   id_sen?: string;
   word?: string;

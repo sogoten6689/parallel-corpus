@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, Tooltip, Typography } from 'antd';
+import { message, Table, Tooltip, Typography } from 'antd';
 import { RowWord } from '@/types/row-word.type';
-import { WordRowMaster } from '@/types/word-row-master.type';
+import { MasterRowWord } from '@/types/master-row-word.type';
 import { Point } from '@/types/point.type';
 import { useTranslation } from "react-i18next";
 import Modal from 'antd/es/modal/Modal';
 
 import { useQuery } from "@tanstack/react-query";
 import { fetchWordRowMasters, getWordRowMasterCount } from '@/services/word-row-master/word-row-master-api';
+import { fetchMasterRowWords } from '@/services/master/master-api';
 
 
 const { Text } = Typography;
@@ -20,50 +21,21 @@ type CorpusTableProps = {
   useWordRowMaster?: boolean;
 }
 
-const getColumnKey = (key: string) => {
-  switch (key) {
-    case 'id':
-      return 'ID';
-    case 'word':
-      return 'Word';
-    case 'Lemma':
-      return 'Lemma';
-    case 'links':
-      return 'Links';
-    case 'morph':
-      return 'Morph';
-    case 'pos':
-      return 'POS';
-    case 'phrase':
-      return 'Phrase';
-    case 'grm':
-      return 'Grm';
-    case 'ner':
-      return 'NER';
-    case 'semantic':
-      return 'Semantic';
-    case 'langCode':
-      return 'Lang_code';
-    default:
-      return key;
-  }
-}
-
 export default function CorpusTable({ sentences, langCode, useWordRowMaster = false }: CorpusTableProps) {
   const { t } = useTranslation();
 
   const getColumnWithTooltip = (key: string) => ({
     title: <Tooltip title={t(`${key}_tooltip`)}>{t(key)}</Tooltip>,
-    dataIndex: getColumnKey(key),
-    key: getColumnKey(key),
+    dataIndex: key,
+    key: key,
   });
 
-  const columnKeys = ['id', 'word', 'lemma', 'links', 'morph', 'pos', 'phrase', 'grm', 'ner', 'semantic', 'langCode'];
+  const columnKeys = ['id', 'id_string', 'id_sen','word', 'lemma', 'links', 'morph', 'pos', 'phrase', 'grm', 'ner', 'semantic', 'lang_code'];
 
   const columns = columnKeys.map((key) => {
     const column = getColumnWithTooltip(key);
 
-    if (key === 'id') {
+    if (key === 'idString') {
       const render = (text: string, record: any) => (
         <a onClick={() => showModal(record)}>{text}</a>
       );
@@ -86,29 +58,17 @@ export default function CorpusTable({ sentences, langCode, useWordRowMaster = fa
 
   // Query for WordRowMaster
   const { data: wordRowMasterData, isLoading: isLoadingMaster, error: errorMaster } = useQuery({
-    queryKey: ['word-row-master', pagination.current, pagination.pageSize, langCode],
+    queryKey: ['master-row-word', pagination.current, pagination.pageSize, langCode],
     queryFn: async () => {
-      const data = await fetchWordRowMasters(pagination.current, pagination.pageSize, langCode);
-      const count = await getWordRowMasterCount(langCode);
-      return { data, total: count.total };
+      const res = await fetchMasterRowWords(pagination.current, pagination.pageSize, langCode);
+      console.log(res);
+      if (res.status !== 200) {
+        message.error(res.statusText);
+        return { data: [], total: null };
+      }
+      return { data: res.data.data, total: res.data.total };
     },
     enabled: useWordRowMaster,
-  });
-
-  // Convert WordRowMaster to RowWord format for display
-  const transformWordRowMasterToRowWord = (wordMaster: WordRowMaster): RowWord => ({
-    ID: wordMaster.row_word_id || '',
-    ID_sen: wordMaster.id_sen || '',
-    Word: wordMaster.word || '',
-    Lemma: wordMaster.lemma || '',
-    Links: wordMaster.links || '',
-    Morph: wordMaster.morph || '',
-    POS: wordMaster.pos || '',
-    Phrase: wordMaster.phrase || '',
-    Grm: wordMaster.grm || '',
-    NER: wordMaster.ner || '',
-    Semantic: wordMaster.semantic || '',
-    Lang_code: wordMaster.lang_code || '',
   });
 
   useEffect(() => {
@@ -140,8 +100,8 @@ export default function CorpusTable({ sentences, langCode, useWordRowMaster = fa
   // Determine data source and loading state
   const isLoading = useWordRowMaster ? isLoadingMaster : false;
   const tableData = useWordRowMaster ? 
-    (wordRowMasterData?.data?.map(transformWordRowMasterToRowWord) || []) :
-    (sentences ? Object.values(sentences).map(point => point as unknown as RowWord) : []);
+    (wordRowMasterData?.data || []) :
+    (sentences ? Object.values(sentences).map(point => point as unknown as MasterRowWord) : []);
 
   return (
     <div>

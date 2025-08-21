@@ -1,8 +1,6 @@
 from .base import Base
-from .sentence import Sentence
-from .point import Point
-from .rowword import RowWord
-from .word_row_master import WordRowMaster
+from .row_word import RowWord
+from .master_row_word import MasterRowWord
 from .user import User, UserRole
 
-__all__ = ["Base", "Sentence", "Point", "RowWord", "WordRowMaster", "User", "UserRole"]
+__all__ = ["Base", "RowWord", "MasterRowWord", "User", "UserRole"]

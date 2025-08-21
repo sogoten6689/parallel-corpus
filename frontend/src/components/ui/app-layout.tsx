@@ -103,17 +103,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       },
     },
     {
-      key: 'vi_cn',
-      label: t('vi_cn'),
+      key: 'vi_zh',
+      label: t('vi_zh'),
       onClick: () => {
-        handleSetLanguageGroup('vi_cn');
+        handleSetLanguageGroup('vi_zh');
       },
     },
     {
-      key: 'cn_vi',
-      label: t('cn_vi'),
+      key: 'zh_vi',
+      label: t('zh_vi'),
       onClick: () => {
-        handleSetLanguageGroup('cn_vi');
+        handleSetLanguageGroup('zh_vi');
       },
     },
   ];

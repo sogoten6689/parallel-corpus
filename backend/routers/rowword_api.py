@@ -5,7 +5,7 @@ from database import get_db
 from responses.row_word_list_response import RowWordListResponse
 from schemas import RowWordCreate, RowWordRead
 from crud import create_row_word, get_all_row_words
-from models import RowWord, Sentence, Point
+from models import RowWord
 import pandas as pd
 import io
 from collections import defaultdict

@@ -28,15 +28,6 @@ export default function Home() {
   return (
     <>
       <div className="grid grid-rows-[auto_1fr]">
-        <div className="p-3 flex items-center gap-4">
-          <span className="font-semibold">{t("select_language")}</span>
-          <Switch
-            checked={appLanguage?.lang_1 === appLanguage?.currentLanguage}
-            onChange={handleSwitch}
-            checkedChildren={appLanguage?.lang_1 === appLanguage?.currentLanguage ? t(appLanguage?.lang_1 ?? "null") : t("null") }
-            unCheckedChildren={appLanguage?.lang_2 === appLanguage?.currentLanguage ? t(appLanguage?.lang_2 ?? "null") : t("null") }
-          />
-        </div>
         {<CorpusTable 
           sentences={showFirst ? sentences_1 : sentences_2} 
           useWordRowMaster={true}

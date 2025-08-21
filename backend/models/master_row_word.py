@@ -2,11 +2,12 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from .base import Base
 
-class WordRowMaster(Base):
-    __tablename__ = "word_row_master"
+class MasterRowWord(Base):
+    __tablename__ = "master_row_words"
 
     id = Column(Integer, primary_key=True, index=True)
-    row_word_id = Column(String, ForeignKey("row_words.ID"))
+    id_string = Column(String)
+    row_word_id = Column(String, ForeignKey("row_words.id"))
     id_sen = Column(String)
     word = Column(String)
     lemma = Column(String)

@@ -1,9 +1,9 @@
 from typing import ClassVar, List
-from models.row_word import RowWord
+from models.master_row_word import MasterRowWord
 
-class RowWordListResponse(RowWord):
+class MasterRowWordListResponse(MasterRowWord):
     total: ClassVar[int]
     page: ClassVar[int]
     total_pages: ClassVar[int]
     limit: ClassVar[int]
-    data: List[RowWord] = []
+    data: List[MasterRowWord] = []

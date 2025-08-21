@@ -11,6 +11,7 @@ export interface API_PROPS {
     },
     MASTER: {
         IMPORT_UPLOAD: string
+        ROW_WORD: string
     }
 }
 
@@ -26,6 +27,7 @@ export const API: API_PROPS = {
         LIST: "/users"
     },
     MASTER: {
-        IMPORT_UPLOAD: "/master/import"
+        IMPORT_UPLOAD: "api/master/import",
+        ROW_WORD: "api/master/words"
     }
 }

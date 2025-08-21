@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
-class WordRowMasterBase(BaseModel):
+class MasterRowWordBase(BaseModel):
     row_word_id: Optional[str] = None
     id_sen: Optional[str] = None
     word: Optional[str] = None
@@ -18,13 +18,13 @@ class WordRowMasterBase(BaseModel):
     create_by: Optional[int] = None
     approval_by: Optional[int] = None
 
-class WordRowMasterCreate(WordRowMasterBase):
+class MasterRowWordCreate(MasterRowWordBase):
     pass
 
-class WordRowMasterUpdate(WordRowMasterBase):
+class MasterRowWordUpdate(MasterRowWordBase):
     pass
 
-class WordRowMaster(WordRowMasterBase):
+class MasterRowWord(MasterRowWordBase):
     id: int
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

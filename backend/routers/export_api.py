@@ -12,9 +12,7 @@ from datetime import datetime
 from database import get_db
 from auth import get_current_user
 from models.user import User
-from models.rowword import RowWord
-from models.sentence import Sentence
-from models.point import Point
+from models.row_word import RowWord
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
