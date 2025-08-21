@@ -1,28 +1,34 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { message, Table, Tooltip, Typography } from 'antd';
+import { message, Space, Table, Tooltip, Typography } from 'antd';
 import { RowWord } from '@/types/row-word.type';
-import { MasterRowWord } from '@/types/master-row-word.type';
-import { Point } from '@/types/point.type';
 import { useTranslation } from "react-i18next";
 import Modal from 'antd/es/modal/Modal';
-
 import { useQuery } from "@tanstack/react-query";
 import { fetchMasterRowWords } from '@/services/master/master-api';
+import { MasterRowWord } from '@/types/master-row-word.type';
+import Card from 'antd/es/card/Card';
+import Dropdown from 'antd/es/dropdown/dropdown';
 
 
 const { Text } = Typography;
 
-type CorpusTableProps = {
-  sentences?: Record<string, Point>;
-  langCode?: string;
-  useWordRowMaster?: boolean;
+type MasterRowWordTableProps = {
 }
 
-export default function CorpusTable({ sentences, langCode, useWordRowMaster = false }: CorpusTableProps) {
+export default function MasterRowWordTable({}: MasterRowWordTableProps) {
   const { t } = useTranslation();
-
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedWord, setSelectedWord] = useState<MasterRowWord | null>(null);
+  const [langCode, setLangCode] = useState<string | undefined>();
+  const [search, setSearch] = useState<string | undefined>();
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+  
   const getColumnWithTooltip = (key: string) => ({
     title: <Tooltip title={t(`${key}_tooltip`)}>{t(key)}</Tooltip>,
     dataIndex: key,
@@ -34,8 +40,8 @@ export default function CorpusTable({ sentences, langCode, useWordRowMaster = fa
   const columns = columnKeys.map((key) => {
     const column = getColumnWithTooltip(key);
 
-    if (key === 'idString') {
-      const render = (text: string, record: any) => (
+    if (key === 'id_string') {
+      const render = (text: string, record: MasterRowWord) => (
         <a onClick={() => showModal(record)}>{text}</a>
       );
       return {
@@ -46,13 +52,6 @@ export default function CorpusTable({ sentences, langCode, useWordRowMaster = fa
 
     return column;
 
-  });
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [selectedWord, setSelectedWord] = useState<any>(null);
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 10,
-    total: 0,
   });
 
   // Query for WordRowMaster
@@ -65,19 +64,27 @@ export default function CorpusTable({ sentences, langCode, useWordRowMaster = fa
         message.error(res.statusText);
         return { data: [], total: null };
       }
-      return { data: res.data.data, total: res.data.total };
+      return { 
+        data: res.data.data,
+        total: res.data.total, 
+        page: res.data.page,
+        limit: res.data.limit, 
+        langCode: res.data.lang_code,
+        search: res.data.search
+      };
     },
-    enabled: useWordRowMaster,
   });
 
   useEffect(() => {
-    if (useWordRowMaster && wordRowMasterData) {
+    if (wordRowMasterData) {
       setPagination(prev => ({
         ...prev,
         total: wordRowMasterData.total,
+        pageSize: wordRowMasterData.limit,
+        current: wordRowMasterData.page,
       }));
     }
-  }, [wordRowMasterData, useWordRowMaster]);
+  }, [wordRowMasterData]);
   
   const handleTableChange = (pagination: any, filters: any, sorter: any) => {
     setPagination({
@@ -86,7 +93,7 @@ export default function CorpusTable({ sentences, langCode, useWordRowMaster = fa
       pageSize: pagination.pageSize,
     });
   };
-  const showModal = (record: RowWord) => {
+  const showModal = (record: MasterRowWord) => {
     setSelectedWord(record);
     setIsModalVisible(true);
   };
@@ -96,19 +103,68 @@ export default function CorpusTable({ sentences, langCode, useWordRowMaster = fa
     setSelectedWord(null);
   };
 
-  // Determine data source and loading state
-  const isLoading = useWordRowMaster ? isLoadingMaster : false;
-  const tableData = useWordRowMaster ? 
-    (wordRowMasterData?.data || []) :
-    (sentences ? Object.values(sentences).map(point => point as unknown as MasterRowWord) : []);
-
+  const isLoading = isLoadingMaster;
+  const tableData = (wordRowMasterData?.data || [])
+  
+  const langCodes = [
+    {
+      key: 'vi',
+      label: t('vi'),
+      onClick: () => {
+        setLangCode('vi');
+      },
+    },
+    {
+      key: 'en',
+      label: t('en'),
+      onClick: () => {
+        setLangCode('en');
+      },
+    },
+    {
+      key: 'ja',
+      label: t('ja'),
+      onClick: () => {
+        setLangCode('ja');
+      },
+    },
+    {
+      key: 'ko',
+      label: t('ko'),
+      onClick: () => {
+        setLangCode('ko');
+      },
+    },
+    {
+      key: 'zh',
+      label: t('zh'),
+      onClick: () => {
+        setLangCode('zh');
+      },
+    },
+  ];
   return (
     <div>
-      <div className="mb-4">
-        <Text strong>{t('total_rows')}: {useWordRowMaster ? (wordRowMasterData?.total || '--') : (tableData.length || '--')}</Text>
-      </div>
+      <Card title={t('all_words')} className="mb-10">
+        <div className="mb-4">
+          <Text strong>{t('total_words')}: {( wordRowMasterData?.total|| '--')}</Text>
+        </div>
+        <div className="mb-4">
+          <Text strong>{t('lang_code')}: {( wordRowMasterData?.langCode || '--')}</Text>
+        </div>
+        <div className="mb-4">
+          <Text strong>{t('search')}: {( wordRowMasterData?.search || '--')}</Text>
+        </div>
+        <div>
+          <Text strong>{t('language')}: </Text>
+          <Dropdown menu={{ items: langCodes }} trigger={['click']} className='cursor-pointer'>
+            <Space style={{ cursor: 'pointer' }}>
+              {langCode ? t(langCode) : t('all')}
+            </Space>
+          </Dropdown>
+        </div>
+      </Card>
       {isLoading && <p>{t('loading')}</p>}
-      {(useWordRowMaster ? errorMaster : false) && <p>{t('error')}: {errorMaster?.message}</p>}
       <Table
         dataSource={tableData}
         columns={columns}
@@ -117,20 +173,20 @@ export default function CorpusTable({ sentences, langCode, useWordRowMaster = fa
         className='w-full'
         bordered
         loading={isLoading}
-        pagination={useWordRowMaster ? {
+        pagination={{
           current: pagination.current,
           pageSize: pagination.pageSize,
           total: pagination.total,
           showSizeChanger: true,
           showQuickJumper: true,
           pageSizeOptions: ['10', '20', '50', '100'],
-        } : false}
-        onChange={useWordRowMaster ? (pagination, filters, sorter) => {
+        }}
+        onChange={(pagination, filters, sorter) => {
           handleTableChange(pagination, filters, sorter);
-        } : undefined}
+        }}
       />
       <Modal
-        title={`${t('word_detail')}: '${selectedWord?.Word}'`}
+        title={`${t('word_detail')}: '${selectedWord?.word}'`}
         open={isModalVisible}
         onCancel={handleCancel}
         footer={null}
@@ -140,27 +196,27 @@ export default function CorpusTable({ sentences, langCode, useWordRowMaster = fa
             <tbody>
               <tr>
                 <td><strong>{t('word')}:</strong></td>
-                <td>{selectedWord.Word}</td>
+                <td>{selectedWord.word}</td>
               </tr>
               <tr>
                 <td><strong>{t('lemma')}:</strong></td>
-                <td>{selectedWord.Lemma}</td>
+                <td>{selectedWord.lemma}</td>
               </tr>
               <tr>
                 <td><strong>{t('pos')}:</strong></td>
-                <td>{selectedWord.POS}</td>
+                <td>{selectedWord.pos}</td>
               </tr>
               <tr>
                 <td><strong>{t('morph')}:</strong></td>
-                <td>{selectedWord.Morph}</td>
+                <td>{selectedWord.morph}</td>
               </tr>
               <tr>
                 <td><strong>{t('ner')}:</strong></td>
-                <td>{selectedWord.NER}</td>
+                <td>{selectedWord.ner}</td>
               </tr>
               <tr>
                 <td><strong>{t('semantic')}:</strong></td>
-                <td>{selectedWord.Semantic}</td>
+                <td>{selectedWord.semantic}</td>
               </tr>
             </tbody>
           </table>

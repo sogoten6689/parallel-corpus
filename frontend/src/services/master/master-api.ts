@@ -20,7 +20,7 @@ export const uploadMaterDataFileApi = async (file: File, langCode: string) => {
 };
 
 
-export const fetchMasterRowWords = async (page: number, limit: number, search?: string, langCode?: string) => {
+export const fetchMasterRowWords = async (page: number, limit: number,  langCode?: string, search?: string) => {
   const params = new URLSearchParams();
   params.append("page", String(page));
   params.append("limit", String(limit));
