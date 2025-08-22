@@ -11,6 +11,7 @@ import io
 from auth import get_current_user
 from models.user import User, UserRole
 from typing import List, Optional
+import re
 
 from responses.master_row_word_list_response import MasterRowWordListResponse
 from responses.row_word_list_response import RowWordListResponse
@@ -49,7 +50,7 @@ async def import_corpus_file(current_user: Optional[User] = Depends(get_current_
                     if len(fields) >= 9:  # Đảm bảo có đủ fields
                         data.append({
                             "ID": fields[0],
-                            "ID_sen": "",
+                            "ID_sen": extract_main_id(fields[0]),
                             "Word": fields[1],
                             "Lemma": fields[2],
                             "Links": fields[3],
@@ -116,3 +117,66 @@ def get_all(db: Session = Depends(get_db), response_model=MasterRowWordListRespo
     data = query.offset((page - 1) * limit).limit(limit).all()
 
     return {"data": data, "page": page, "limit": limit, "total": total, "total_pages": total_pages}
+
+
+
+@router.get("/dicid")
+def get_dicid_by_lang(lang_code: str, search: str = '', db: Session = Depends(get_db)):
+    """
+    Return a dictionary mapping ID_sen -> { start: int, end: int }
+    computed over all RowWord rows for the given lang_code.
+
+    The indices are based on the order of rows sorted by (ID_sen, ID).
+    """
+    if not lang_code:
+        raise HTTPException(status_code=400, detail="lang_code is required")
+
+    query = db.query(MasterRowWord).filter(MasterRowWord.lang_code == lang_code)
+
+    if search != '':  # Kiểm tra search khác rỗng
+        query = query.filter(MasterRowWord.word.contains(search))
+
+    rows = (
+        query
+        .order_by(MasterRowWord.id_sen, MasterRowWord.id)
+        .all()
+    )
+    list_id_sen = [row.id_sen for row in rows]
+
+    # return rows
+    dic: dict[str, dict[str, int]] = {}
+    if not rows:
+        return dic
+
+    rows_in_list_id_sen = (
+        db.query(MasterRowWord)
+        .filter(MasterRowWord.id_sen.in_(list_id_sen))
+        .order_by(MasterRowWord.id_sen, MasterRowWord.id)
+        .all()
+    )
+    current_id = rows[0].id_sen
+
+    start = 1
+    for i, r in enumerate(rows_in_list_id_sen):
+        if r.id_sen != current_id:
+            dic[current_id] = {"start": start, "end": i - 1}
+            current_id = r.id_sen
+            start = i
+        elif i == len(rows) - 1:
+            dic[current_id] = {"start": start, "end": i}
+
+    return {
+        "rows_in_list_id_sen": rows_in_list_id_sen,
+        "dic": dic,
+        "rrows": rows
+    }
+
+def extract_main_id(id_str: str) -> str:
+    """
+    Trích xuất 6 chữ số chính từ chuỗi ID dạng VDxxxxxxYY
+    Ví dụ: 'VD01821301' -> '018213'
+    """
+    id_str = id_str.replace("\ufeff", "").strip()
+    if len(id_str) >= 10 and id_str.startswith("VD"):
+        return id_str[2:-2]
+    raise ValueError(f"ID không hợp lệ: {id_str}")

@@ -1,7 +1,7 @@
 'use client';
 
 import { useDispatch } from 'react-redux';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button, Upload, App, Spin, Form, Modal, Select, Space, Typography } from 'antd';
 import { InboxOutlined, UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -18,13 +18,9 @@ export default function FileUploaderMaster() {
   const [form] = Form.useForm();
   const { logout } = useAuth();
 
-  // const handleChange = async (file: any) => {
-  //   try {
-  //   } catch (err) {
-  //     message.error("Upload thất bại! Vui lòng liên hệ admin.");
-  //     console.error(err);
-  //   }
-  // };
+  useEffect(() => {
+    // console.log("open", open);
+  }, [open]);
   const accept = ".txt, .csv, .excel, .xlsx";
 
   const uploadProps: UploadProps = {
@@ -102,11 +98,11 @@ export default function FileUploaderMaster() {
       <Modal
         title="Upload dữ liệu & chọn ngôn ngữ"
         open={open}
-        // onCancel={() => {
-        //   if (!loading) {
-        //     setOpen(false);
-        //   }
-        // }}
+        onCancel={() => {
+          if (!loading) {
+            setOpen(false);
+          }
+        }}
         onOk={handleSubmit}
 
       >
