@@ -175,8 +175,9 @@ def extract_main_id(id_str: str) -> str:
     """
     Trích xuất 6 chữ số chính từ chuỗi ID dạng VDxxxxxxYY
     Ví dụ: 'VD01821301' -> '018213'
+    Ví dụ: 'ED00000201' -> '000002'
     """
     id_str = id_str.replace("\ufeff", "").strip()
-    if len(id_str) >= 10 and id_str.startswith("VD"):
+    if len(id_str) >= 10 and (id_str.startswith("ED") or id_str.startswith("VD")):
         return id_str[2:-2]
     raise ValueError(f"ID không hợp lệ: {id_str}")
