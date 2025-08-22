@@ -33,16 +33,16 @@ def create_database_if_not_exists():
         port=port
     )
     con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-    cur = con.cursor()
+    # cur = con.cursor()
 
     # Check and create database
-    cur.execute(f"SELECT 1 FROM pg_database WHERE datname = '{dbname}';")
-    exists = cur.fetchone()
-    if not exists:
-        print(f"Database '{dbname}' not found. Creating...")
-        cur.execute(f"CREATE DATABASE {dbname};")
-    else:
-        print(f"Database '{dbname}' already exists.")
+    # cur.execute(f"SELECT 1 FROM pg_database WHERE datname = '{dbname}';")
+    # exists = cur.fetchone()
+    # if not exists:
+    #     print(f"Database '{dbname}' not found. Creating...")
+    #     cur.execute(f"CREATE DATABASE {dbname};")
+    # else:
+    #     print(f"Database '{dbname}' already exists.")
 
-    cur.close()
+    # cur.close()
     con.close()

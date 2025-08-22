@@ -49,8 +49,8 @@ async def import_corpus_file(current_user: Optional[User] = Depends(get_current_
                     fields = line.strip().split('\t')
                     if len(fields) >= 9:  # Đảm bảo có đủ fields
                         data.append({
-                            "ID": fields[0],
-                            "ID_sen": extract_main_id(fields[0]),
+                            "ID": extract_main_id(fields[0]),
+                            "ID_sen": extract_sentence_id(fields[0]),
                             "Word": fields[1],
                             "Lemma": fields[2],
                             "Links": fields[3],
@@ -121,7 +121,7 @@ def get_all(db: Session = Depends(get_db), response_model=MasterRowWordListRespo
 
 
 @router.get("/dicid")
-def get_dicid_by_lang(lang_code: str, search: str = '', db: Session = Depends(get_db)):
+def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '',page: int = 1, limit: int = 10, db: Session = Depends(get_db)):
     """
     Return a dictionary mapping ID_sen -> { start: int, end: int }
     computed over all RowWord rows for the given lang_code.
@@ -139,39 +139,63 @@ def get_dicid_by_lang(lang_code: str, search: str = '', db: Session = Depends(ge
     rows = (
         query
         .order_by(MasterRowWord.id_sen, MasterRowWord.id)
+        .offset((page - 1) * limit).limit(limit)
         .all()
     )
     list_id_sen = [row.id_sen for row in rows]
 
-    # return rows
-    dic: dict[str, dict[str, int]] = {}
-    if not rows:
-        return dic
-
     rows_in_list_id_sen = (
         db.query(MasterRowWord)
+        .filter(MasterRowWord.lang_code.in_([lang_code, other_lang_code]))
         .filter(MasterRowWord.id_sen.in_(list_id_sen))
         .order_by(MasterRowWord.id_sen, MasterRowWord.id)
         .all()
     )
-    current_id = rows[0].id_sen
+    # merge rows
+    dic: dict[str, dict[str, int]] = {}
+    for row in rows:
+        dic[row.id_string] = row
 
-    start = 1
-    for i, r in enumerate(rows_in_list_id_sen):
-        if r.id_sen != current_id:
-            dic[current_id] = {"start": start, "end": i - 1}
-            current_id = r.id_sen
-            start = i
-        elif i == len(rows) - 1:
-            dic[current_id] = {"start": start, "end": i}
+        
+
+    # return rows
+    # dic: dict[str, dict[str, int]] = {}
+    # if not rows:
+    #     return dic
+
+    # rows_in_list_id_sen = (
+    #     db.query(MasterRowWord)
+    #     .filter(MasterRowWord.id_sen.in_(list_id_sen))
+    #     .order_by(MasterRowWord.id_sen, MasterRowWord.id)
+    #     .all()
+    # )
+    # current_id = rows[0].id_sen
+
+    # start = 1
+    # for i, r in enumerate(rows_in_list_id_sen):
+    #     if r.id_sen != current_id:
+    #         dic[current_id] = {"start": start, "end": i - 1}
+    #         current_id = r.id_sen
+    #         start = i
+    #     elif i == len(rows) - 1:
+    #         dic[current_id] = {"start": start, "end": i}
 
     return {
-        "rows_in_list_id_sen": rows_in_list_id_sen,
+        # "rows_in_list_id_sen": rows_in_list_id_sen,
         "dic": dic,
-        "rrows": rows
+        # "rows": rows,
+        "sentences": list_id_sen,
+        "metadata": {
+            "lang_code": lang_code,
+            "other_lang_code": other_lang_code,
+            "page": page,
+            "limit": limit,
+            "total": len(rows),
+            "total_pages": (len(rows) + limit - 1) // limit
+        }
     }
 
-def extract_main_id(id_str: str) -> str:
+def extract_sentence_id(id_str: str) -> str:
     """
     Trích xuất 6 chữ số chính từ chuỗi ID dạng VDxxxxxxYY
     Ví dụ: 'VD01821301' -> '018213'
@@ -180,4 +204,14 @@ def extract_main_id(id_str: str) -> str:
     id_str = id_str.replace("\ufeff", "").strip()
     if len(id_str) >= 10 and (id_str.startswith("ED") or id_str.startswith("VD")):
         return id_str[2:-2]
+    raise ValueError(f"ID không hợp lệ: {id_str}")
+def extract_main_id(id_str: str) -> str:
+    """
+    Trích xuất 8 chữ số chính từ chuỗi ID dạng VDxxxxxxYY
+    Ví dụ: 'VD01821301' -> '01821301'
+    Ví dụ: 'ED00000201' -> '00000201'
+    """
+    id_str = id_str.replace("\ufeff", "").strip()
+    if len(id_str) >= 10 and (id_str.startswith("ED") or id_str.startswith("VD") or id_str.startswith("KR")):
+        return id_str[2:10]
     raise ValueError(f"ID không hợp lệ: {id_str}")
