@@ -12,6 +12,7 @@ export interface API_PROPS {
     MASTER: {
         IMPORT_UPLOAD: string
         ROW_WORD: string
+        DICID: string
     }
 }
 
@@ -28,6 +29,7 @@ export const API: API_PROPS = {
     },
     MASTER: {
         IMPORT_UPLOAD: "api/master/import",
-        ROW_WORD: "api/master/words"
+        ROW_WORD: "api/master/words",
+        DICID: "api/master/dicid"
     }
 }

@@ -162,17 +162,23 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         .order_by(MasterRowWord.id_sen, MasterRowWord.id)
         .all()
     )
-    # merge rows
-    # dic: dict[str, dict[str, int]] = {}
-    dic = []
-    for row in rows:
+    
+    lang_code_dic = []
+    other_lang_code_dic = []
 
+    for row in rows:
         row_full = {
             "id_string": row.id_string,
             "id_sen": row.id_sen,
-            "center": row.word
+            "center": row.word,
+            "position": extract_last_key_id(row.id_string),
         }
         rows_same_sen = [r for r in rows_in_list_id_sen if r.id_sen == row.id_sen and r.lang_code == lang_code]
+
+        # row_position = extract_last_key_id(r.id_string)
+        row_links = [s for s in (row.links or "").split(",") if s]
+        row_start = row_links[0]
+        row_end = row_links[row_links.__len__() - 1]
         new_dic = []
         for r in rows_same_sen:
             position = extract_last_key_id(r.id_string)
@@ -201,11 +207,74 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         row_full["left"] = sentence_left
         row_full["right"] = sentence_right
 
-        dic.append(row_full)
+        lang_code_dic.append(row_full)
+
+
+        other_lang_row = [r for r in rows_in_list_id_sen if r.id_string == row.id_string and r.lang_code == other_lang_code][0]
+
+        other_lang_row_full = {
+            "id_string": row.id_string,
+            "id_sen": row.id_sen,
+            "start_center": row_start,
+            "end_center": row_end,
+            "center": other_lang_row.word,
+            "position": extract_last_key_id(other_lang_row.id_string),
+        }
+
+        other_lang_rows_same_sen = [r for r in rows_in_list_id_sen if r.id_sen == row.id_sen and r.lang_code == other_lang_code]
+        other_lang_new_dic = []
+        for r in other_lang_rows_same_sen:
+            position = extract_last_key_id(r.id_string)
+            links = [s for s in (r.links or "").split(",") if s]
+            other_lang_new_dic.append({
+                "position": position,
+                "word": r.word,
+                "links": links,
+                "start": links[0],
+                "end": links[links.__len__() - 1]
+            })
+
+        # row_full["new_dic"] = new_dic
+        other_lang_sentence_left = ""
+        other_lang_sentence_right = ""
+        # sorted_same_sen = sorted(dic[row.id_string]["new_dic"], key=lambda x: extract_last_key_id(x["id_string"]))
+
+        other_lang_sorted_same_sen = sorted(other_lang_new_dic, key=lambda x: x["position"])
+        other_lang_center_position = extract_last_key_id(other_lang_row.id_string)
+        other_center = ""
+        other_postion = ""
+        for r in other_lang_sorted_same_sen:
+            if r['position'] < other_lang_center_position:
+                other_lang_sentence_left += f"{r['word']} "
+            if r['position'] > other_lang_center_position:
+                other_lang_sentence_right += f"{r['word']} "
+
+        # for r in other_lang_sorted_same_sen:
+        #     if r['start'] < row_start and r['end'] > row_end:
+        #         other_lang_sentence_left += f"{r['word']} "
+        #     else :
+        #         if r['start'] > row_start and r['end'] < row_end:
+        #             other_lang_sentence_right += f"{r['word']} "
+        #         else:
+        #             other_center += f"{r['word']} "
+        #             other_postion += f"{r['position']} "
+
+        # other_lang_row_full["center"] = other_center
+        # other_lang_row_full["position"] = other_postion
+        other_lang_row_full["left"] = other_lang_sentence_left
+        other_lang_row_full["right"] = other_lang_sentence_right
+
+        other_lang_code_dic.append(other_lang_row_full)
+   
+
+   
+    data = {}
+
+    data[lang_code] = lang_code_dic
+    data[other_lang_code] = other_lang_code_dic
         
     return {
-        "dic": dic,
-        "sentences": list_id_sen,
+        "data": data,
         "metadata": {
             "lang_code": lang_code,
             "other_lang_code": other_lang_code,

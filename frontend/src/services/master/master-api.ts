@@ -29,5 +29,18 @@ export const fetchMasterRowWords = async (page: number, limit: number,  langCode
   return await axiosInstance.get(
     API.MASTER.ROW_WORD, { params }
   );
+};
 
+
+export const fetchDict = async (page: number, limit: number,  langCode: string, otherLangCode?: string, search?: string) => {
+  const params = new URLSearchParams();
+  params.append("page", String(page));
+  params.append("limit", String(limit));
+
+  if (langCode) params.append("lang_code", langCode);
+  if (otherLangCode) params.append("other_lang_code", otherLangCode);
+  if (search) params.append("search", search);
+  return await axiosInstance.get(
+    API.MASTER.DICID, { params }
+  );
 };
