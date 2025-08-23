@@ -96,10 +96,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const languageGroupItems = [
     {
-      key: 'en_vi',
-      label: t('en_vi'),
+      key: 'vi_en',
+      label: t('vi_en'),
       onClick: () => {
-        handleSetLanguageGroup('en_vi');
+        handleSetLanguageGroup('vi_en');
       },
     },
     {
@@ -110,10 +110,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       },
     },
     {
-      key: 'zh_vi',
-      label: t('zh_vi'),
+      key: 'vi_ja',
+      label: t('vi_ja'),
       onClick: () => {
-        handleSetLanguageGroup('zh_vi');
+        handleSetLanguageGroup('vi_ja');
+      },
+    },
+    {
+      key: 'vi_ru',
+      label: t('vi_ru'),
+      onClick: () => {
+        handleSetLanguageGroup('vi_ru');
+      },
+    },
+
+    {
+      key: 'vi_ko',
+      label: t('vi_ko'),
+      onClick: () => {
+        handleSetLanguageGroup('vi_ko');
       },
     },
   ];

@@ -36,9 +36,12 @@ export default function FileUploaderMaster() {
 
   const langOptions = useMemo(
     () => [
-      { label: "Việt Nam (vi)", value: "vi" },
+      { label: "Tiếng Việt (vi)", value: "vi" },
       { label: "English (en)", value: "en" },
-      { label: "Hán (zh)", value: "zh" },
+      { label: "Tiếng Hán (zh)", value: "zh" },
+      { label: "Tiếng Hàn (ko)", value: "ko" },
+      { label: "Tiếng Nhật (ja)", value: "ja" },
+      { label: "Tiếng Nga (ru)", value: "ru" },
     ],
     []
   );
