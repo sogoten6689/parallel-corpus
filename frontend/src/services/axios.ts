@@ -18,17 +18,18 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
-axiosInstance.interceptors.response.use(
-  (response) => response,
-    (error) => {
-        if (error.response?.status === 401) {
+// axiosInstance.interceptors.response.use(
+//   (response) => response,
+//     (error) => {
+//         if (error.response?.status === 401) {
            
-            localStorage.removeItem('token');
-            window.location.href = appRoute.home;
-        }
-        return Promise.reject(error);
-    }
-)
+//             localStorage.removeItem('token');
+//             logout();
+//             // window.location.href = appRoute.home;
+//         }
+//         return Promise.reject(error);
+//     }
+// )
 
 const axiosInstanceAzure = axios.create({
   baseURL: process.env.NEXT_PUBLIC_REACT_APP_API || "http://localhost:3000",

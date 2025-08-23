@@ -65,7 +65,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const res = await logInApi({email, password});
 
       if (res.status !== 200 || !res.data.access_token) {
-        throw new Error('Login failed');
+        // throw new Error('Login failed');
         return;
       }
 
@@ -75,7 +75,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const resUser = await getProfileMeApi();
       if (resUser.status !== 200 || !resUser.data) {
-        throw new Error('Get user failed');
+        // throw new Error('Get user failed');
         return;
       }
 
@@ -93,7 +93,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
     } catch (error) {
-      throw new Error('Login failed');
+      // throw new Error('Login failed');
     } finally {
       setIsLoading(false);
     }
@@ -132,11 +132,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setToken('');
+  const logout = async () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    setUser(null);
+    setToken('');
   };
 
   const value: AuthContextType = {

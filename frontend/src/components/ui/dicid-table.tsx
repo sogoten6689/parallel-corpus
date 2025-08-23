@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Table, Button, Modal } from 'antd';
 import { useTranslation } from "react-i18next";
-import { Sentence } from '@/types/sentence.type';
 import type { ColumnsType } from 'antd/es/table';
 import { SearchOutlined } from '@ant-design/icons';
 import { alignSentence } from '@/dao/search-utils';
@@ -127,7 +126,7 @@ export default function DicIdTable({
   const columns: ColumnsType<DicIdItem> = [
     { title: t('left'), dataIndex: 'left', key: 'left', width: '40%', align: 'right' as const },
     { title: t('key'), dataIndex: 'center', key: 'center', width: '10%', align: 'center' as const },
-    { title: t('position'), dataIndex: 'position', key: 'position', width: '10%', align: 'center' as const },
+    // { title: t('position'), dataIndex: 'position', key: 'position', width: '10%', align: 'center' as const },
     { title: t('right'), dataIndex: 'right', key: 'right', width: '40%', align: 'left' as const },
     {
       title: t('view'),

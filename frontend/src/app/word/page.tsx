@@ -1,15 +1,8 @@
 'use client';
 
-import TagTable from "@/components/ui/tag-table";
 import { useTranslation } from "react-i18next";
 import { Divider, Input, Button, Select, Radio, App, Form, Typography } from 'antd';
-import { use, useEffect, useState } from "react";
-import { RowWord } from "@/types/row-word.type";
-import { searchPhraseAPI, searchWordAPI } from "@/services/rowword/rowword-api";
-import { Sentence } from "@/types/sentence.type";
-import { getSentencePairAPI } from "@/services/rowword/rowword-api";
-import { useSelector } from 'react-redux';
-import { RootState } from "@/redux";
+import { useEffect, useState } from "react";
 import { useAppLanguage } from "@/contexts/AppLanguageContext";
 import { fetchDict } from "@/services/master/master-api";
 import DicIdTable from "@/components/ui/dicid-table";
@@ -65,6 +58,8 @@ const Word: React.FC = () => {
       //     langCode
       //   );
       // }
+      setData_1([]);
+      setData_2([]);
       const res = await fetchDict(page, limit, currentLanguage, otherLangCode, searchText);
       console.log(res);
       // if (res.status !== 200) {

@@ -50,19 +50,102 @@ async def import_corpus_file(current_user: Optional[User] = Depends(get_current_
                     fields = line.strip().split('\t')
                     if len(fields) >= 9:  # Đảm bảo có đủ fields
                         data.append({
-                            "ID": extract_main_id(fields[0]),
-                            "ID_sen": extract_sentence_id(fields[0]),
-                            "Word": fields[1],
-                            "Lemma": fields[2],
-                            "Links": fields[3],
-                            "Morph": fields[4],
-                            "POS": fields[5],
-                            "Phrase": fields[6],
-                            "Grm": fields[7],
-                            "NER": fields[8],
-                            "Semantic": fields[9] if len(fields) > 9 else ""
+                            "id_string": extract_main_id(fields[0]),
+                            "id_sen": extract_sentence_id(fields[0]),
+                            "word": fields[1],
+                            "lemma": fields[2],
+                            "links": fields[3],
+                            "morph": fields[4],
+                            "pos": fields[5],
+                            "phrase": fields[6],
+                            "grm": fields[7],
+                            "ner": fields[8],
+                            "semantic": fields[9] if len(fields) > 9 else ""
                         })
             df = pd.DataFrame(data)
+        else:
+            raise HTTPException(status_code=400, detail="File must be .csv, .xlsx, or .txt")
+
+        # # Kiểm tra cột cần thiết
+        # required_columns = ["ID", "ID_sen", "Word", "Lemma", "Links", "Morph", "POS", "Phrase", "Grm", "NER", "Semantic"]
+        # missing = set(required_columns) - set(df.columns)
+        # if missing:
+        #     raise HTTPException(status_code=422, detail=f"Missing columns: {', '.join(missing)}")
+
+        # Thêm vào DB
+        count = 0
+        for _, row in df.iterrows():
+            if row["id_string"].strip() == "":
+                continue
+            item = MasterRowWord(
+                id_string=row["id_string"],
+                id_sen=row["id_sen"],
+                word=row["word"],
+                lemma=row["lemma"],
+                links=row["links"],
+                morph=row["morph"],
+                pos=row["pos"],
+                phrase=row["phrase"],
+                grm=row["grm"],
+                ner=row["ner"],
+                semantic=row["semantic"],
+                lang_code=lang_code
+            )
+            db.merge(item)
+            count += 1
+
+        db.commit()
+        return {"message": f"Imported {count} rows from {filename}"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+    
+@router.post("/import-validation")
+async def import_corpus_file(current_user: Optional[User] = Depends(get_current_user), file: UploadFile = File(...),
+                             lang_code: str = Form(...), db: Session = Depends(get_db)):
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="No Permission. Only admin can import master data")
+    if file is None:
+        raise HTTPException(status_code=400, detail="No file uploaded")
+    if lang_code is None:
+        raise HTTPException(status_code=400, detail="Language code is required")
+    try:
+        # Đọc file content
+        content = await file.read()
+        filename = file.filename.lower()
+
+        # Đọc file bằng Pandas hoặc xử lý text
+        if filename.endswith(".csv"):
+            df = pd.read_csv(io.StringIO(content.decode("utf-8")), sep=",")
+        elif filename.endswith(".xlsx"):
+            df = pd.read_excel(io.BytesIO(content), engine='openpyxl')
+        elif filename.endswith(".txt"):
+            # Xử lý file .txt với format tab-separated
+            lines = content.decode("utf-8").splitlines()
+            # return lines
+            data = []
+            for line in lines:
+                # return line
+                if line.strip():  # Bỏ qua dòng trống
+                    fields = line.strip().split('\t')
+                    if len(fields) >= 9:  # Đảm bảo có đủ fields
+                        data.append({
+                            "id_string": extract_main_id(fields[0]),
+                            "id_sen": extract_sentence_id(fields[0]),
+                            "word": fields[1],
+                            "lemma": fields[2],
+                            "links": fields[3],
+                            "morph": fields[4],
+                            "pos": fields[5],
+                            "phrase": fields[6],
+                            "grm": fields[7],
+                            "ner": fields[8],
+                            "semantic": fields[9] if len(fields) > 9 else ""
+                        })
+            df = pd.DataFrame(data)
+            
         else:
             raise HTTPException(status_code=400, detail="File must be .csv, .xlsx, or .txt")
 
@@ -78,28 +161,29 @@ async def import_corpus_file(current_user: Optional[User] = Depends(get_current_
             if row["ID"].strip() == "":
                 continue
             item = MasterRowWord(
-                id_string=row["ID"],
-                id_sen=row["ID_sen"],
-                word=row["Word"],
-                lemma=row["Lemma"],
-                links=row["Links"],
-                morph=row["Morph"],
-                pos=row["POS"],
-                phrase=row["Phrase"],
-                grm=row["Grm"],
-                ner=row["NER"],
-                semantic=row["Semantic"],
+                id_string=row["id_string"],
+                id_sen=row["id_sen"],
+                word=row["word"],
+                lemma=row["lemma"],
+                links=row["links"],
+                morph=row["morph"],
+                pos=row["pos"],
+                phrase=row["phrase"],
+                grm=row["grm"],
+                ner=row["ner"],
+                semantic=row["semantic"],
                 lang_code=lang_code
             )
             db.merge(item)
             count += 1
 
-        db.commit()
-        return {"message": f"Imported {count} rows from {filename}"}
+        db.rollback()
+        return {"message": f"Validated {count} rows from {filename}"}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
     
+
 
 @router.get("/words")
 def get_all(db: Session = Depends(get_db), response_model=MasterRowWordListResponse,
@@ -162,7 +246,7 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         .order_by(MasterRowWord.id_sen, MasterRowWord.id)
         .all()
     )
-    
+    # return rows_in_list_id_sen
     lang_code_dic = []
     other_lang_code_dic = []
 
@@ -186,7 +270,8 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
             new_dic.append({
                 "position": position,
                 "word": r.word,
-                "links": links,
+                "links_array": links,
+                "links": r.links,
                 "start": links[0],
                 "end": links[links.__len__() - 1]
             })
@@ -201,8 +286,10 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         for r in sorted_same_sen:
             if r['position'] < center_position:
                 sentence_left += f"{r['word']} "
+                # sentence_left += f"({r['position']} - {r['links']}) "
             if r['position'] > center_position:
                 sentence_right += f"{r['word']} "
+                # sentence_right += f"({r['position']} - {r['links']}) "
         
         row_full["left"] = sentence_left
         row_full["right"] = sentence_right
@@ -210,7 +297,12 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         lang_code_dic.append(row_full)
 
 
-        other_lang_row = [r for r in rows_in_list_id_sen if r.id_string == row.id_string and r.lang_code == other_lang_code][0]
+        other_lang_rows = [r for r in rows_in_list_id_sen if r.id_string == row.id_string and r.lang_code == other_lang_code]
+
+        if other_lang_rows.__len__() == 0:
+            continue
+
+        other_lang_row = other_lang_rows[0]
 
         other_lang_row_full = {
             "id_string": row.id_string,
@@ -221,7 +313,7 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
             "position": extract_last_key_id(other_lang_row.id_string),
         }
 
-        other_lang_rows_same_sen = [r for r in rows_in_list_id_sen if r.id_sen == row.id_sen and r.lang_code == other_lang_code]
+        other_lang_rows_same_sen = [r for r in rows_in_list_id_sen if (r.id_sen == row.id_sen and r.lang_code == other_lang_code)]
         other_lang_new_dic = []
         for r in other_lang_rows_same_sen:
             position = extract_last_key_id(r.id_string)
@@ -229,7 +321,8 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
             other_lang_new_dic.append({
                 "position": position,
                 "word": r.word,
-                "links": links,
+                "links": r.links,
+                "links_array": links,
                 "start": links[0],
                 "end": links[links.__len__() - 1]
             })
@@ -246,8 +339,11 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         for r in other_lang_sorted_same_sen:
             if r['position'] < other_lang_center_position:
                 other_lang_sentence_left += f"{r['word']} "
+                # other_lang_sentence_left += f"({r['position']} - {r['links']}) "
             if r['position'] > other_lang_center_position:
                 other_lang_sentence_right += f"{r['word']} "
+                # other_lang_sentence_right += f"({r['position']} - {r['links']}) "
+
 
         # for r in other_lang_sorted_same_sen:
         #     if r['start'] < row_start and r['end'] > row_end:
