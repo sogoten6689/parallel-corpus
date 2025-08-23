@@ -2,6 +2,7 @@ from sqlalchemy import func
 from fastapi import APIRouter, UploadFile, File, Depends, Form, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from models.master_row_word import MasterRowWord
 from database import get_db
 from responses.row_word_list_response import RowWordListResponse
 from schemas import RowWordCreate, RowWordRead
@@ -44,7 +45,7 @@ def get_all(db: Session = Depends(get_db), response_model=RowWordListResponse, l
 async def search_word(
     key: str,
     isMorph: bool = False,
-    lang_code: str = "",
+    lang_code: str = "vi",
     db: Session = Depends(get_db)
 ):
     # Normalize key similar to frontend
@@ -52,39 +53,40 @@ async def search_word(
     key_lower = norm_key.lower()
 
     # Build base query
-    query = db.query(RowWord)
-    if lang_code:
-        query = query.filter(RowWord.Lang_code == lang_code)
+    query = db.query(MasterRowWord)
+    # if lang_code:
+    #     query = query.filter(MasterRowWord.lang_code == lang_code)
 
     if not isMorph:
-        query = query.filter(RowWord.Word == norm_key)
+        query = query.filter(MasterRowWord.word == norm_key)
     else:
         # Case-insensitive compare for Morph
-        query = query.filter(func.lower(RowWord.Morph) == key_lower)
+        query = query.filter(func.lower(MasterRowWord.morph) == key_lower)
 
     # Order to keep deterministic first-per-sentence selection
-    rows = query.order_by(RowWord.ID_sen, RowWord.ID).all()
+    rows = query.order_by(MasterRowWord.id_sen, MasterRowWord.id).all()
 
+    # return rows
     result = {}
 
-    def serialize_row(r: RowWord):
+    def serialize_row(r: MasterRowWord):
         return {
-            "ID": getattr(r, "ID", None),
-            "ID_sen": getattr(r, "ID_sen", None),
-            "Word": getattr(r, "Word", None),
-            "Lemma": getattr(r, "Lemma", None),
-            "Links": getattr(r, "Links", None),
-            "Morph": getattr(r, "Morph", None),
-            "POS": getattr(r, "POS", None),
-            "Phrase": getattr(r, "Phrase", None),
-            "Grm": getattr(r, "Grm", None),
-            "NER": getattr(r, "NER", None),
-            "Semantic": getattr(r, "Semantic", None),
-            "Lang_code": getattr(r, "Lang_code", None),
+            "ID": getattr(r, "id_string", None),
+            "ID_sen": getattr(r, "id_sen", None),
+            "Word": getattr(r, "word", None),
+            "Lemma": getattr(r, "lemma", None),
+            "Links": getattr(r, "links", None),
+            "Morph": getattr(r, "morph", None),
+            "POS": getattr(r, "pos", None),
+            "Phrase": getattr(r, "phrase", None),
+            "Grm": getattr(r, "grm", None),
+            "NER": getattr(r, "ner", None),
+            "Semantic": getattr(r, "semantic", None),
+            "Lang_code": getattr(r, "lang_code", None),
         }
 
     for r in rows:
-        sid = getattr(r, "ID_sen", None)
+        sid = getattr(r, "id_sen", None)
         if sid is None:
             continue
         if sid not in result:

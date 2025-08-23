@@ -11,7 +11,8 @@ import io
 from auth import get_current_user
 from models.user import User, UserRole
 from typing import List, Optional
-import re
+from sqlalchemy import func
+
 
 from responses.master_row_word_list_response import MasterRowWordListResponse
 from responses.row_word_list_response import RowWordListResponse
@@ -121,7 +122,7 @@ def get_all(db: Session = Depends(get_db), response_model=MasterRowWordListRespo
 
 
 @router.get("/dicid")
-def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '',page: int = 1, limit: int = 10, db: Session = Depends(get_db)):
+def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is_morph: bool = False, page: int = 1, limit: int = 10, db: Session = Depends(get_db)):
     """
     Return a dictionary mapping ID_sen -> { start: int, end: int }
     computed over all RowWord rows for the given lang_code.
@@ -135,6 +136,16 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '',pag
 
     if search != '':  # Kiểm tra search khác rỗng
         query = query.filter(MasterRowWord.word.contains(search))
+
+        norm_key = (search or "").strip().replace(" ", "_")
+        key_lower = norm_key.lower()
+        
+
+        if not is_morph:
+            query = query.filter(MasterRowWord.word == norm_key)
+        else:
+            # Case-insensitive compare for Morph
+            query = query.filter(func.lower(MasterRowWord.morph) == key_lower)
 
     rows = (
         query
@@ -152,38 +163,48 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '',pag
         .all()
     )
     # merge rows
-    dic: dict[str, dict[str, int]] = {}
-    for row in rows:
-        dic[row.id_string] = row
-
-        
-
-    # return rows
     # dic: dict[str, dict[str, int]] = {}
-    # if not rows:
-    #     return dic
+    dic = []
+    for row in rows:
 
-    # rows_in_list_id_sen = (
-    #     db.query(MasterRowWord)
-    #     .filter(MasterRowWord.id_sen.in_(list_id_sen))
-    #     .order_by(MasterRowWord.id_sen, MasterRowWord.id)
-    #     .all()
-    # )
-    # current_id = rows[0].id_sen
+        row_full = {
+            "id_string": row.id_string,
+            "id_sen": row.id_sen,
+            "center": row.word
+        }
+        rows_same_sen = [r for r in rows_in_list_id_sen if r.id_sen == row.id_sen and r.lang_code == lang_code]
+        new_dic = []
+        for r in rows_same_sen:
+            position = extract_last_key_id(r.id_string)
+            links = [s for s in (r.links or "").split(",") if s]
+            new_dic.append({
+                "position": position,
+                "word": r.word,
+                "links": links,
+                "start": links[0],
+                "end": links[links.__len__() - 1]
+            })
 
-    # start = 1
-    # for i, r in enumerate(rows_in_list_id_sen):
-    #     if r.id_sen != current_id:
-    #         dic[current_id] = {"start": start, "end": i - 1}
-    #         current_id = r.id_sen
-    #         start = i
-    #     elif i == len(rows) - 1:
-    #         dic[current_id] = {"start": start, "end": i}
+        # row_full["new_dic"] = new_dic
+        sentence_left = ""
+        sentence_right = ""
+        # sorted_same_sen = sorted(dic[row.id_string]["new_dic"], key=lambda x: extract_last_key_id(x["id_string"]))
+        sorted_same_sen = sorted(new_dic, key=lambda x: x["position"])
 
+        center_position = extract_last_key_id(row.id_string)
+        for r in sorted_same_sen:
+            if r['position'] < center_position:
+                sentence_left += f"{r['word']} "
+            if r['position'] > center_position:
+                sentence_right += f"{r['word']} "
+        
+        row_full["left"] = sentence_left
+        row_full["right"] = sentence_right
+
+        dic.append(row_full)
+        
     return {
-        # "rows_in_list_id_sen": rows_in_list_id_sen,
         "dic": dic,
-        # "rows": rows,
         "sentences": list_id_sen,
         "metadata": {
             "lang_code": lang_code,
@@ -214,4 +235,15 @@ def extract_main_id(id_str: str) -> str:
     id_str = id_str.replace("\ufeff", "").strip()
     if len(id_str) >= 10 and (id_str.startswith("ED") or id_str.startswith("VD") or id_str.startswith("KR")):
         return id_str[2:10]
+    raise ValueError(f"ID không hợp lệ: {id_str}")
+
+def extract_last_key_id(id_str: str) -> int:
+    """
+    Trích xuất 2 chữ số cuối từ chuỗi ID dạng xxxxxxYY
+    Ví dụ: '01821301' -> 1
+    Ví dụ: '00000201' -> 1
+    """
+    id_str = id_str.replace("\ufeff", "").strip()
+    if len(id_str) >= 8:
+        return int(id_str[-2:])
     raise ValueError(f"ID không hợp lệ: {id_str}")
