@@ -45,23 +45,10 @@ const Word: React.FC = () => {
     }
 
     try {
-      // if (searchType !== 'phrase') {
-      //   listSentences = await searchWordAPI(
-      //     searchText.trim(),
-      //     searchType === 'morphological',
-      //     langCode
-      //   );
-      // }
-      // else {
-      //   listSenPhrase = await searchPhraseAPI(
-      //     searchText.trim(),
-      //     langCode
-      //   );
-      // }
       setData_1([]);
       setData_2([]);
-      const res = await fetchDict(page, limit, currentLanguage, otherLangCode, searchText);
-      console.log(res);
+      const res = await fetchDict(page, limit, currentLanguage, otherLangCode, searchText, searchType === 'morphological', searchType === 'phrase');
+      // console.log(res);
       // if (res.status !== 200) {
       //   message.error(res.statusText);
       //   return;
@@ -122,8 +109,8 @@ const Word: React.FC = () => {
                 onChange={(e) => setSearchType(e.target.value)}
                 options={[
                   { label: t('matches'), value: 'matches' },
-                  { label: t('phrase'), value: 'phrase' },
                   { label: t('morphological'), value: 'morphological' },
+                  { label: t('phrase'), value: 'phrase' },
                 ]}
               />
             </Form.Item>

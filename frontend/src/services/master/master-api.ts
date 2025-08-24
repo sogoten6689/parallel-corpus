@@ -32,10 +32,12 @@ export const fetchMasterRowWords = async (page: number, limit: number,  langCode
 };
 
 
-export const fetchDict = async (page: number, limit: number,  langCode: string, otherLangCode?: string, search?: string) => {
+export const fetchDict = async (page: number, limit: number,  langCode: string, otherLangCode?: string, search?: string, is_morph?: boolean, is_phrase?: boolean) => {
   const params = new URLSearchParams();
   params.append("page", String(page));
   params.append("limit", String(limit));
+  params.append("is_morph", String(is_morph));
+  params.append("is_phrase", String(is_phrase));
 
   if (langCode) params.append("lang_code", langCode);
   if (otherLangCode) params.append("other_lang_code", otherLangCode);

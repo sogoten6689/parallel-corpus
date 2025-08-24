@@ -206,7 +206,7 @@ def get_all(db: Session = Depends(get_db), response_model=MasterRowWordListRespo
 
 
 @router.get("/dicid")
-def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is_morph: bool = False, page: int = 1, limit: int = 10, db: Session = Depends(get_db)):
+def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is_morph: bool = False, is_phrase: bool = False, page: int = 1, limit: int = 10, db: Session = Depends(get_db)):
     """
     Return a dictionary mapping ID_sen -> { start: int, end: int }
     computed over all RowWord rows for the given lang_code.
@@ -219,7 +219,7 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
     query = db.query(MasterRowWord).filter(MasterRowWord.lang_code == lang_code)
 
     if search != '':  # Kiểm tra search khác rỗng
-        query = query.filter(MasterRowWord.word.contains(search))
+        # query = query.filter(MasterRowWord.word.contains(search))
 
         norm_key = (search or "").strip().replace(" ", "_")
         key_lower = norm_key.lower()
@@ -297,20 +297,20 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         lang_code_dic.append(row_full)
 
 
-        other_lang_rows = [r for r in rows_in_list_id_sen if r.id_string == row.id_string and r.lang_code == other_lang_code]
+        # other_lang_rows = [r for r in rows_in_list_id_sen if r.id_string == row.id_string and r.lang_code == other_lang_code]
 
-        if other_lang_rows.__len__() == 0:
-            continue
+        # if other_lang_rows.__len__() == 0:
+        #     continue
 
-        other_lang_row = other_lang_rows[0]
+        # other_lang_row = other_lang_rows[0]
 
         other_lang_row_full = {
             "id_string": row.id_string,
             "id_sen": row.id_sen,
             "start_center": row_start,
             "end_center": row_end,
-            "center": other_lang_row.word,
-            "position": extract_last_key_id(other_lang_row.id_string),
+            # "center": other_lang_row.word,
+            # "position": extract_last_key_id(other_lang_row.id_string),
         }
 
         other_lang_rows_same_sen = [r for r in rows_in_list_id_sen if (r.id_sen == row.id_sen and r.lang_code == other_lang_code)]
@@ -330,39 +330,31 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         # row_full["new_dic"] = new_dic
         other_lang_sentence_left = ""
         other_lang_sentence_right = ""
-        # sorted_same_sen = sorted(dic[row.id_string]["new_dic"], key=lambda x: extract_last_key_id(x["id_string"]))
-
         other_lang_sorted_same_sen = sorted(other_lang_new_dic, key=lambda x: x["position"])
-        other_lang_center_position = extract_last_key_id(other_lang_row.id_string)
-        other_center = ""
-        other_postion = ""
-        for r in other_lang_sorted_same_sen:
-            if r['position'] < other_lang_center_position:
-                other_lang_sentence_left += f"{r['word']} "
-                # other_lang_sentence_left += f"({r['position']} - {r['links']}) "
-            if r['position'] > other_lang_center_position:
+
+        if row.links == "-":
+            other_lang_row_full["center"] = "-"
+            for r in other_lang_sorted_same_sen:
                 other_lang_sentence_right += f"{r['word']} "
-                # other_lang_sentence_right += f"({r['position']} - {r['links']}) "
+            # continue
+        else:
+            other_lang_sentence_center = ""
+            for r in other_lang_sorted_same_sen:
+                if r['position'] < int(row_start):
+                    other_lang_sentence_left += f"{r['word']} "
+                else :
+                    if r['position'] > int(row_end):
+                        other_lang_sentence_right += f"{r['word']} "
+                    else :
+                        other_lang_sentence_center += f"{r['word']} "
+                        other_lang_row_full["center"] = other_lang_sentence_center
+                        
+            
 
-
-        # for r in other_lang_sorted_same_sen:
-        #     if r['start'] < row_start and r['end'] > row_end:
-        #         other_lang_sentence_left += f"{r['word']} "
-        #     else :
-        #         if r['start'] > row_start and r['end'] < row_end:
-        #             other_lang_sentence_right += f"{r['word']} "
-        #         else:
-        #             other_center += f"{r['word']} "
-        #             other_postion += f"{r['position']} "
-
-        # other_lang_row_full["center"] = other_center
-        # other_lang_row_full["position"] = other_postion
         other_lang_row_full["left"] = other_lang_sentence_left
         other_lang_row_full["right"] = other_lang_sentence_right
 
         other_lang_code_dic.append(other_lang_row_full)
-   
-
    
     data = {}
 
@@ -370,15 +362,17 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
     data[other_lang_code] = other_lang_code_dic
         
     return {
-        "data": data,
         "metadata": {
+            # "list_id_sen": list_id_sen,
+            # "rows_in_list_id_sen": rows_in_list_id_sen,
             "lang_code": lang_code,
             "other_lang_code": other_lang_code,
             "page": page,
             "limit": limit,
             "total": len(rows),
             "total_pages": (len(rows) + limit - 1) // limit
-        }
+        },
+        "data": data,
     }
 
 def extract_sentence_id(id_str: str) -> str:
