@@ -12,3 +12,5 @@ xlrd
 passlib[bcrypt]
 python-jose[cryptography]
 python-multipart
+spacy
+requests
