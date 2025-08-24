@@ -230,7 +230,7 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         else:
             # Case-insensitive compare for Morph
             query = query.filter(func.lower(MasterRowWord.morph) == key_lower)
-
+    total = query.count()
     rows = (
         query
         .order_by(MasterRowWord.id_sen, MasterRowWord.id)
@@ -369,7 +369,7 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
             "other_lang_code": other_lang_code,
             "page": page,
             "limit": limit,
-            "total": len(rows),
+            "total": total,
             "total_pages": (len(rows) + limit - 1) // limit
         },
         "data": data,

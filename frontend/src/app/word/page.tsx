@@ -25,6 +25,7 @@ const Word: React.FC = () => {
   // const [selectedRow2, setSelectedRow2] = useState<Sentence | null>(null);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(6);
+  const [total, setTotal] = useState(0);
   const [form] = Form.useForm();
   
   useEffect(() => {
@@ -59,6 +60,9 @@ const Word: React.FC = () => {
       } else {
         setData_1(res.data.data[currentLanguage]);
         setData_2(res.data.data[otherLangCode]);
+        setTotal(res.data.metadata.total);
+        setPage(res.data.metadata.page);
+        setLimit(res.data.metadata.limit);
       }
       // setData_2(res.data.data);
         
@@ -76,6 +80,13 @@ const Word: React.FC = () => {
     }
     handleSearch();
   };
+
+  useEffect(() => {
+    if (!searchText.trim()) {
+      return;
+    }
+    handleSearch();
+  }, [searchType, currentLanguage, otherLangCode, page, limit]);
 
 
   return (
@@ -129,8 +140,10 @@ const Word: React.FC = () => {
             // selectedRowKey={selectedRow1 ? selectedRow1.id_sen : null}
             // onRowSelect={handleRowSelect1}
             currentPage={page}
+            total={total}
+            onPageChange={setPage}
             // onPageChange={setPage1}
-            // pageSize={pageSize}
+            pageSize={limit}
           />
 
           <Divider>
@@ -140,7 +153,10 @@ const Word: React.FC = () => {
             data={data_2}
             // selectedRowKey={selectedRow1 ? selectedRow1.id_sen : null}
             // onRowSelect={handleRowSelect1}
+            onPageChange={setPage}
             currentPage={page}
+            pageSize={limit}
+            total={total}
             // onPageChange={setPage1}
             // pageSize={pageSize}
           />

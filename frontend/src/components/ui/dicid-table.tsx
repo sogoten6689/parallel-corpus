@@ -17,7 +17,8 @@ type DicIdTableProps = {
   onRowSelect?: (row: DicIdItem | null, index: number | null) => void,
   currentPage?: number,
   onPageChange?: (page: number) => void,
-  pageSize?: number
+  pageSize?: number,
+  total?: number
 };
 
 export default function DicIdTable({
@@ -26,7 +27,8 @@ export default function DicIdTable({
   onRowSelect,
   currentPage = 1,
   onPageChange,
-  pageSize = 6
+  pageSize = 6,
+  total = 0
 }: DicIdTableProps) {
   const { t } = useTranslation();
   const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1),
@@ -156,6 +158,7 @@ export default function DicIdTable({
           pageSize,
           current: currentPage,
           onChange: (page) => onPageChange && onPageChange(page),
+          total: total,
         }}
         rowSelection={{
           type: 'radio',
