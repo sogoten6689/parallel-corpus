@@ -218,18 +218,23 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
 
     query = db.query(MasterRowWord).filter(MasterRowWord.lang_code == lang_code)
 
+    
     if search != '':  # Kiểm tra search khác rỗng
         # query = query.filter(MasterRowWord.word.contains(search))
 
         norm_key = (search or "").strip().replace(" ", "_")
         key_lower = norm_key.lower()
         
+        if is_phrase:
+            phrase_search = create_phrase2(search)
 
+            query = query.filter(MasterRowWord.word.in_(phrase_search))
         if not is_morph:
             query = query.filter(MasterRowWord.word == norm_key)
         else:
             # Case-insensitive compare for Morph
             query = query.filter(func.lower(MasterRowWord.morph) == key_lower)
+            
     total = query.count()
     rows = (
         query
@@ -259,7 +264,6 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         }
         rows_same_sen = [r for r in rows_in_list_id_sen if r.id_sen == row.id_sen and r.lang_code == lang_code]
 
-        # row_position = extract_last_key_id(r.id_string)
         row_links = [s for s in (row.links or "").split(",") if s]
         row_start = row_links[0]
         row_end = row_links[row_links.__len__() - 1]
@@ -276,20 +280,16 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
                 "end": links[links.__len__() - 1]
             })
 
-        # row_full["new_dic"] = new_dic
         sentence_left = ""
         sentence_right = ""
-        # sorted_same_sen = sorted(dic[row.id_string]["new_dic"], key=lambda x: extract_last_key_id(x["id_string"]))
         sorted_same_sen = sorted(new_dic, key=lambda x: x["position"])
 
         center_position = extract_last_key_id(row.id_string)
         for r in sorted_same_sen:
             if r['position'] < center_position:
                 sentence_left += f"{r['word']} "
-                # sentence_left += f"({r['position']} - {r['links']}) "
             if r['position'] > center_position:
                 sentence_right += f"{r['word']} "
-                # sentence_right += f"({r['position']} - {r['links']}) "
         
         row_full["left"] = sentence_left
         row_full["right"] = sentence_right
@@ -297,12 +297,6 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         lang_code_dic.append(row_full)
 
 
-        # other_lang_rows = [r for r in rows_in_list_id_sen if r.id_string == row.id_string and r.lang_code == other_lang_code]
-
-        # if other_lang_rows.__len__() == 0:
-        #     continue
-
-        # other_lang_row = other_lang_rows[0]
 
         other_lang_row_full = {
             "id_string": row.id_string,
@@ -327,7 +321,6 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
                 "end": links[links.__len__() - 1]
             })
 
-        # row_full["new_dic"] = new_dic
         other_lang_sentence_left = ""
         other_lang_sentence_right = ""
         other_lang_sorted_same_sen = sorted(other_lang_new_dic, key=lambda x: x["position"])
@@ -336,7 +329,6 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
             other_lang_row_full["center"] = "-"
             for r in other_lang_sorted_same_sen:
                 other_lang_sentence_right += f"{r['word']} "
-            # continue
         else:
             other_lang_sentence_center = ""
             for r in other_lang_sorted_same_sen:
@@ -363,14 +355,15 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         
     return {
         "metadata": {
-            # "list_id_sen": list_id_sen,
-            # "rows_in_list_id_sen": rows_in_list_id_sen,
+            "search": search,
+            "is_phrase": is_phrase,
+            "is_morph": is_morph,
             "lang_code": lang_code,
             "other_lang_code": other_lang_code,
             "page": page,
             "limit": limit,
             "total": total,
-            "total_pages": (len(rows) + limit - 1) // limit
+            "total_pages": (total/limit) // limit
         },
         "data": data,
     }
@@ -406,3 +399,88 @@ def extract_last_key_id(id_str: str) -> int:
     if len(id_str) >= 8:
         return int(id_str[-2:])
     raise ValueError(f"ID không hợp lệ: {id_str}")
+
+
+def create_phrase(key: str) -> List[List[str]]:
+    """
+    Tách 1 phrase nhập vào thành các trường hợp có thể trong corpus.
+    Ví dụ:
+        "một con bò" -> [
+            ["một", "con", "bò"],
+            ["một_con", "bò"],
+            ["một", "con_bò"],
+            ["một_con_bò"]
+        ]
+        "một công ty" -> [
+            ["một", "công_ty"]
+        ]
+    """
+    phrases_list = []
+    words = key.split(" ")
+
+    if len(words) >= 2:
+        num_word = 2
+        while num_word <= 4:
+            # Lướt qua từng vị trí trong danh sách từ
+            for k in range(len(words)):
+                temp = []
+
+                # Thêm các từ đứng một mình trước vị trí k
+                # for h in range(k):
+                #     temp.append(words[h])
+
+                # Tạo phrase với số từ bằng num_word bắt đầu từ vị trí k
+                i = k
+                while i < len(words) - num_word + 1:
+                    phrase = "_".join(words[i:i + num_word])
+                    temp.append(phrase)
+                    i += num_word
+
+                # Thêm các từ còn lại (không đủ tạo phrase)
+                # while i < len(words):
+                #     temp.append(words[i])
+                #     i += 1
+
+                # Tránh trùng lặp
+                # if temp not in phrases_list:
+                #     phrases_list.append(temp)
+
+            num_word += 1
+    else:
+        phrases_list.append(words)
+
+    return phrases_list
+
+
+def create_phrase2(key: str) -> List[List[str]]:
+    """
+    Tách phrase nhập vào thành các trường hợp có thể khi chỉ ghép 2 từ.
+    Ví dụ:
+        "một con bò" -> [
+            ["một", "con", "bò"],
+            ["một_con", "bò"],
+            ["một", "con_bò"]
+        ]
+    """
+    phrases_list = []
+    words = key.split(" ")
+
+    if len(words) < 2:
+        return [words]
+
+    # Trường hợp gốc (không ghép gì)
+    phrases_list.append(words)
+
+    # Ghép từng cặp liền nhau
+    for i in range(len(words) - 1):
+        temp = words[:i] + [f"{words[i]}_{words[i+1]}"] + words[i+2:]
+        if temp not in phrases_list:
+            phrases_list.append(temp)
+
+    merged = []
+    for phrase_item in phrases_list:
+        for word in phrase_item:
+            if "_" in word and word not in merged:
+                merged.append(word)
+
+    return merged
