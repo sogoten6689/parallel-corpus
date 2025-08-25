@@ -60,11 +60,11 @@ export default function DicIdTable({
     setModalRow(row);
 
     const res = await getAlignSentence(row.id_string, currentLanguage, otherLangCode);
-    console.log(res.data);
     
     if (res) {
       setAligned(res.data);
     }
+
     setModalOpen(true);
   };
 
@@ -81,8 +81,15 @@ export default function DicIdTable({
   const gap = 40;
 
   useEffect(() => {
-    if (!aligned || !modalOpen) return;
+  if (!aligned || !modalOpen) return;
+    
+
+
+
+  const timer = setTimeout(() => {
+    // console.log("Chạy lại sau 2 giây khi `data` thay đổi");
     const canvas = canvasRef.current;
+    
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -144,7 +151,26 @@ export default function DicIdTable({
 
     ctx.strokeStyle = '#ccc';
     ctx.strokeRect(0, 0, canvas.width, canvas.height);
+  }, 200);
+
+  return () => clearTimeout(timer);
+    
+    
   }, [aligned, modalOpen]);
+
+  useEffect(() => {
+    if (!modalOpen) {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      setModalRow(null);
+      setAligned(null);
+    }
+  }, [modalOpen]);
 
   const columns: ColumnsType<DicIdItem> = [
     { title: t('left'), dataIndex: 'left', key: 'left', width: '40%', align: 'right' as const },
@@ -219,15 +245,17 @@ export default function DicIdTable({
             <div style={{ margin: '20px 0', overflowX: 'auto', width: '100%' }}>
               {aligned && (
                 <div style={{ minWidth: 700, width: '100%', overflowX: 'auto' }}>
+
                   <canvas
                     ref={canvasRef}
                     width={padding * 2 + Math.max(
                       (aligned.sentence_1.length || 1),
                       (aligned.sentence_2.length || 1)
                     ) * (wordWidth + gap)}
+                    // width={700}
                     height={160}
                     style={{
-                      border: '1px solid #ccc',
+                      // border: '1px solid #ccc',
                       width: Math.max(
                         700,
                         padding * 2 + Math.max(
@@ -235,6 +263,8 @@ export default function DicIdTable({
                           (aligned.sentence_2.length || 1)
                         ) * (wordWidth + gap)
                       ),
+                      // width: 700,
+
                       minWidth: 400,
                       display: 'block'
                     }}
