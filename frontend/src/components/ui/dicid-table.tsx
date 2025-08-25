@@ -58,20 +58,13 @@ export default function DicIdTable({
 
   const handleOpenModal = async (row: DicIdItem) => {
     setModalRow(row);
-    // get details from API
-    console.log(row);
-    console.log(row.id_string);
-    
 
-    // const alignedResult: SentenceAlignment = alignSentence(row.id_sen, rows_1, rows_2, dicId_1, dicId_2);
     const res = await getAlignSentence(row.id_string, currentLanguage, otherLangCode);
     console.log(res.data);
     
     if (res) {
       setAligned(res.data);
     }
-    const alignedResult: DicSentenceAlignment = { sentence_1: [], sentence_2: [] };
-    // setAligned(alignedResult);
     setModalOpen(true);
   };
 

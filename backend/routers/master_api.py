@@ -432,7 +432,8 @@ def get_align_sentence(db: Session = Depends(get_db), id_string: str = '', lang_
             "pos": row["pos"],
             # "links": row["links"],
             # "links_array": row["links_array"],
-            "id_target": [int(x) - 1 for x in row["links_array"]],
+            # "id_target": [int(x) - 1 for x in row["links_array"]],
+            "id_target": [int(x) - 1 for x in row["links_array"]] if row["links"] != "-" else []
             # "start": row["start"],
             # "end": row["end"]
         }
