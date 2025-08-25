@@ -9,6 +9,7 @@ import { fetchMasterRowWords } from '@/services/master/master-api';
 import { MasterRowWord } from '@/types/master-row-word.type';
 import Card from 'antd/es/card/Card';
 import Dropdown from 'antd/es/dropdown/dropdown';
+import { DownOutlined } from '@ant-design/icons';
 const { Option } = Select;
 
 
@@ -17,7 +18,7 @@ const { Text } = Typography;
 type MasterRowWordTableProps = {
 }
 
-export default function MasterRowWordTable({}: MasterRowWordTableProps) {
+export default function MasterRowWordTable({ }: MasterRowWordTableProps) {
   const { t } = useTranslation();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedWord, setSelectedWord] = useState<MasterRowWord | null>(null);
@@ -28,14 +29,14 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
     pageSize: 10,
     total: 0,
   });
-  
+
   const getColumnWithTooltip = (key: string) => ({
     title: <Tooltip title={t(`${key}_tooltip`)}>{t(key)}</Tooltip>,
     dataIndex: key,
     key: key,
   });
 
-  const columnKeys = ['id', 'id_string', 'id_sen','word', 'lemma', 'links', 'morph', 'pos', 'phrase', 'grm', 'ner', 'semantic', 'lang_code'];
+  const columnKeys = ['id', 'id_string', 'id_sen', 'word', 'lemma', 'links', 'morph', 'pos', 'phrase', 'grm', 'ner', 'semantic', 'lang_code'];
 
   const columns = columnKeys.map((key) => {
     const column = getColumnWithTooltip(key);
@@ -64,11 +65,11 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
         message.error(res.statusText);
         return { data: [], total: null };
       }
-      return { 
+      return {
         data: res.data.data,
-        total: res.data.total, 
+        total: res.data.total,
         page: res.data.page,
-        limit: res.data.limit, 
+        limit: res.data.limit,
         langCode: res.data.lang_code,
         search: res.data.search
       };
@@ -85,7 +86,7 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
       }));
     }
   }, [wordRowMasterData]);
-  
+
   const handleTableChange = (pagination: any, filters: any, sorter: any) => {
     setPagination({
       ...pagination,
@@ -105,7 +106,7 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
 
   const isLoading = isLoadingMaster;
   const tableData = (wordRowMasterData?.data || [])
-  
+
   const langCodes = [
     {
       key: 'all',
@@ -153,26 +154,27 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
   return (
     <div>
       <Card title={t('all_words').toUpperCase()} className="mb-10">
-        <div className="mb-4">
-          <Text strong>{t('total_words')}: {( wordRowMasterData?.total.toLocaleString() || '--')}</Text>
-        </div>
-        <div>
+        <Space size="middle" align="center" className="mb-4">
+          <Text strong>
+            {t('total_words')}: {(wordRowMasterData?.total.toLocaleString() || '--')}
+          </Text>
           <Text strong>{t('language')}: </Text>
           <Dropdown menu={{ items: langCodes }} trigger={['click']} className='cursor-pointer primary btn'>
             <Space style={{ cursor: 'pointer' }}>
               {langCode ? t(langCode) : t('all')}
+              <DownOutlined />
             </Space>
           </Dropdown>
-
-            <Typography.Title level={5} className="font-semibold !mb-0 flex items-center">
-              {t("input_keyword")}
-            </Typography.Title>
-              <Input
-                placeholder={t('input')}
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-        </div>
+          <Text strong className="font-semibold">
+            {t("input_keyword")}
+          </Text>
+          <Input
+            placeholder={t('input')}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ width: 240 }}
+          />
+        </Space>
       </Card>
       {isLoading && <p>{t('loading')}</p>}
       <Table
@@ -205,12 +207,12 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
         {selectedWord && (
           <table style={{ width: '100%', fontSize: '14px' }} key={selectedWord?.id + "modal"}>
             <tbody key={selectedWord?.id + "modal-tbody"}>
-                {columns.map(({ key, title }) => (
-                    <tr key={key + "modal"}>
-                      <td><strong>{title}:</strong></td>
-                      <td>{(selectedWord as any)[key]}</td>
-                    </tr>
-                  ))}
+              {columns.map(({ key, title }) => (
+                <tr key={key + "modal"}>
+                  <td><strong>{title}:</strong></td>
+                  <td>{(selectedWord as any)[key]}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         )}

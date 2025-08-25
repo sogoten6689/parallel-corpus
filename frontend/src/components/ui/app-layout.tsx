@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Image, Layout, Menu, theme, Typography, Flex, Divider, FloatButton, Drawer, Radio, RadioChangeEvent, Button, Dropdown, Avatar, Space, Switch } from 'antd';
+import { Image, Layout, Menu, theme, Typography, Flex, Divider, FloatButton, Drawer, Radio, RadioChangeEvent, Button, Dropdown, Avatar, Space, Switch, Row, Col, Grid } from 'antd';
 import {
   SunOutlined,
   MoonOutlined,
@@ -17,6 +17,8 @@ import {
   LogoutOutlined,
   SettingOutlined,
   AccountBookOutlined,
+  DownOutlined,
+  EllipsisOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useTheme } from '@/app/theme-provider';
@@ -121,6 +123,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const {
     token: { colorBgContainer },
   } = theme.useToken();
+  const screens = Grid.useBreakpoint();
 
   const menuKeyMap: Record<string, string> = {
     '/': '1',
@@ -144,8 +147,69 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const handleSwitch = (checked: boolean) => {
     const currentLanguage = appLanguage?.lang_1 === appLanguage?.currentLanguage ? appLanguage?.lang_2 : appLanguage?.lang_1;
-    setCurrentLanguage(currentLanguage ?? 'en', appLanguage ?? {languagePair: 'en_vi', currentLanguage: 'en', lang_1: 'en', lang_2: 'vi'});
+    setCurrentLanguage(currentLanguage ?? 'en', appLanguage ?? { languagePair: 'en_vi', currentLanguage: 'en', lang_1: 'en', lang_2: 'vi' });
   };
+
+  // Small-screen overflow actions menu
+  const actionMenuItems = [
+    {
+      key: 'langPair',
+      label: (
+        <Space>
+          <Typography.Text strong style={{ whiteSpace: 'nowrap' }}>
+            {t('language_pair')}:
+          </Typography.Text>
+          <Dropdown menu={{ items: languageGroupItems }} trigger={['click']}>
+            <Space style={{ cursor: 'pointer' }}>
+              {appLanguage?.languagePair ? t(appLanguage?.languagePair) : t('en_vi')}
+              <DownOutlined />
+            </Space>
+          </Dropdown>
+        </Space>
+      ),
+      onClick: (info: any) => info?.domEvent?.stopPropagation?.(),
+    },
+    { type: 'divider' as const },
+    {
+      key: 'currentLang',
+      label: (
+        <Space>
+          <Typography.Text style={{ whiteSpace: 'nowrap' }}>
+            {t('current_language')}
+          </Typography.Text>
+          <Switch
+            checked={appLanguage?.lang_1 === appLanguage?.currentLanguage}
+            onChange={handleSwitch}
+            checkedChildren={appLanguage?.lang_1 === appLanguage?.currentLanguage ? t(appLanguage?.lang_1 ?? 'null') : t('null')}
+            unCheckedChildren={appLanguage?.lang_2 === appLanguage?.currentLanguage ? t(appLanguage?.lang_2 ?? 'null') : t('null')}
+          />
+        </Space>
+      ),
+      onClick: (info: any) => info?.domEvent?.stopPropagation?.(),
+    },
+    { type: 'divider' as const },
+    {
+      key: 'theme',
+      icon: mode === 'light' ? <SunOutlined /> : <MoonOutlined />,
+      label: t('theme') ?? 'Theme',
+      onClick: toggleTheme,
+    },
+    { type: 'divider' as const },
+    {
+      key: 'language-switcher',
+      label: <LanguageSwitcher />,
+    },
+    { type: 'divider' as const },
+    ...(isAuthenticated
+      ? [
+          { key: 'profile', icon: <UserOutlined />, label: t('profile') ?? 'Profile', onClick: handleMyProfile },
+          { key: 'logout', icon: <LogoutOutlined />, label: t('auth.logout') || 'Logout', onClick: handleLogout },
+        ]
+      : [
+          { key: 'login', icon: <LoginOutlined />, label: t('auth.login') || 'Login', onClick: () => router.push(appRoute.login) },
+          { key: 'signup', icon: <UserOutlined />, label: t('auth.signup') || 'Signup', onClick: () => router.push(appRoute.signup) },
+        ]),
+  ];
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
@@ -170,66 +234,87 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             { key: '3', icon: <TagOutlined />, label: <Link href="/tag">{t('menu_tag')}</Link> },
             { key: '4', icon: <TagsOutlined />, label: <Link href="/word-tag">{t('menu_word_tag')}</Link> },
             { key: '5', icon: <StockOutlined />, label: <Link href="/statistical">{t('statistical')}</Link> },
-             user?.role === 'admin' ? { key: '6', icon: <SettingOutlined />, label: <Link href="/users">{t('user')}</Link> } : null,  
-             user?.id ? { key: '8', icon: <AccountBookOutlined />, label: <Link href="/my-profile">{t('profile')}</Link> } : null,  
+            user?.role === 'admin' ? { key: '6', icon: <SettingOutlined />, label: <Link href="/users">{t('user')}</Link> } : null,
+            user?.id ? { key: '8', icon: <AccountBookOutlined />, label: <Link href="/my-profile">{t('profile')}</Link> } : null,
             { key: '7', icon: <InfoOutlined />, label: <Link href="/introduction">{t('introduction')}</Link> },
           ]}
         />
       </Sider>
       <Layout>
         <Header style={{ background: colorBgContainer }}>
-          <Flex gap="middle" align="center" style={{ width: '100%' }}>
-            <Flex gap="middle" align="center" style={{ flex: 1, justifyContent: 'center' }}>
-              {/* <FileUploader /> */}
-                {t('language_pair')}:
+          <Row align="middle" gutter={[8, 8]} wrap>
+            <Col xs={24} md={16}>
+              <Space size="middle" align="center" wrap>
+                {/* <FileUploader /> */}
+                <Typography.Text strong style={{ whiteSpace: 'nowrap' }}>
+                  {t('language_pair')}:
+                </Typography.Text>
                 <Dropdown menu={{ items: languageGroupItems }} trigger={['click']}>
                   <Space style={{ cursor: 'pointer' }}>
                     {appLanguage?.languagePair ? t(appLanguage?.languagePair) : t('en_vi')}
+                    <DownOutlined />
                   </Space>
                 </Dropdown>
 
-            <span className="font-semibold">{t("current_language")}</span>
-            <Switch
-              checked={appLanguage?.lang_1 === appLanguage?.currentLanguage}
-              onChange={handleSwitch}
-              checkedChildren={appLanguage?.lang_1 === appLanguage?.currentLanguage ? t(appLanguage?.lang_1 ?? "null") : t("null") }
-              unCheckedChildren={appLanguage?.lang_2 === appLanguage?.currentLanguage ? t(appLanguage?.lang_2 ?? "null") : t("null") }
-            />
-            <FileUploaderMaster />
-
-            </Flex>
-            <Flex gap="middle" align="center" style={{ justifyContent: 'flex-end', marginRight: 20 }}>
-              {mode === 'light' ? (
-                <SunOutlined onClick={toggleTheme} style={{ fontSize: 20, verticalAlign: 'middle' }} />
-              ) : (
-                <MoonOutlined onClick={toggleTheme} style={{ fontSize: 20, verticalAlign: 'middle' }} />
-              )}
-              <Divider type="vertical" />
-              <LanguageSwitcher />
-              <Divider type="vertical" />
-              {isAuthenticated ? (
-                <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>
-                  <Space style={{ cursor: 'pointer' }}>
-                    <Avatar icon={<UserOutlined />} />
-                    <span>{getKeyName(user?.fullName ?? "Unknown")}</span>
-                  </Space>
-                </Dropdown>
-              ) : (
-                <Space>
-                  <Link href={appRoute.login}>
-                    <Button type="text" icon={<LoginOutlined />}>
-                      {t('auth.login')}
-                    </Button>
-                  </Link>
-                  <Link href={appRoute.signup}>
-                    <Button type="primary" icon={<UserOutlined />}>
-                      {t('auth.signup')}
-                    </Button>
-                  </Link>
+                <Typography.Text className="font-semibold" style={{ whiteSpace: 'nowrap' }}>
+                  {t("current_language")}
+                </Typography.Text>
+                <Switch
+                  checked={appLanguage?.lang_1 === appLanguage?.currentLanguage}
+                  onChange={handleSwitch}
+                  checkedChildren={appLanguage?.lang_1 === appLanguage?.currentLanguage ? t(appLanguage?.lang_1 ?? "null") : t("null")}
+                  unCheckedChildren={appLanguage?.lang_2 === appLanguage?.currentLanguage ? t(appLanguage?.lang_2 ?? "null") : t("null")}
+                />
+                <FileUploaderMaster />
+              </Space>
+            </Col>
+            <Col xs={24} md={8}>
+              {screens.md ? (
+                <Space
+                  size="middle"
+                  align="center"
+                  wrap
+                  style={{ width: '100%', justifyContent: 'flex-end' }}
+                >
+                  {mode === 'light' ? (
+                    <SunOutlined onClick={toggleTheme} style={{ fontSize: 20, verticalAlign: 'middle' }} />
+                  ) : (
+                    <MoonOutlined onClick={toggleTheme} style={{ fontSize: 20, verticalAlign: 'middle' }} />
+                  )}
+                  <Divider type="vertical" />
+                  <LanguageSwitcher />
+                  <Divider type="vertical" />
+                  {isAuthenticated ? (
+                    <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>
+                      <Space style={{ cursor: 'pointer' }}>
+                        <Avatar icon={<UserOutlined />} />
+                        <span>{getKeyName(user?.fullName ?? "Unknown")}</span>
+                      </Space>
+                    </Dropdown>
+                  ) : (
+                    <Space>
+                      <Link href={appRoute.login}>
+                        <Button type="text" icon={<LoginOutlined />}>
+                          {t('auth.login')}
+                        </Button>
+                      </Link>
+                      <Link href={appRoute.signup}>
+                        <Button type="primary" icon={<UserOutlined />}>
+                          {t('auth.signup')}
+                        </Button>
+                      </Link>
+                    </Space>
+                  )}
                 </Space>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
+                  <Dropdown menu={{ items: actionMenuItems }} trigger={['click']}>
+                    <Button type="default" icon={<EllipsisOutlined />} />
+                  </Dropdown>
+                </div>
               )}
-            </Flex>
-          </Flex>
+            </Col>
+          </Row>
         </Header>
         <Content style={{ margin: '16px' }}>
           {children}
