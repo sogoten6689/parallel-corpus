@@ -1,11 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from crud import get_word_row_masters_by_lang
 from models.master_row_word import MasterRowWord
 from database import get_db
-from fastapi import APIRouter, UploadFile, File, Depends, Form, HTTPException
+from fastapi import APIRouter, UploadFile, File, Depends, Form, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
-from models import RowWord
 import pandas as pd
 import io
 from auth import get_current_user
@@ -20,7 +18,7 @@ router = APIRouter(prefix="/master", tags=["master"])
 
 @router.post("/import")
 async def import_corpus_file(current_user: Optional[User] = Depends(get_current_user), file: UploadFile = File(...),
-                             lang_code: str = Form(...), db: Session = Depends(get_db)):
+                             lang_code: str = Form(...), db: Session = Depends(get_db), background_tasks: BackgroundTasks = BackgroundTasks()):
     if current_user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
     if current_user.role != UserRole.ADMIN:
@@ -34,156 +32,12 @@ async def import_corpus_file(current_user: Optional[User] = Depends(get_current_
         content = await file.read()
         filename = file.filename.lower()
 
-        # Đọc file bằng Pandas hoặc xử lý text
-        if filename.endswith(".csv"):
-            df = pd.read_csv(io.StringIO(content.decode("utf-8")), sep=",")
-        elif filename.endswith(".xlsx"):
-            df = pd.read_excel(io.BytesIO(content), engine='openpyxl')
-        elif filename.endswith(".txt"):
-            # Xử lý file .txt với format tab-separated
-            lines = content.decode("utf-8").splitlines()
-            # return lines
-            data = []
-            for line in lines:
-                # return line
-                if line.strip():  # Bỏ qua dòng trống
-                    fields = line.strip().split('\t')
-                    if len(fields) >= 9:  # Đảm bảo có đủ fields
-                        data.append({
-                            "id_string": extract_main_id(fields[0]),
-                            "id_sen": extract_sentence_id(fields[0]),
-                            "word": fields[1],
-                            "lemma": fields[2],
-                            "links": fields[3],
-                            "morph": fields[4],
-                            "pos": fields[5],
-                            "phrase": fields[6],
-                            "grm": fields[7],
-                            "ner": fields[8],
-                            "semantic": fields[9] if len(fields) > 9 else ""
-                        })
-            df = pd.DataFrame(data)
-        else:
-            raise HTTPException(status_code=400, detail="File must be .csv, .xlsx, or .txt")
+        background_tasks.add_task(process_file_job(content, filename, lang_code, db))
 
-        # # Kiểm tra cột cần thiết
-        # required_columns = ["ID", "ID_sen", "Word", "Lemma", "Links", "Morph", "POS", "Phrase", "Grm", "NER", "Semantic"]
-        # missing = set(required_columns) - set(df.columns)
-        # if missing:
-        #     raise HTTPException(status_code=422, detail=f"Missing columns: {', '.join(missing)}")
-
-        # Thêm vào DB
-        count = 0
-        for _, row in df.iterrows():
-            if row["id_string"].strip() == "":
-                continue
-            item = MasterRowWord(
-                id_string=row["id_string"],
-                id_sen=row["id_sen"],
-                word=row["word"],
-                lemma=row["lemma"],
-                links=row["links"],
-                morph=row["morph"],
-                pos=row["pos"],
-                phrase=row["phrase"],
-                grm=row["grm"],
-                ner=row["ner"],
-                semantic=row["semantic"],
-                lang_code=lang_code
-            )
-            db.merge(item)
-            count += 1
-
-        db.commit()
-        return {"message": f"Imported {count} rows from {filename}"}
+        return {"message": "File imported successfully"}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
-    
-@router.post("/import-validation")
-async def import_corpus_file(current_user: Optional[User] = Depends(get_current_user), file: UploadFile = File(...),
-                             lang_code: str = Form(...), db: Session = Depends(get_db)):
-    if current_user is None:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="No Permission. Only admin can import master data")
-    if file is None:
-        raise HTTPException(status_code=400, detail="No file uploaded")
-    if lang_code is None:
-        raise HTTPException(status_code=400, detail="Language code is required")
-    try:
-        # Đọc file content
-        content = await file.read()
-        filename = file.filename.lower()
-
-        # Đọc file bằng Pandas hoặc xử lý text
-        if filename.endswith(".csv"):
-            df = pd.read_csv(io.StringIO(content.decode("utf-8")), sep=",")
-        elif filename.endswith(".xlsx"):
-            df = pd.read_excel(io.BytesIO(content), engine='openpyxl')
-        elif filename.endswith(".txt"):
-            # Xử lý file .txt với format tab-separated
-            lines = content.decode("utf-8").splitlines()
-            # return lines
-            data = []
-            for line in lines:
-                # return line
-                if line.strip():  # Bỏ qua dòng trống
-                    fields = line.strip().split('\t')
-                    if len(fields) >= 9:  # Đảm bảo có đủ fields
-                        data.append({
-                            "id_string": extract_main_id(fields[0]),
-                            "id_sen": extract_sentence_id(fields[0]),
-                            "word": fields[1],
-                            "lemma": fields[2],
-                            "links": fields[3],
-                            "morph": fields[4],
-                            "pos": fields[5],
-                            "phrase": fields[6],
-                            "grm": fields[7],
-                            "ner": fields[8],
-                            "semantic": fields[9] if len(fields) > 9 else ""
-                        })
-            df = pd.DataFrame(data)
-            
-        else:
-            raise HTTPException(status_code=400, detail="File must be .csv, .xlsx, or .txt")
-
-        # # Kiểm tra cột cần thiết
-        # required_columns = ["ID", "ID_sen", "Word", "Lemma", "Links", "Morph", "POS", "Phrase", "Grm", "NER", "Semantic"]
-        # missing = set(required_columns) - set(df.columns)
-        # if missing:
-        #     raise HTTPException(status_code=422, detail=f"Missing columns: {', '.join(missing)}")
-
-        # Thêm vào DB
-        count = 0
-        for _, row in df.iterrows():
-            if row["ID"].strip() == "":
-                continue
-            item = MasterRowWord(
-                id_string=row["id_string"],
-                id_sen=row["id_sen"],
-                word=row["word"],
-                lemma=row["lemma"],
-                links=row["links"],
-                morph=row["morph"],
-                pos=row["pos"],
-                phrase=row["phrase"],
-                grm=row["grm"],
-                ner=row["ner"],
-                semantic=row["semantic"],
-                lang_code=lang_code
-            )
-            db.merge(item)
-            count += 1
-
-        db.rollback()
-        return {"message": f"Validated {count} rows from {filename}"}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
-    
-
 
 @router.get("/words")
 def get_all(db: Session = Depends(get_db), response_model=MasterRowWordListResponse,
@@ -468,7 +322,7 @@ def extract_sentence_id(id_str: str) -> str:
     Ví dụ: 'ED00000201' -> '000002'
     """
     id_str = id_str.replace("\ufeff", "").strip()
-    if len(id_str) >= 10 and (id_str.startswith("ED") or id_str.startswith("VD")):
+    if len(id_str) >= 10:
         return id_str[2:-2]
     raise ValueError(f"ID không hợp lệ: {id_str}")
 def extract_main_id(id_str: str) -> str:
@@ -478,7 +332,8 @@ def extract_main_id(id_str: str) -> str:
     Ví dụ: 'ED00000201' -> '00000201'
     """
     id_str = id_str.replace("\ufeff", "").strip()
-    if len(id_str) >= 10 and (id_str.startswith("ED") or id_str.startswith("VD") or id_str.startswith("KR")):
+    # if len(id_str) >= 10 and (id_str.startswith("ED") or id_str.startswith("VD") or id_str.startswith("KR")):
+    if len(id_str) >= 10:
         return id_str[2:10]
     raise ValueError(f"ID không hợp lệ: {id_str}")
 
@@ -577,3 +432,84 @@ def create_phrase2(key: str) -> List[List[str]]:
                 merged.append(word)
 
     return merged
+
+
+def process_file_job(content: bytes, filename: str,
+                             lang_code: str = Form(...), db: Session = Depends(get_db)):
+    # Xử lý file trong job
+    print(f"Đang xử lý file: {filename}")
+
+    # Ví dụ: parse CSV, import database, ...
+    with open(f"/tmp/{filename}", "wb") as f:
+        f.write(content)
+    print("Job hoàn tất")
+
+    try:
+        
+
+        # Đọc file bằng Pandas hoặc xử lý text
+        if filename.endswith(".csv"):
+            df = pd.read_csv(io.StringIO(content.decode("utf-8")), sep=",")
+        elif filename.endswith(".xlsx"):
+            df = pd.read_excel(io.BytesIO(content), engine='openpyxl')
+        elif filename.endswith(".txt"):
+            # Xử lý file .txt với format tab-separated
+            lines = content.decode("utf-8").splitlines()
+            # return lines
+            data = []
+            for line in lines:
+                # return line
+                if line.strip():  # Bỏ qua dòng trống
+                    fields = line.strip().split('\t')
+                    if len(fields) >= 9:  # Đảm bảo có đủ fields
+                        data.append({
+                            "id_string": extract_main_id(fields[0]),
+                            "id_sen": extract_sentence_id(fields[0]),
+                            "word": fields[1],
+                            "lemma": fields[2],
+                            "links": fields[3],
+                            "morph": fields[4],
+                            "pos": fields[5],
+                            "phrase": fields[6],
+                            "grm": fields[7],
+                            "ner": fields[8],
+                            "semantic": fields[9] if len(fields) > 9 else ""
+                        })
+            df = pd.DataFrame(data)
+        else:
+            raise HTTPException(status_code=400, detail="File must be .csv, .xlsx, or .txt")
+
+        # # Kiểm tra cột cần thiết
+        # required_columns = ["ID", "ID_sen", "Word", "Lemma", "Links", "Morph", "POS", "Phrase", "Grm", "NER", "Semantic"]
+        # missing = set(required_columns) - set(df.columns)
+        # if missing:
+        #     raise HTTPException(status_code=422, detail=f"Missing columns: {', '.join(missing)}")
+
+        # Thêm vào DB
+        count = 0
+        for _, row in df.iterrows():
+            if row["id_string"].strip() == "":
+                continue
+            item = MasterRowWord(
+                id_string=row["id_string"],
+                id_sen=row["id_sen"],
+                word=row["word"],
+                lemma=row["lemma"],
+                links=row["links"],
+                morph=row["morph"],
+                pos=row["pos"],
+                phrase=row["phrase"],
+                grm=row["grm"],
+                ner=row["ner"],
+                semantic=row["semantic"],
+                lang_code=lang_code
+            )
+            db.merge(item)
+            count += 1
+
+        db.commit()
+        return {"message": f"Imported {count} rows from {filename}"}
+
+    except Exception as e:
+        print(f"Error processing file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
