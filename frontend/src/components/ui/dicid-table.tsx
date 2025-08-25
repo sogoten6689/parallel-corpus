@@ -10,9 +10,13 @@ import { useSelector } from 'react-redux';
 import { RootState } from "@/redux";
 import { SentenceAlignment } from '@/types/alignment.type';
 import { DicIdItem } from '@/types/dicid-item.type';
+import { getAlignSentence } from '@/services/master/master-api';
+import { useAppLanguage } from '@/contexts/AppLanguageContext';
+import { DicSentenceAlignment } from '@/types/dic-alignment.type';
 
 type DicIdTableProps = {
   data: DicIdItem[],
+  languageCode: string,
   selectedRowKey?: React.Key | null,
   onRowSelect?: (row: DicIdItem | null, index: number | null) => void,
   currentPage?: number,
@@ -23,6 +27,7 @@ type DicIdTableProps = {
 
 export default function DicIdTable({
   data,
+  languageCode,
   selectedRowKey,
   onRowSelect,
   currentPage = 1,
@@ -31,19 +36,42 @@ export default function DicIdTable({
   total = 0
 }: DicIdTableProps) {
   const { t } = useTranslation();
-  const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1),
-    rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2),
-    dicId_1 = useSelector((state: RootState) => state.dataSlice.dicId_1),
-    dicId_2 = useSelector((state: RootState) => state.dataSlice.dicId_2);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalRow, setModalRow] = useState<DicIdItem | null>(null);
-  const [aligned, setAligned] = useState<SentenceAlignment | null>(null);
+  const [aligned, setAligned] = useState<DicSentenceAlignment | null>(null);
+  const { appLanguage } = useAppLanguage();
+  const [currentLanguage, setCurrentLanguage] = useState('vi');
+  const [otherLangCode, setOtherLangCode] = useState('en');
 
-  const handleOpenModal = (row: DicIdItem) => {
+  useEffect(() => {
+    if (appLanguage) {
+      setCurrentLanguage(appLanguage.currentLanguage);
+      if (appLanguage.currentLanguage === appLanguage.languagePair.split('_')[0]) {
+        setOtherLangCode(appLanguage.languagePair.split('_')[1]);
+      } else {
+        setOtherLangCode(appLanguage.languagePair.split('_')[0]);
+      }
+    }
+  }, [appLanguage]);
+
+
+  const handleOpenModal = async (row: DicIdItem) => {
     setModalRow(row);
-    const alignedResult: SentenceAlignment = alignSentence(row.id_sen, rows_1, rows_2, dicId_1, dicId_2);
-    setAligned(alignedResult);
+    // get details from API
+    console.log(row);
+    console.log(row.id_string);
+    
+
+    // const alignedResult: SentenceAlignment = alignSentence(row.id_sen, rows_1, rows_2, dicId_1, dicId_2);
+    const res = await getAlignSentence(row.id_string, currentLanguage, otherLangCode);
+    console.log(res.data);
+    
+    if (res) {
+      setAligned(res.data);
+    }
+    const alignedResult: DicSentenceAlignment = { sentence_1: [], sentence_2: [] };
+    // setAligned(alignedResult);
     setModalOpen(true);
   };
 
@@ -149,7 +177,7 @@ export default function DicIdTable({
       <Table
         dataSource={data}
         columns={columns}
-        rowKey={record => record.id_string}
+        rowKey={(record, index) => record.id_string + languageCode + index}
         scroll={{ x: 800 }}
         className='w-full'
         bordered

@@ -227,8 +227,8 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         
         if is_phrase:
             phrase_search = create_phrase2(search)
-
             query = query.filter(MasterRowWord.word.in_(phrase_search))
+
         if not is_morph:
             query = query.filter(MasterRowWord.word == norm_key)
         else:
@@ -366,6 +366,98 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
             "total_pages": (total/limit) // limit
         },
         "data": data,
+    }
+
+@router.get("/align-sentence")
+def get_align_sentence(db: Session = Depends(get_db), id_string: str = '', lang_code: str = 'en', other_lang_code: str = 'vi'):
+
+    if id_string == '':
+        raise HTTPException(status_code=404, detail="Row not found - id_string is empty")
+    
+    row = db.query(MasterRowWord).filter(MasterRowWord.id_string == id_string).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Row not found - id_string not exist")
+
+
+    rows_in_list_id_sen = (
+        db.query(MasterRowWord)
+        .filter(MasterRowWord.lang_code.in_([lang_code, other_lang_code]))
+        .filter(MasterRowWord.id_sen == row.id_sen)
+        .order_by(MasterRowWord.id_sen, MasterRowWord.id)
+        .all()
+    )
+    rows_in_lang_code = [r for r in rows_in_list_id_sen if r.lang_code == lang_code]
+    rows_in_other_lang_code = [r for r in rows_in_list_id_sen if r.lang_code == other_lang_code]
+
+    new_dic_in_lang_code = []
+    for r in rows_in_lang_code:
+        position = extract_last_key_id(r.id_string)
+        links = [s for s in (r.links or "").split(",") if s]
+        new_dic_in_lang_code.append({
+            "position": position,
+            "word": r.word,
+            "pos": r.pos,
+            "links_array": links,
+            "links": r.links,
+            "start": links[0],
+            "end": links[links.__len__() - 1]
+        })
+
+    new_dic_in_other_lang_code = []
+    for r in rows_in_other_lang_code:
+        position = extract_last_key_id(r.id_string)
+        links = [s for s in (r.links or "").split(",") if s]
+        new_dic_in_other_lang_code.append({
+            "position": position,
+            "word": r.word,
+            "pos": r.pos,
+            "links_array": links,
+            "links": r.links,
+            "start": links[0],
+            "end": links[links.__len__() - 1]
+        })
+
+    new_dic_in_lang_code_sorted = sorted(new_dic_in_lang_code, key=lambda x: x["position"])
+    new_dic_in_other_lang_code_sorted = sorted(new_dic_in_other_lang_code, key=lambda x: x["position"])
+
+    sentence_1 = []
+    sentence_2 = []
+
+    idx = 0
+    for row  in new_dic_in_lang_code_sorted:
+        corpus = {
+            "id": idx,
+            "word": row["word"],
+            # "position": row["position"],
+            "pos": row["pos"],
+            # "links": row["links"],
+            # "links_array": row["links_array"],
+            "id_target": [int(x) - 1 for x in row["links_array"]],
+            # "start": row["start"],
+            # "end": row["end"]
+        }
+        idx += 1
+        sentence_1.append(corpus)
+
+    # Build sentence_2
+    idx = 0
+    for row  in new_dic_in_other_lang_code_sorted:
+        corpus = {
+            "id": idx,
+            "word": row["word"],
+            # "position": row["position"],
+            "pos": row["pos"],
+            # "links": row["links"],
+            # "links_array": row["links_array"],
+            # "start": row["start"],
+            # "end": row["end"]
+        }
+        idx += 1
+        sentence_2.append(corpus)
+            
+    return {
+        "sentence_1": sentence_1,
+        "sentence_2": sentence_2
     }
 
 def extract_sentence_id(id_str: str) -> str:

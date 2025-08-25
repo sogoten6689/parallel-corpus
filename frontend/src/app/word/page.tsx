@@ -21,26 +21,45 @@ const Word: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [data_1, setData_1] = useState<DicIdItem[]>([]);
   const [data_2, setData_2] = useState<DicIdItem[]>([]);
-  // const [selectedRow1, setSelectedRow1] = useState<Sentence | null>(null);
-  // const [selectedRow2, setSelectedRow2] = useState<Sentence | null>(null);
+  const [selectedRow1, setSelectedRow1] = useState<DicIdItem | null>(null);
+  const [selectedRow2, setSelectedRow2] = useState<DicIdItem | null>(null);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(6);
   const [total, setTotal] = useState(0);
   const [form] = Form.useForm();
-  
+
   useEffect(() => {
     if (appLanguage) {
       setCurrentLanguage(appLanguage.currentLanguage);
       if (appLanguage.currentLanguage === appLanguage.languagePair.split('_')[0]) {
-      setOtherLangCode(appLanguage.languagePair.split('_')[1]);
+        setOtherLangCode(appLanguage.languagePair.split('_')[1]);
       } else {
         setOtherLangCode(appLanguage.languagePair.split('_')[0]);
       }
     }
   }, [appLanguage]);
 
+
+  const handleRowSelect1 = (row: DicIdItem | null, index: number | null) => {
+    setSelectedRow1(row);
+    if (index !== null && data_2[index]) {
+      setSelectedRow2(data_2.find((item) => item.id_string === row?.id_string) ?? null);
+      // setSelectedRow2(data_2[index]);
+    } else {
+      setSelectedRow2(null);
+    }
+  };
+
+  const handleRowSelect2 = (row: DicIdItem | null, index: number | null) => {
+    setSelectedRow2(row);
+    if (index !== null && data_1[index]) {
+      setSelectedRow1(data_1.find((item) => item.id_string === row?.id_string) ?? null);
+    } else {
+      setSelectedRow1(null);
+    }
+  };
   const handleSearch = async () => {
-  if (!searchText.trim()) {
+    if (!searchText.trim()) {
       message.warning(t('missing_input'))
       return;
     }
@@ -65,10 +84,10 @@ const Word: React.FC = () => {
         setLimit(res.data.metadata.limit);
       }
       // setData_2(res.data.data);
-        
+
     } catch (err) {
       console.log(err);
-      
+
       message.error(t('something_wrong'));
     }
   };
@@ -137,12 +156,12 @@ const Word: React.FC = () => {
           </Divider>
           <DicIdTable
             data={data_1}
-            // selectedRowKey={selectedRow1 ? selectedRow1.id_sen : null}
-            // onRowSelect={handleRowSelect1}
+            languageCode={currentLanguage}
+            selectedRowKey={selectedRow1 ? selectedRow1.id_sen : null}
+            onRowSelect={handleRowSelect1}
             currentPage={page}
             total={total}
             onPageChange={setPage}
-            // onPageChange={setPage1}
             pageSize={limit}
           />
 
@@ -151,14 +170,13 @@ const Word: React.FC = () => {
           </Divider>
           <DicIdTable
             data={data_2}
-            // selectedRowKey={selectedRow1 ? selectedRow1.id_sen : null}
-            // onRowSelect={handleRowSelect1}
+            languageCode={otherLangCode}
+            selectedRowKey={selectedRow1 ? selectedRow1.id_sen : null}
+            onRowSelect={handleRowSelect2}
             onPageChange={setPage}
             currentPage={page}
             pageSize={limit}
             total={total}
-            // onPageChange={setPage1}
-            // pageSize={pageSize}
           />
         </div>
       </div >

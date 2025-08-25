@@ -46,3 +46,13 @@ export const fetchDict = async (page: number, limit: number,  langCode: string, 
     API.MASTER.DICID, { params }
   );
 };
+
+export const getAlignSentence = async (idString: string, langCode: string, otherLangCode: string) => {
+  const params = new URLSearchParams();
+  params.append("id_string", idString);
+  params.append("lang_code", langCode);
+  params.append("other_lang_code", otherLangCode);
+  return await axiosInstance.get(
+    API.MASTER.ALIGN_SENTENCE, { params }
+  );
+};
