@@ -67,12 +67,7 @@ const Word: React.FC = () => {
     try {
       setData_1([]);
       setData_2([]);
-      const res = await fetchDict(page, limit, currentLanguage, otherLangCode, searchText, searchType === 'morphological', searchType === 'phrase');
-      // console.log(res);
-      // if (res.status !== 200) {
-      //   message.error(res.statusText);
-      //   return;
-      // }
+      const res = await fetchDict(page, limit, currentLanguage,  appLanguage?.languagePair?? 'vi_en', otherLangCode, searchText, searchType === 'morphological', searchType === 'phrase');
       if (res.status !== 200) {
         message.error(res.statusText);
         return;
@@ -83,8 +78,6 @@ const Word: React.FC = () => {
         setPage(res.data.metadata.page);
         setLimit(res.data.metadata.limit);
       }
-      // setData_2(res.data.data);
-
     } catch (err) {
       console.log(err);
 

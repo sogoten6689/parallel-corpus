@@ -14,11 +14,15 @@ from sqlalchemy import func
 
 from responses.master_row_word_list_response import MasterRowWordListResponse
 from responses.row_word_list_response import RowWordListResponse
+from services.master_row_word_service import MasterRowWordService
+
+master_row_word_service = MasterRowWordService(MasterRowWord)
+
 router = APIRouter(prefix="/master", tags=["master"])
 
 @router.post("/import")
 async def import_corpus_file(current_user: Optional[User] = Depends(get_current_user), file: UploadFile = File(...),
-                             lang_code: str = Form(...), db: Session = Depends(get_db), background_tasks: BackgroundTasks = BackgroundTasks()):
+                             lang_code: str = Form(...), lang_pair: str = Form(...), db: Session = Depends(get_db), background_tasks: BackgroundTasks = BackgroundTasks()):
     if current_user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
     if current_user.role != UserRole.ADMIN:
@@ -32,7 +36,7 @@ async def import_corpus_file(current_user: Optional[User] = Depends(get_current_
         content = await file.read()
         filename = file.filename.lower()
 
-        background_tasks.add_task(process_file_job(content, filename, lang_code, db))
+        background_tasks.add_task(process_file_job2(content, filename, lang_code, lang_pair, db))
 
         return {"message": "File imported successfully"}
 
@@ -57,10 +61,13 @@ def get_all(db: Session = Depends(get_db), response_model=MasterRowWordListRespo
 
     return {"data": data, "page": page, "limit": limit, "total": total, "total_pages": total_pages}
 
-
+@router.delete("/words/delete-all")
+def delete_all(db: Session = Depends(get_db)):
+    master_row_word_service.delete_all_fast(db)
+    return {"message": "All words deleted successfully"}
 
 @router.get("/dicid")
-def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is_morph: bool = False, is_phrase: bool = False, page: int = 1, limit: int = 10, db: Session = Depends(get_db)):
+def get_dicid_by_lang(lang_code: str, other_lang_code: str, lang_pair: str, search: str = '', is_morph: bool = False, is_phrase: bool = False, page: int = 1, limit: int = 10, db: Session = Depends(get_db)):
     """
     Return a dictionary mapping ID_sen -> { start: int, end: int }
     computed over all RowWord rows for the given lang_code.
@@ -71,6 +78,7 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         raise HTTPException(status_code=400, detail="lang_code is required")
 
     query = db.query(MasterRowWord).filter(MasterRowWord.lang_code == lang_code)
+    query = query.filter(MasterRowWord.lang_pair == lang_pair)
 
     
     if search != '':  # Kiểm tra search khác rỗng
@@ -102,6 +110,7 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         db.query(MasterRowWord)
         .filter(MasterRowWord.lang_code.in_([lang_code, other_lang_code]))
         .filter(MasterRowWord.id_sen.in_(list_id_sen))
+        .filter(MasterRowWord.lang_pair == lang_pair)
         .order_by(MasterRowWord.id_sen, MasterRowWord.id)
         .all()
     )
@@ -210,6 +219,7 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
     return {
         "metadata": {
             "search": search,
+            "lang_pair": lang_pair,
             "is_phrase": is_phrase,
             "is_morph": is_morph,
             "lang_code": lang_code,
@@ -223,12 +233,15 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
     }
 
 @router.get("/align-sentence")
-def get_align_sentence(db: Session = Depends(get_db), id_string: str = '', lang_code: str = 'en', other_lang_code: str = 'vi'):
+def get_align_sentence(db: Session = Depends(get_db), id_string: str = '', lang_code: str = 'en', other_lang_code: str = 'vi', lang_pair: str = 'vi_en'):
 
     if id_string == '':
         raise HTTPException(status_code=404, detail="Row not found - id_string is empty")
     
-    row = db.query(MasterRowWord).filter(MasterRowWord.id_string == id_string).first()
+    row = db.query(MasterRowWord).filter(MasterRowWord.id_string == id_string)
+    row = row.filter(MasterRowWord.lang_code == lang_code)
+    row = row.filter(MasterRowWord.lang_pair == lang_pair)
+    row = row.first()
     if not row:
         raise HTTPException(status_code=404, detail="Row not found - id_string not exist")
 
@@ -236,6 +249,7 @@ def get_align_sentence(db: Session = Depends(get_db), id_string: str = '', lang_
     rows_in_list_id_sen = (
         db.query(MasterRowWord)
         .filter(MasterRowWord.lang_code.in_([lang_code, other_lang_code]))
+        .filter(MasterRowWord.lang_pair == lang_pair)
         .filter(MasterRowWord.id_sen == row.id_sen)
         .order_by(MasterRowWord.id_sen, MasterRowWord.id)
         .all()
@@ -435,17 +449,20 @@ def create_phrase2(key: str) -> List[List[str]]:
 
 
 def process_file_job(content: bytes, filename: str,
-                             lang_code: str = Form(...), db: Session = Depends(get_db)):
+                             lang_code: str = Form(...), lang_pair: str = Form(...), db: Session = Depends(get_db)):
     # Xử lý file trong job
-    print(f"Đang xử lý file: {filename}")
+    # print(f"Đang xử lý file: {filename}")
 
     # Ví dụ: parse CSV, import database, ...
-    with open(f"/tmp/{filename}", "wb") as f:
-        f.write(content)
-    print("Job hoàn tất")
+    # with open(f"/tmp/{filename}", "wb") as f:
+    #     f.write(content)
+    # print("Job hoàn tất")
 
     try:
         
+        # Thêm vào DB
+        count = 0
+        data_db=[]
 
         # Đọc file bằng Pandas hoặc xử lý text
         if filename.endswith(".csv"):
@@ -462,54 +479,140 @@ def process_file_job(content: bytes, filename: str,
                 if line.strip():  # Bỏ qua dòng trống
                     fields = line.strip().split('\t')
                     if len(fields) >= 9:  # Đảm bảo có đủ fields
-                        data.append({
-                            "id_string": extract_main_id(fields[0]),
-                            "id_sen": extract_sentence_id(fields[0]),
-                            "word": fields[1],
-                            "lemma": fields[2],
-                            "links": fields[3],
-                            "morph": fields[4],
-                            "pos": fields[5],
-                            "phrase": fields[6],
-                            "grm": fields[7],
-                            "ner": fields[8],
-                            "semantic": fields[9] if len(fields) > 9 else ""
-                        })
+                            # data.append({
+                            #     "id_string": extract_main_id(fields[0]),
+                            #     "id_sen": extract_sentence_id(fields[0]),
+                            #     "word": fields[1],
+                            #     "lemma": fields[2],
+                            #     "links": fields[3],
+                            #     "morph": fields[4],
+                            #     "pos": fields[5],
+                            #     "phrase": fields[6],
+                            #     "grm": fields[7],
+                            #     "ner": fields[8],
+                            #     "semantic": fields[9] if len(fields) > 9 else ""
+                            # })
+                        if fields[0].strip() == "":
+                            continue
+                        count += 1
+                        item = MasterRowWord(
+                            id_string=extract_main_id(fields[0]),
+                            id_sen=extract_sentence_id(fields[0]),
+                            word=fields[1],
+                            lemma=fields[2],
+                            links=fields[3],
+                            morph=fields[4],
+                            pos=fields[5],
+                            phrase=fields[6],
+                            grm=fields[7],
+                            ner=fields[8],
+                            semantic=fields[9] if len(fields) > 9 else "",
+                            lang_code=lang_code
+                        )
+                        if item not in data_db:
+                            data_db.append(item)
+                            # db.merge(item)
+
             df = pd.DataFrame(data)
+
+            # master_row_word_service.bulk_create(db, data_db, chunk_size=10000)
+            # db.commit()
+            return {"message": f"Imported {count} rows from {filename}"}
         else:
             raise HTTPException(status_code=400, detail="File must be .csv, .xlsx, or .txt")
 
         # # Kiểm tra cột cần thiết
-        # required_columns = ["ID", "ID_sen", "Word", "Lemma", "Links", "Morph", "POS", "Phrase", "Grm", "NER", "Semantic"]
-        # missing = set(required_columns) - set(df.columns)
-        # if missing:
-        #     raise HTTPException(status_code=422, detail=f"Missing columns: {', '.join(missing)}")
+        required_columns = ["ID", "ID_sen", "Word", "Lemma", "Links", "Morph", "POS", "Phrase", "Grm", "NER", "Semantic"]
+        missing = set(required_columns) - set(df.columns)
+        if missing:
+            raise HTTPException(status_code=422, detail=f"Missing columns: {', '.join(missing)}")
 
         # Thêm vào DB
-        count = 0
-        for _, row in df.iterrows():
-            if row["id_string"].strip() == "":
-                continue
-            item = MasterRowWord(
-                id_string=row["id_string"],
-                id_sen=row["id_sen"],
-                word=row["word"],
-                lemma=row["lemma"],
-                links=row["links"],
-                morph=row["morph"],
-                pos=row["pos"],
-                phrase=row["phrase"],
-                grm=row["grm"],
-                ner=row["ner"],
-                semantic=row["semantic"],
-                lang_code=lang_code
-            )
-            db.merge(item)
-            count += 1
+        # count = 0
+        # data
+        # for _, row in df.iterrows():
+        #     if row["id_string"].strip() == "":
+        #         continue
+        #     item = MasterRowWord(
+        #         id_string=row["id_string"],
+        #         id_sen=row["id_sen"],
+        #         word=row["word"],
+        #         lemma=row["lemma"],
+        #         links=row["links"],
+        #         morph=row["morph"],
+        #         pos=row["pos"],
+        #         phrase=row["phrase"],
+        #         grm=row["grm"],
+        #         ner=row["ner"],
+        #         semantic=row["semantic"],
+        #         lang_code=lang_code
+        #     )
+        #     db.add(item)
+        #     count += 1
+        # # db.merge(item)
 
-        db.commit()
-        return {"message": f"Imported {count} rows from {filename}"}
+        # # db.commit()
+        # master_row_word_service.bulk_create(db, data)
+        # return {"message": f"Imported {count} rows from {filename}"}
 
     except Exception as e:
         print(f"Error processing file: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+
+def process_file_job2(content: bytes, filename: str, lang_code: str, lang_pair: str, db: Session):
+    try:
+        count = 0
+        data_db = []
+        seen_ids = set()  # để kiểm tra trùng
+
+        if filename.endswith(".csv"):
+            df = pd.read_csv(io.StringIO(content.decode("utf-8")), sep=",")
+        elif filename.endswith(".xlsx"):
+            df = pd.read_excel(io.BytesIO(content), engine="openpyxl")
+        elif filename.endswith(".txt"):
+            lines = content.decode("utf-8").splitlines()
+            for line in lines:
+                if not line.strip():
+                    continue
+                fields = line.strip().split("\t")
+                if len(fields) < 9 or not fields[0].strip():
+                    continue
+
+                id_string = extract_main_id(fields[0])
+                id_sen = extract_sentence_id(fields[0])
+                if id_string in seen_ids:
+                    continue
+                seen_ids.add(id_string)
+
+                item = dict(
+                    id_string=id_string,
+                    id_sen=id_sen,
+                    word=fields[1],
+                    lemma=fields[2],
+                    links=fields[3],
+                    morph=fields[4],
+                    pos=fields[5],
+                    phrase=fields[6],
+                    grm=fields[7],
+                    ner=fields[8],
+                    semantic=fields[9] if len(fields) > 9 else "",
+                    lang_code=lang_code,
+                    lang_pair=lang_pair
+                )
+                data_db.append(item)
+                count += 1
+        else:
+            raise HTTPException(status_code=400, detail="File must be .csv, .xlsx, or .txt")
+
+        # Bulk insert theo batch (mỗi batch 10k record)
+        chunk_size = 5000
+        for i in range(0, len(data_db), chunk_size):
+            db.bulk_insert_mappings(MasterRowWord, data_db[i:i+chunk_size])
+            db.commit()
+
+        print(f"Imported {count} rows from {filename}")
+
+    except Exception as e:
+        print(f"Error processing file: {str(e)}")
+        db.rollback()
+        raise

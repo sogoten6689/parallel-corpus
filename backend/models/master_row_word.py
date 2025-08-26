@@ -19,6 +19,7 @@ class MasterRowWord(Base):
     ner = Column(String)
     semantic = Column(String)
     lang_code = Column(String)
+    lang_pair = Column(String)
     create_by = Column(Integer, ForeignKey("users.id"))
     approval_by = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime)

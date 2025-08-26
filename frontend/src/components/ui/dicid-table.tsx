@@ -59,7 +59,7 @@ export default function DicIdTable({
   const handleOpenModal = async (row: DicIdItem) => {
     setModalRow(row);
 
-    const res = await getAlignSentence(row.id_string, currentLanguage, otherLangCode);
+    const res = await getAlignSentence(row.id_string, currentLanguage, appLanguage?.languagePair?? 'vi_en', otherLangCode);
     
     if (res) {
       setAligned(res.data);

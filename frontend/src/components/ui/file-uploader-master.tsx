@@ -1,9 +1,8 @@
 'use client';
 
-import { useDispatch } from 'react-redux';
-import { useEffect, useMemo, useState } from 'react';
-import { Button, Upload, App, Spin, Form, Modal, Select, Space, Typography } from 'antd';
-import { InboxOutlined, UploadOutlined } from '@ant-design/icons';
+import { useEffect, useState } from 'react';
+import { Button, Upload, App, Spin, Form, Modal, Typography, Dropdown, Col, Row, Space } from 'antd';
+import { DownOutlined, InboxOutlined, UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
 import { uploadMaterDataFileApi } from '@/services/master/master-api';
@@ -17,10 +16,63 @@ export default function FileUploaderMaster() {
   const [open, setOpen] = useState(false);
   const [form] = Form.useForm();
   const { logout } = useAuth();
+  const [languagePair, setLanguagePair] = useState<string>('vi_en');
+  const [langCode, setLangCode] = useState<string>('vi');
+  const [langOptions, setLangOptions] = useState<{ key: string; label: string, onClick?: () => void }[]>([]);
+
+  const handleSetLanguageGroup = (languageGroup: string) => {
+    setLanguagePair(languageGroup);
+  };
 
   useEffect(() => {
-    // console.log("open", open);
-  }, [open]);
+    const lang_1 = languagePair.split('_')[0];
+    const lang_2 = languagePair.split('_')[1];
+    const langOptions = [
+      { key: lang_1, label: t(lang_1), onClick: () => {setLangCode(lang_1)} },
+      { key: lang_2, label: t(lang_2), onClick: () => {setLangCode(lang_2)} },
+    ];
+    setLangOptions(langOptions);
+  }, [languagePair]);
+
+  const languageGroupItems = [
+    {
+      key: 'vi_en',
+      label: t('vi_en'),
+      onClick: () => {
+        handleSetLanguageGroup('vi_en');
+      },
+    },
+    {
+      key: 'vi_zh',
+      label: t('vi_zh'),
+      onClick: () => {
+        handleSetLanguageGroup('vi_zh');
+      },
+    },
+    {
+      key: 'vi_ja',
+      label: t('vi_ja'),
+      onClick: () => {
+        handleSetLanguageGroup('vi_ja');
+      },
+    },
+    {
+      key: 'vi_ru',
+      label: t('vi_ru'),
+      onClick: () => {
+        handleSetLanguageGroup('vi_ru');
+      },
+    },
+
+    {
+      key: 'vi_ko',
+      label: t('vi_ko'),
+      onClick: () => {
+        handleSetLanguageGroup('vi_ko');
+      },
+    },
+  ];
+
   const accept = ".txt, .csv, .excel, .xlsx";
 
   const uploadProps: UploadProps = {
@@ -34,21 +86,8 @@ export default function FileUploaderMaster() {
     },
   };
 
-  const langOptions = useMemo(
-    () => [
-      { label: "Tiếng Việt (vi)", value: "vi" },
-      { label: "English (en)", value: "en" },
-      { label: "Tiếng Hán (zh)", value: "zh" },
-      { label: "Tiếng Hàn (ko)", value: "ko" },
-      { label: "Tiếng Nhật (ja)", value: "ja" },
-      { label: "Tiếng Nga (ru)", value: "ru" },
-    ],
-    []
-  );
-
   const handleSubmit = async () => {
     try {
-      const values = await form.validateFields();
       if (fileList.length === 0) {
         message.warning("Hãy chọn 1 file cần upload");
         return;
@@ -61,7 +100,7 @@ export default function FileUploaderMaster() {
       }
 
       setLoading(true);
-      const res = await uploadMaterDataFileApi(file, values.lang);
+      const res = await uploadMaterDataFileApi(file, langCode, languagePair);
       // console.log(res);
 
       if (res.status !== 200) {
@@ -116,20 +155,36 @@ export default function FileUploaderMaster() {
 
 
           <Form form={form} layout="vertical" requiredMark>
-            <Form.Item
-              name="lang"
-              label="Ngôn ngữ"
-              rules={[{ required: true, message: "Vui lòng chọn ngôn ngữ" }]}
-            >
-              <Select
-                placeholder="Chọn ngôn ngữ"
-                options={langOptions}
-
-                showSearch
-                optionFilterProp="label"
-              />
-            </Form.Item>
-
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  name="lang_pair"
+                  label="Cặp ngôn ngữ"
+                  rules={[{ required: true, message: "Vui lòng chọn cặp ngôn ngữ" }]}
+                >
+                  <Dropdown menu={{ items: languageGroupItems }} trigger={['click']}>
+                    <Space style={{ cursor: 'pointer' }}>
+                      {languagePair ? t(languagePair) : t('en_vi')}
+                      <DownOutlined />
+                    </Space>
+                  </Dropdown>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="lang_code"
+                  label="Ngôn ngữ"
+                  rules={[{ required: true, message: "Vui lòng chọn ngôn ngữ" }]}
+                >
+                  <Dropdown menu={{ items: langOptions }} trigger={['click']}>
+                    <Space style={{ cursor: 'pointer' }}>
+                      {langCode ? t(langCode) : t('en')}
+                      <DownOutlined />
+                    </Space>
+                  </Dropdown>
+                </Form.Item>
+              </Col>
+            </Row>
 
             <Form.Item label="File">
 

@@ -35,7 +35,7 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
     key: key,
   });
 
-  const columnKeys = ['id', 'id_string', 'id_sen','word', 'lemma', 'links', 'morph', 'pos', 'phrase', 'grm', 'ner', 'semantic', 'lang_code'];
+  const columnKeys = ['id', 'id_string', 'id_sen','word', 'lemma', 'links', 'morph', 'pos', 'phrase', 'grm', 'ner', 'semantic', 'lang_code', 'lang_pair'];
 
   const columns = columnKeys.map((key) => {
     const column = getColumnWithTooltip(key);
@@ -43,6 +43,16 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
     if (key === 'id_string') {
       const render = (text: string, record: MasterRowWord) => (
         <a onClick={() => showModal(record)}>{text}</a>
+      );
+      return {
+        ...column,
+        render,
+      };
+    }
+
+    if (key === 'lang_code' || key === 'lang_pair') {
+      const render = (text: string, record: MasterRowWord) => (
+        <div>{t(text)}</div>
       );
       return {
         ...column,

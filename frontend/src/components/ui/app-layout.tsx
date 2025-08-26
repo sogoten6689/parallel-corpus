@@ -90,7 +90,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const handleSetLanguageGroup = (languageGroup: string) => {
     // Implementation for setting language group
-    console.log('Setting language group:', languageGroup);
     setLanguageGroup(languageGroup);
   };
 
