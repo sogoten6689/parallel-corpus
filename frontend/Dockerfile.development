@@ -7,7 +7,8 @@ RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 COPY package.json package-lock.json ./
 RUN echo "Step 1: Installing production dependencies"
-RUN npm install --save-dev
+# RUN npm install --save-dev
+RUN npm ci --only=production
 
 # Step 1: Installing production dependencies
 # This is a comment or log statement to indicate the current step
