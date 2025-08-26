@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Form, Input, message, Select, Space, Table, Tooltip, Typography } from 'antd';
+import { Button, Col, Form, Input, message, Row, Select, Space, Table, Tooltip, Typography } from 'antd';
 import { useTranslation } from "react-i18next";
 import Modal from 'antd/es/modal/Modal';
 import { useQuery } from "@tanstack/react-query";
@@ -23,6 +23,8 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
   const [selectedWord, setSelectedWord] = useState<MasterRowWord | null>(null);
   const [langCode, setLangCode] = useState<string | undefined>('');
   const [search, setSearch] = useState<string | undefined>();
+  const [totalAll, setTotalAll] = useState<number | null>(null);
+  const [totalAllSen, setTotalAllSen] = useState<number | null>(null);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -74,9 +76,12 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
         message.error(res.statusText);
         return { data: [], total: null };
       }
+      setTotalAll(res.data.total_all);
+      setTotalAllSen(res.data.total_all_sen);
       return { 
         data: res.data.data,
-        total: res.data.total, 
+        total: res.data.total,
+        totalSen: res.data.total_sen,
         page: res.data.page,
         limit: res.data.limit, 
         langCode: res.data.lang_code,
@@ -160,29 +165,51 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
       },
     },
   ];
+
+  const renderTitle = () => {
+    return (
+      <div>
+        {t('all_words').toUpperCase() + ` (${totalAll?.toLocaleString() || '--'})`}
+        <br />
+        <h5 className='text-sm'>({t('all_sentences').toLowerCase() + `: ${totalAllSen?.toLocaleString() || '--'}`})</h5>
+      </div>
+    );
+  };
+
   return (
     <div>
-      <Card title={t('all_words').toUpperCase()} className="mb-10">
-        <div className="mb-4">
-          <Text strong>{t('total_words')}: {( wordRowMasterData?.total.toLocaleString() || '--')}</Text>
-        </div>
-        <div>
-          <Text strong>{t('language')}: </Text>
-          <Dropdown menu={{ items: langCodes }} trigger={['click']} className='cursor-pointer primary btn'>
-            <Space style={{ cursor: 'pointer' }}>
-              {langCode ? t(langCode) : t('all')}
-            </Space>
-          </Dropdown>
-
-            <Typography.Title level={5} className="font-semibold !mb-0 flex items-center">
-              {t("input_keyword")}
-            </Typography.Title>
+      <Card title={renderTitle()} className="mb-10">
+        <Row>
+          <Col span={6}>
+            <Text strong>{t('language')}: </Text>
+            <Dropdown menu={{ items: langCodes }} trigger={['click']} className='cursor-pointer primary btn'>
+              <Space style={{ cursor: 'pointer' }}>
+                <Button size='small'>{langCode ? t(langCode) : t('all')}</Button>
+              </Space>
+            </Dropdown>
+          </Col>
+          <Col span={6}>
+            <div>
               <Input
-                placeholder={t('input')}
+                placeholder={t("input_keyword")}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
-        </div>
+            </div>
+          </Col>
+          <Col span={6}></Col>
+          <Col span={6}></Col>
+        </Row>
+        <Row>
+          <Col span={6}>
+            <Text strong>{t('total_words')}: {( wordRowMasterData?.total.toLocaleString() || '--')}</Text>
+          </Col>
+          <Col span={6}>
+            <Text strong>{t('total_sentences')}: {( wordRowMasterData?.totalSen.toLocaleString() || '--')}</Text>
+          </Col>
+          <Col span={6}></Col>
+          <Col span={6}></Col>
+        </Row>
       </Card>
       {isLoading && <p>{t('loading')}</p>}
       <Table

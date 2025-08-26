@@ -9,7 +9,7 @@ import io
 from auth import get_current_user
 from models.user import User, UserRole
 from typing import List, Optional
-from sqlalchemy import func
+from sqlalchemy import distinct, func, or_
 
 
 from responses.master_row_word_list_response import MasterRowWordListResponse
@@ -46,20 +46,38 @@ async def import_corpus_file(current_user: Optional[User] = Depends(get_current_
 @router.get("/words")
 def get_all(db: Session = Depends(get_db), response_model=MasterRowWordListResponse,
             page: int = 1, limit: int = 10, lang_code: str = '', search: str = ''):
+    total_all = db.query(func.count(MasterRowWord.id)).scalar()
+    total_all_sen = db.query(func.count(distinct(MasterRowWord.id_sen))).scalar()
     query = db.query(MasterRowWord)
 
     if lang_code != '':
         query = query.filter(MasterRowWord.lang_code == lang_code)
 
     if search != '':
-        query = query.filter(MasterRowWord.word.contains(search))
+        query = query.filter(
+            or_(
+                MasterRowWord.word.contains(search),
+                MasterRowWord.id_sen.contains(search)
+            )
+        )
 
     total = query.count()
+    total_sen=query.distinct(MasterRowWord.id_sen).count()
     total_pages = (total + limit - 1) // limit
 
     data = query.offset((page - 1) * limit).limit(limit).all()
+    
 
-    return {"data": data, "page": page, "limit": limit, "total": total, "total_pages": total_pages}
+    return {
+        "data": data, 
+        "page": page, 
+        "limit": limit,
+        "total": total,
+        "total_all": total_all,
+        "total_all_sen": total_all_sen,
+        "total_sen": total_sen,
+        "total_pages": total_pages,
+    }
 
 @router.delete("/words/delete-all")
 def delete_all(db: Session = Depends(get_db)):
