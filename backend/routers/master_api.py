@@ -70,7 +70,7 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
     if not lang_code:
         raise HTTPException(status_code=400, detail="lang_code is required")
 
-    query = db.query(MasterRowWord).filter(MasterRowWord.lang_code == lang_code)
+    query = db.query(MasterRowWord).filter(MasterRowWord.lang_code == lang_code).distinct(MasterRowWord.id_string)
 
     
     if search != '':  # Kiểm tra search khác rỗng
@@ -92,7 +92,7 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
     total = query.count()
     rows = (
         query
-        .order_by(MasterRowWord.id_sen, MasterRowWord.id)
+        # .order_by(MasterRowWord.id_sen, MasterRowWord.id)
         .offset((page - 1) * limit).limit(limit)
         .all()
     )
@@ -102,7 +102,8 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, search: str = '', is
         db.query(MasterRowWord)
         .filter(MasterRowWord.lang_code.in_([lang_code, other_lang_code]))
         .filter(MasterRowWord.id_sen.in_(list_id_sen))
-        .order_by(MasterRowWord.id_sen, MasterRowWord.id)
+        .distinct(MasterRowWord.id_string)
+        # .order_by(MasterRowWord.id_sen, MasterRowWord.id)
         .all()
     )
     # return rows_in_list_id_sen
@@ -237,7 +238,8 @@ def get_align_sentence(db: Session = Depends(get_db), id_string: str = '', lang_
         db.query(MasterRowWord)
         .filter(MasterRowWord.lang_code.in_([lang_code, other_lang_code]))
         .filter(MasterRowWord.id_sen == row.id_sen)
-        .order_by(MasterRowWord.id_sen, MasterRowWord.id)
+        .distinct(MasterRowWord.id_string)
+        # .order_by(MasterRowWord.id_sen, MasterRowWord.id)
         .all()
     )
     rows_in_lang_code = [r for r in rows_in_list_id_sen if r.lang_code == lang_code]

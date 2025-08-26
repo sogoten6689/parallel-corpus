@@ -196,7 +196,7 @@ export default function DicIdTable({
       <Table
         dataSource={data}
         columns={columns}
-        rowKey={(record, index) => record.id_string + languageCode + index}
+        rowKey={(record) => record.id_string + languageCode}
         scroll={{ x: 800 }}
         className='w-full'
         bordered
