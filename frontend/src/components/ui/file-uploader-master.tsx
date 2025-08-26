@@ -32,6 +32,7 @@ export default function FileUploaderMaster() {
       { key: lang_2, label: t(lang_2), onClick: () => {setLangCode(lang_2)} },
     ];
     setLangOptions(langOptions);
+    setLangCode(lang_1);
   }, [languagePair]);
 
   const languageGroupItems = [
