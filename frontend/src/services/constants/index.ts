@@ -12,7 +12,9 @@ export interface API_PROPS {
     MASTER: {
         IMPORT_UPLOAD: string
         ROW_WORD: string
+        ROW_WORD_EIDT: (id: number) => string
         DICID: string
+        ALIGN_SENTENCE: string
     }
 }
 
@@ -30,6 +32,8 @@ export const API: API_PROPS = {
     MASTER: {
         IMPORT_UPLOAD: "api/master/import",
         ROW_WORD: "api/master/words",
-        DICID: "api/master/dicid"
+        ROW_WORD_EIDT: (id: number) => `api/master/words/${id}`,
+        DICID: "api/master/dicid",
+        ALIGN_SENTENCE: "api/master/align-sentence",
     }
 }

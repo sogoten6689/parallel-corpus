@@ -90,7 +90,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const handleSetLanguageGroup = (languageGroup: string) => {
     // Implementation for setting language group
-    console.log('Setting language group:', languageGroup);
     setLanguageGroup(languageGroup);
   };
 
@@ -195,22 +194,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Header style={{ background: colorBgContainer }}>
           <Flex gap="middle" align="center" style={{ width: '100%' }}>
             <Flex gap="middle" align="center" style={{ flex: 1, justifyContent: 'center' }}>
-              {/* <FileUploader /> */}
-                {t('language_pair')}:
+              <span className="font-semibold">{t("language_pair")}:</span>
                 <Dropdown menu={{ items: languageGroupItems }} trigger={['click']}>
                   <Space style={{ cursor: 'pointer' }}>
-                    {appLanguage?.languagePair ? t(appLanguage?.languagePair) : t('en_vi')}
+                    <Button type={'dashed'} >{appLanguage?.languagePair ? t(appLanguage?.languagePair) : t('en_vi')}</Button>
                   </Space>
                 </Dropdown>
-
-            <span className="font-semibold">{t("current_language")}</span>
-            <Switch
-              checked={appLanguage?.lang_1 === appLanguage?.currentLanguage}
-              onChange={handleSwitch}
-              checkedChildren={appLanguage?.lang_1 === appLanguage?.currentLanguage ? t(appLanguage?.lang_1 ?? "null") : t("null") }
-              unCheckedChildren={appLanguage?.lang_2 === appLanguage?.currentLanguage ? t(appLanguage?.lang_2 ?? "null") : t("null") }
-            />
-            <FileUploaderMaster />
+              <span className="font-semibold">{t("current_language")}:</span>
+              <Switch
+                checked={appLanguage?.lang_1 === appLanguage?.currentLanguage}
+                onChange={handleSwitch}
+                checkedChildren={appLanguage?.lang_1 === appLanguage?.currentLanguage ? t(appLanguage?.lang_1 ?? "null") : t("null") }
+                unCheckedChildren={appLanguage?.lang_2 === appLanguage?.currentLanguage ? t(appLanguage?.lang_2 ?? "null") : t("null") }
+              />
+            {user?.role === 'admin' ? <FileUploaderMaster /> : null}
+            
+            
 
             </Flex>
             <Flex gap="middle" align="center" style={{ justifyContent: 'flex-end', marginRight: 20 }}>

@@ -5,43 +5,62 @@ import { Table, Button, Modal } from 'antd';
 import { useTranslation } from "react-i18next";
 import type { ColumnsType } from 'antd/es/table';
 import { SearchOutlined } from '@ant-design/icons';
-import { alignSentence } from '@/dao/search-utils';
-import { useSelector } from 'react-redux';
-import { RootState } from "@/redux";
-import { SentenceAlignment } from '@/types/alignment.type';
 import { DicIdItem } from '@/types/dicid-item.type';
+import { getAlignSentence } from '@/services/master/master-api';
+import { useAppLanguage } from '@/contexts/AppLanguageContext';
+import { DicSentenceAlignment } from '@/types/dic-alignment.type';
 
 type DicIdTableProps = {
   data: DicIdItem[],
+  languageCode: string,
   selectedRowKey?: React.Key | null,
   onRowSelect?: (row: DicIdItem | null, index: number | null) => void,
   currentPage?: number,
   onPageChange?: (page: number) => void,
-  pageSize?: number
+  pageSize?: number,
+  total?: number
 };
 
 export default function DicIdTable({
   data,
+  languageCode,
   selectedRowKey,
   onRowSelect,
   currentPage = 1,
   onPageChange,
-  pageSize = 6
+  pageSize = 6,
+  total = 0
 }: DicIdTableProps) {
   const { t } = useTranslation();
-  const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1),
-    rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2),
-    dicId_1 = useSelector((state: RootState) => state.dataSlice.dicId_1),
-    dicId_2 = useSelector((state: RootState) => state.dataSlice.dicId_2);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalRow, setModalRow] = useState<DicIdItem | null>(null);
-  const [aligned, setAligned] = useState<SentenceAlignment | null>(null);
+  const [aligned, setAligned] = useState<DicSentenceAlignment | null>(null);
+  const { appLanguage } = useAppLanguage();
+  const [currentLanguage, setCurrentLanguage] = useState('vi');
+  const [otherLangCode, setOtherLangCode] = useState('en');
 
-  const handleOpenModal = (row: DicIdItem) => {
+  useEffect(() => {
+    if (appLanguage) {
+      setCurrentLanguage(appLanguage.currentLanguage);
+      if (appLanguage.currentLanguage === appLanguage.languagePair.split('_')[0]) {
+        setOtherLangCode(appLanguage.languagePair.split('_')[1]);
+      } else {
+        setOtherLangCode(appLanguage.languagePair.split('_')[0]);
+      }
+    }
+  }, [appLanguage]);
+
+
+  const handleOpenModal = async (row: DicIdItem) => {
     setModalRow(row);
-    const alignedResult: SentenceAlignment = alignSentence(row.id_sen, rows_1, rows_2, dicId_1, dicId_2);
-    setAligned(alignedResult);
+
+    const res = await getAlignSentence(row.id_string, currentLanguage, appLanguage?.languagePair?? 'vi_en', otherLangCode);
+    
+    if (res) {
+      setAligned(res.data);
+    }
+
     setModalOpen(true);
   };
 
@@ -58,8 +77,15 @@ export default function DicIdTable({
   const gap = 40;
 
   useEffect(() => {
-    if (!aligned || !modalOpen) return;
+  if (!aligned || !modalOpen) return;
+    
+
+
+
+  const timer = setTimeout(() => {
+    // console.log("Chạy lại sau 2 giây khi `data` thay đổi");
     const canvas = canvasRef.current;
+    
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -121,7 +147,26 @@ export default function DicIdTable({
 
     ctx.strokeStyle = '#ccc';
     ctx.strokeRect(0, 0, canvas.width, canvas.height);
+  }, 200);
+
+  return () => clearTimeout(timer);
+    
+    
   }, [aligned, modalOpen]);
+
+  useEffect(() => {
+    if (!modalOpen) {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      }
+      setModalRow(null);
+      setAligned(null);
+    }
+  }, [modalOpen]);
 
   const columns: ColumnsType<DicIdItem> = [
     { title: t('left'), dataIndex: 'left', key: 'left', width: '40%', align: 'right' as const },
@@ -147,7 +192,7 @@ export default function DicIdTable({
       <Table
         dataSource={data}
         columns={columns}
-        rowKey={record => record.id_string}
+        rowKey={(record) => record.id_string + languageCode }
         scroll={{ x: 800 }}
         className='w-full'
         bordered
@@ -156,6 +201,7 @@ export default function DicIdTable({
           pageSize,
           current: currentPage,
           onChange: (page) => onPageChange && onPageChange(page),
+          total: total,
         }}
         rowSelection={{
           type: 'radio',
@@ -195,15 +241,17 @@ export default function DicIdTable({
             <div style={{ margin: '20px 0', overflowX: 'auto', width: '100%' }}>
               {aligned && (
                 <div style={{ minWidth: 700, width: '100%', overflowX: 'auto' }}>
+
                   <canvas
                     ref={canvasRef}
                     width={padding * 2 + Math.max(
                       (aligned.sentence_1.length || 1),
                       (aligned.sentence_2.length || 1)
                     ) * (wordWidth + gap)}
+                    // width={700}
                     height={160}
                     style={{
-                      border: '1px solid #ccc',
+                      // border: '1px solid #ccc',
                       width: Math.max(
                         700,
                         padding * 2 + Math.max(
@@ -211,6 +259,8 @@ export default function DicIdTable({
                           (aligned.sentence_2.length || 1)
                         ) * (wordWidth + gap)
                       ),
+                      // width: 700,
+
                       minWidth: 400,
                       display: 'block'
                     }}

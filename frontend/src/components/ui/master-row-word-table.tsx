@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Form, Input, message, Select, Space, Table, Tooltip, Typography } from 'antd';
+import { Button, Col, Form, Input, message, Row, Select, Space, Table, Tooltip, Typography } from 'antd';
 import { useTranslation } from "react-i18next";
 import Modal from 'antd/es/modal/Modal';
 import { useQuery } from "@tanstack/react-query";
@@ -9,6 +9,8 @@ import { fetchMasterRowWords } from '@/services/master/master-api';
 import { MasterRowWord } from '@/types/master-row-word.type';
 import Card from 'antd/es/card/Card';
 import Dropdown from 'antd/es/dropdown/dropdown';
+import { EditOutlined } from '@ant-design/icons';
+import { useAuth } from '@/contexts/AuthContext';
 const { Option } = Select;
 
 
@@ -19,10 +21,14 @@ type MasterRowWordTableProps = {
 
 export default function MasterRowWordTable({}: MasterRowWordTableProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isModalEditVisible, setIsModalEditVisible] = useState(false);
   const [selectedWord, setSelectedWord] = useState<MasterRowWord | null>(null);
   const [langCode, setLangCode] = useState<string | undefined>('');
   const [search, setSearch] = useState<string | undefined>();
+  const [totalAll, setTotalAll] = useState<number | null>(null);
+  const [totalAllSen, setTotalAllSen] = useState<number | null>(null);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -35,7 +41,7 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
     key: key,
   });
 
-  const columnKeys = ['id', 'id_string', 'id_sen','word', 'lemma', 'links', 'morph', 'pos', 'phrase', 'grm', 'ner', 'semantic', 'lang_code'];
+  const columnKeys = ['id_string', 'id_sen','word', 'lemma', 'links', 'morph', 'pos', 'phrase', 'grm', 'ner', 'semantic', 'lang_pair', 'action'];
 
   const columns = columnKeys.map((key) => {
     const column = getColumnWithTooltip(key);
@@ -43,6 +49,36 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
     if (key === 'id_string') {
       const render = (text: string, record: MasterRowWord) => (
         <a onClick={() => showModal(record)}>{text}</a>
+      );
+      return {
+        ...column,
+        render,
+      };
+    }
+
+    if (key === 'lang_pair') {
+      const render = (text: string, record: MasterRowWord) => (
+        <div className="center">
+          <div>
+            <Button size="small" type='primary'>{t(text ?? 'null')}</Button>
+          </div>
+          <Button size="small" type='dashed'>{t(record.lang_code ?? 'null')}</Button>
+        </div>
+      );
+      return {
+        ...column,
+        render,
+      };
+    }
+
+
+    if (key === 'action') {
+      const render = (text: string, record: MasterRowWord) => (
+          <>
+            { user?.role === 'admin' &&
+            <Button icon={<EditOutlined />} onClick={() => showModalEdit(record)}>{t('edit')}</Button>
+          }
+          </>
       );
       return {
         ...column,
@@ -59,14 +95,16 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
     queryKey: ['master-row-word', pagination.current, pagination.pageSize, langCode, search],
     queryFn: async () => {
       const res = await fetchMasterRowWords(pagination.current, pagination.pageSize, langCode, search);
-      console.log(res);
       if (res.status !== 200) {
         message.error(res.statusText);
         return { data: [], total: null };
       }
+      setTotalAll(res.data.total_all);
+      setTotalAllSen(res.data.total_all_sen);
       return { 
         data: res.data.data,
-        total: res.data.total, 
+        total: res.data.total,
+        totalSen: res.data.total_sen,
         page: res.data.page,
         limit: res.data.limit, 
         langCode: res.data.lang_code,
@@ -100,6 +138,16 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
 
   const handleCancel = () => {
     setIsModalVisible(false);
+    setSelectedWord(null);
+  };
+
+  const showModalEdit = (record: MasterRowWord) => {
+    setSelectedWord(record);
+    setIsModalEditVisible(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsModalEditVisible(false);
     setSelectedWord(null);
   };
 
@@ -150,29 +198,64 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
       },
     },
   ];
+
+  const renderTitle = () => {
+    return (
+      <div>
+        {t('all_words').toUpperCase() + ` (${totalAll?.toLocaleString() || '--'})`}
+        <br />
+        <h5 className='text-sm'>({t('all_sentences').toLowerCase() + `: ${totalAllSen?.toLocaleString() || '--'}`})</h5>
+      </div>
+    );
+  };
+
+  function handleOkEdit(): void {
+    console.log(selectedWord);
+
+  }
+  const onChangeWord = (key : string, value: string) => {
+    if (selectedWord) {
+      setSelectedWord({
+        ...selectedWord,
+        [key]: value,
+      });
+    }
+  }
+
   return (
     <div>
-      <Card title={t('all_words').toUpperCase()} className="mb-10">
-        <div className="mb-4">
-          <Text strong>{t('total_words')}: {( wordRowMasterData?.total.toLocaleString() || '--')}</Text>
-        </div>
-        <div>
-          <Text strong>{t('language')}: </Text>
-          <Dropdown menu={{ items: langCodes }} trigger={['click']} className='cursor-pointer primary btn'>
-            <Space style={{ cursor: 'pointer' }}>
-              {langCode ? t(langCode) : t('all')}
-            </Space>
-          </Dropdown>
-
-            <Typography.Title level={5} className="font-semibold !mb-0 flex items-center">
-              {t("input_keyword")}
-            </Typography.Title>
+      <Card title={renderTitle()} className="mb-10">
+        <Row>
+          <Col span={6}>
+            <Text strong>{t('language')}: </Text>
+            <Dropdown menu={{ items: langCodes }} trigger={['click']} className='cursor-pointer primary btn'>
+              <Space style={{ cursor: 'pointer' }}>
+                <Button size='small'>{langCode ? t(langCode) : t('all')}</Button>
+              </Space>
+            </Dropdown>
+          </Col>
+          <Col span={6}>
+            <div>
               <Input
-                placeholder={t('input')}
+                placeholder={t("input_keyword")}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
-        </div>
+            </div>
+          </Col>
+          <Col span={6}></Col>
+          <Col span={6}></Col>
+        </Row>
+        <Row>
+          <Col span={6}>
+            <Text strong>{t('total_words')}: {( wordRowMasterData?.total.toLocaleString() || '--')}</Text>
+          </Col>
+          <Col span={6}>
+            <Text strong>{t('total_sentences')}: {( wordRowMasterData?.totalSen.toLocaleString() || '--')}</Text>
+          </Col>
+          <Col span={6}></Col>
+          <Col span={6}></Col>
+        </Row>
       </Card>
       {isLoading && <p>{t('loading')}</p>}
       <Table
@@ -210,6 +293,37 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
                       <td><strong>{title}:</strong></td>
                       <td>{(selectedWord as any)[key]}</td>
                     </tr>
+                  ))}
+            </tbody>
+          </table>
+        )}
+      </Modal>
+      
+      <Modal
+        title={`${t('word_edit')}: '${selectedWord?.word}'`}
+        open={isModalEditVisible}
+        onCancel={handleCancelEdit}
+        onOk={handleOkEdit}
+        // footer={null}
+      >
+        {selectedWord && (
+          <table style={{ width: '100%', fontSize: '14px' }} key={selectedWord?.id + "modal"}>
+            <tbody key={selectedWord?.id + "modal-tbody"}>
+                {columns.map(({ key, title }) => (
+                    <>
+                      {key != 'action' && 
+                      <tr key={key + "modalEidt"}>
+                        <td><strong>{title}:</strong></td>
+                        <td>
+                          <Input
+                            placeholder={t(key)}
+                            value={(selectedWord as any)[key]}
+                            onChange={(e) => onChangeWord(key, e.target.value)}
+                          />
+                        </td>
+                      </tr>
+                      }
+                    </>
                   ))}
             </tbody>
           </table>

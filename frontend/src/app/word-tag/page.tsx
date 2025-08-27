@@ -218,29 +218,6 @@ const WordTag: React.FC = () => {
                   className="flex items-center"
                 />
               </Form.Item>
-              <Typography.Title level={5} className="font-semibold !mb-0 flex items-center">
-                {t("select_language")}
-              </Typography.Title>
-              <Form.Item name="language" initialValue={language}>
-                <Select
-                  style={{ width: 120 }}
-                  value={language}
-                  onChange={handleLanguageChange}
-                >
-                  <Option value="1">{lang_1 ? t(lang_1) : t('lang1')}</Option>
-                  <Option value="2">{lang_2 ? t(lang_2) : t('lang2')}</Option>
-                </Select>
-              </Form.Item>
-              <Form.Item>
-                <Button type="primary" htmlType="submit" className="flex items-center">
-                  {t('search')}
-                </Button>
-              </Form.Item>
-              <Form.Item>
-                <Button color="cyan" variant="solid" onClick={handleSaveButton}>
-                  {t('save')}
-                </Button>
-              </Form.Item>
             </div>
           </Form>
           {language === '1' && (
