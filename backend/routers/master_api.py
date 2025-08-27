@@ -36,7 +36,7 @@ async def import_corpus_file(current_user: Optional[User] = Depends(get_current_
         content = await file.read()
         filename = file.filename.lower()
 
-        background_tasks.add_task(process_file_job2(content, filename, lang_code, lang_pair, db))
+        background_tasks.add_task(process_file_job(content, filename, lang_code, lang_pair, db))
 
         return {"message": "File imported successfully"}
 
@@ -380,7 +380,6 @@ def extract_last_key_id(id_str: str) -> int:
         return int(id_str[-2:])
     raise ValueError(f"ID không hợp lệ: {id_str}")
 
-
 def create_phrase(key: str) -> List[List[str]]:
     """
     Tách 1 phrase nhập vào thành các trường hợp có thể trong corpus.
@@ -465,119 +464,7 @@ def create_phrase2(key: str) -> List[List[str]]:
 
     return merged
 
-
-def process_file_job(content: bytes, filename: str,
-                             lang_code: str = Form(...), lang_pair: str = Form(...), db: Session = Depends(get_db)):
-    # Xử lý file trong job
-    # print(f"Đang xử lý file: {filename}")
-
-    # Ví dụ: parse CSV, import database, ...
-    # with open(f"/tmp/{filename}", "wb") as f:
-    #     f.write(content)
-    # print("Job hoàn tất")
-
-    try:
-        
-        # Thêm vào DB
-        count = 0
-        data_db=[]
-
-        # Đọc file bằng Pandas hoặc xử lý text
-        if filename.endswith(".csv"):
-            df = pd.read_csv(io.StringIO(content.decode("utf-8")), sep=",")
-        elif filename.endswith(".xlsx"):
-            df = pd.read_excel(io.BytesIO(content), engine='openpyxl')
-        elif filename.endswith(".txt"):
-            # Xử lý file .txt với format tab-separated
-            lines = content.decode("utf-8").splitlines()
-            # return lines
-            data = []
-            for line in lines:
-                # return line
-                if line.strip():  # Bỏ qua dòng trống
-                    fields = line.strip().split('\t')
-                    if len(fields) >= 9:  # Đảm bảo có đủ fields
-                            # data.append({
-                            #     "id_string": extract_main_id(fields[0]),
-                            #     "id_sen": extract_sentence_id(fields[0]),
-                            #     "word": fields[1],
-                            #     "lemma": fields[2],
-                            #     "links": fields[3],
-                            #     "morph": fields[4],
-                            #     "pos": fields[5],
-                            #     "phrase": fields[6],
-                            #     "grm": fields[7],
-                            #     "ner": fields[8],
-                            #     "semantic": fields[9] if len(fields) > 9 else ""
-                            # })
-                        if fields[0].strip() == "":
-                            continue
-                        count += 1
-                        item = MasterRowWord(
-                            id_string=extract_main_id(fields[0]),
-                            id_sen=extract_sentence_id(fields[0]),
-                            word=fields[1],
-                            lemma=fields[2],
-                            links=fields[3],
-                            morph=fields[4],
-                            pos=fields[5],
-                            phrase=fields[6],
-                            grm=fields[7],
-                            ner=fields[8],
-                            semantic=fields[9] if len(fields) > 9 else "",
-                            lang_code=lang_code
-                        )
-                        if item not in data_db:
-                            data_db.append(item)
-                            # db.merge(item)
-
-            df = pd.DataFrame(data)
-
-            # master_row_word_service.bulk_create(db, data_db, chunk_size=10000)
-            # db.commit()
-            return {"message": f"Imported {count} rows from {filename}"}
-        else:
-            raise HTTPException(status_code=400, detail="File must be .csv, .xlsx, or .txt")
-
-        # # Kiểm tra cột cần thiết
-        required_columns = ["ID", "ID_sen", "Word", "Lemma", "Links", "Morph", "POS", "Phrase", "Grm", "NER", "Semantic"]
-        missing = set(required_columns) - set(df.columns)
-        if missing:
-            raise HTTPException(status_code=422, detail=f"Missing columns: {', '.join(missing)}")
-
-        # Thêm vào DB
-        # count = 0
-        # data
-        # for _, row in df.iterrows():
-        #     if row["id_string"].strip() == "":
-        #         continue
-        #     item = MasterRowWord(
-        #         id_string=row["id_string"],
-        #         id_sen=row["id_sen"],
-        #         word=row["word"],
-        #         lemma=row["lemma"],
-        #         links=row["links"],
-        #         morph=row["morph"],
-        #         pos=row["pos"],
-        #         phrase=row["phrase"],
-        #         grm=row["grm"],
-        #         ner=row["ner"],
-        #         semantic=row["semantic"],
-        #         lang_code=lang_code
-        #     )
-        #     db.add(item)
-        #     count += 1
-        # # db.merge(item)
-
-        # # db.commit()
-        # master_row_word_service.bulk_create(db, data)
-        # return {"message": f"Imported {count} rows from {filename}"}
-
-    except Exception as e:
-        print(f"Error processing file: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
-
-def process_file_job2(content: bytes, filename: str, lang_code: str, lang_pair: str, db: Session):
+def process_file_job(content: bytes, filename: str, lang_code: str, lang_pair: str, db: Session):
     try:
         count = 0
         data_db = []

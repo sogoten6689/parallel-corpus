@@ -9,6 +9,7 @@ import { fetchMasterRowWords } from '@/services/master/master-api';
 import { MasterRowWord } from '@/types/master-row-word.type';
 import Card from 'antd/es/card/Card';
 import Dropdown from 'antd/es/dropdown/dropdown';
+import { EditOutlined } from '@ant-design/icons';
 const { Option } = Select;
 
 
@@ -37,7 +38,7 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
     key: key,
   });
 
-  const columnKeys = ['id', 'id_string', 'id_sen','word', 'lemma', 'links', 'morph', 'pos', 'phrase', 'grm', 'ner', 'semantic', 'lang_code', 'lang_pair'];
+  const columnKeys = ['id_string', 'id_sen','word', 'lemma', 'links', 'morph', 'pos', 'phrase', 'grm', 'ner', 'semantic', 'lang_pair', 'action'];
 
   const columns = columnKeys.map((key) => {
     const column = getColumnWithTooltip(key);
@@ -52,9 +53,25 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
       };
     }
 
-    if (key === 'lang_code' || key === 'lang_pair') {
+    if (key === 'lang_pair') {
       const render = (text: string, record: MasterRowWord) => (
-        <div>{t(text)}</div>
+        <div className="center">
+          <div>
+            <Button size="small" type='primary'>{t(text ?? 'null')}</Button>
+          </div>
+          <Button size="small" type='dashed'>{t(record.lang_code ?? 'null')}</Button>
+        </div>
+      );
+      return {
+        ...column,
+        render,
+      };
+    }
+
+
+    if (key === 'action') {
+      const render = (text: string, record: MasterRowWord) => (
+          <Button icon={<EditOutlined />} onClick={() => showModal(record)}>{t('edit')}</Button>
       );
       return {
         ...column,
