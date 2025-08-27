@@ -59,3 +59,9 @@ export const getAlignSentence = async (idString: string, langCode: string, langP
     API.MASTER.ALIGN_SENTENCE, { params }
   );
 };
+
+export const fetchPOS = async (langCode?: string) => {
+  const params = new URLSearchParams();
+  if (langCode) params.append("lang_code", langCode);
+  return await axiosInstance.get(API.MASTER.POS, { params });
+};

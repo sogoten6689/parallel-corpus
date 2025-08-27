@@ -80,6 +80,17 @@ def get_all(db: Session = Depends(get_db), response_model=MasterRowWordListRespo
     }
 
 
+@router.get("/pos")
+def get_all_pos(db: Session = Depends(get_db), lang_code: str = ""):
+    # SELECT pos FROM master_row_words [WHERE lang_code=?] GROUP BY pos;
+    query = db.query(distinct(MasterRowWord.pos))
+    if lang_code:
+        query = query.filter(MasterRowWord.lang_code == lang_code)
+    rows = query.all()
+    values = [r[0] for r in rows if r[0] is not None and str(r[0]).strip() != ""]
+    values = sorted(values)
+    return {"data": values}
+
 @router.put("/words/{id}")
 def update_word(db: Session = Depends(get_db), response_model=MasterRowWordListResponse,
                 current_user: Optional[User] = Depends(get_current_user), 

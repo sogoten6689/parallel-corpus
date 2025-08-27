@@ -3,7 +3,7 @@
 import TagTable from "@/components/ui/tag-table";
 import { useTranslation } from "react-i18next";
 import { Divider, Button, Select, App, Cascader, Typography, Form } from 'antd';
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RowWord } from "@/types/row-word.type";
 import { searchTag } from "@/dao/search-utils";
 import { Sentence } from "@/types/sentence.type";
@@ -13,6 +13,7 @@ import { RootState } from "@/redux";
 import { getNERSet, getPOSSet, getSEMSet } from "@/dao/data-utils";
 import type { Option } from '@/types/option.type';
 import { getTagOptions } from "@/dao/tag-options";
+import { fetchPOS } from "@/services/master/master-api";
 
 const { Option } = Select;
 
@@ -36,12 +37,23 @@ const Tag: React.FC = () => {
     lang_2 = useSelector((state: RootState) => state.dataSlice.lang_2);
 
   const [tagSelect, setTagSelect] = useState(['none']);
+  const [posSetRemote, setPosSetRemote] = useState<string[]>([]);
 
-  const posSet = language === '1' ? getPOSSet(rows_1) : getPOSSet(rows_2),
+  const posSetLocal = language === '1' ? getPOSSet(rows_1) : getPOSSet(rows_2),
     nerSet = language === '1' ? getNERSet(rows_1) : getNERSet(rows_2),
     semSet = language === '1' ? getSEMSet(rows_1) : getSEMSet(rows_2);
 
-  const options: Option[] = getTagOptions(t, posSet, nerSet, semSet);
+  const options: Option[] = getTagOptions(t, posSetRemote.length ? posSetRemote : posSetLocal, nerSet, semSet);
+
+  useEffect(() => {
+    const code = language === '1' ? (lang_1 || '') : (lang_2 || '');
+    fetchPOS(code).then(res => {
+      const arr: string[] = res.data?.data || [];
+      setPosSetRemote(arr);
+    }).catch(() => {
+      setPosSetRemote([]);
+    });
+  }, [language, lang_1, lang_2]);
 
   const handleLanguageChange = (value: string) => {
     setData_1([]);
