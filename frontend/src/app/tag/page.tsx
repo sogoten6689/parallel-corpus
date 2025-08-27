@@ -13,7 +13,7 @@ import { RootState } from "@/redux";
 import { getNERSet, getPOSSet, getSEMSet } from "@/dao/data-utils";
 import type { Option } from '@/types/option.type';
 import { getTagOptions } from "@/dao/tag-options";
-import { fetchPOS } from "@/services/master/master-api";
+import { fetchPOS, fetchNER, fetchSemantic } from "@/services/master/master-api";
 
 const { Option } = Select;
 
@@ -38,20 +38,45 @@ const Tag: React.FC = () => {
 
   const [tagSelect, setTagSelect] = useState(['none']);
   const [posSetRemote, setPosSetRemote] = useState<string[]>([]);
+  const [nerSetRemote, setNerSetRemote] = useState<string[]>([]);
+  const [semSetRemote, setSemSetRemote] = useState<string[]>([]);
 
   const posSetLocal = language === '1' ? getPOSSet(rows_1) : getPOSSet(rows_2),
-    nerSet = language === '1' ? getNERSet(rows_1) : getNERSet(rows_2),
-    semSet = language === '1' ? getSEMSet(rows_1) : getSEMSet(rows_2);
+    nerSetLocal = language === '1' ? getNERSet(rows_1) : getNERSet(rows_2),
+    semSetLocal = language === '1' ? getSEMSet(rows_1) : getSEMSet(rows_2);
 
-  const options: Option[] = getTagOptions(t, posSetRemote.length ? posSetRemote : posSetLocal, nerSet, semSet);
+  const options: Option[] = getTagOptions(
+    t, 
+    posSetRemote.length ? posSetRemote : posSetLocal, 
+    nerSetRemote.length ? nerSetRemote : nerSetLocal, 
+    semSetRemote.length ? semSetRemote : semSetLocal
+  );
 
   useEffect(() => {
     const code = language === '1' ? (lang_1 || '') : (lang_2 || '');
+    
+    // Fetch POS data
     fetchPOS(code).then(res => {
       const arr: string[] = res.data?.data || [];
       setPosSetRemote(arr);
     }).catch(() => {
       setPosSetRemote([]);
+    });
+
+    // Fetch NER data
+    fetchNER(code).then(res => {
+      const arr: string[] = res.data?.data || [];
+      setNerSetRemote(arr);
+    }).catch(() => {
+      setNerSetRemote([]);
+    });
+
+    // Fetch Semantic data
+    fetchSemantic(code).then(res => {
+      const arr: string[] = res.data?.data || [];
+      setSemSetRemote(arr);
+    }).catch(() => {
+      setSemSetRemote([]);
     });
   }, [language, lang_1, lang_2]);
 

@@ -16,6 +16,8 @@ export interface API_PROPS {
         DICID: string
         ALIGN_SENTENCE: string
         POS: string
+        NER: string
+        SEMANTIC: string
     }
 }
 
@@ -37,5 +39,7 @@ export const API: API_PROPS = {
         DICID: "api/master/dicid",
         ALIGN_SENTENCE: "api/master/align-sentence",
         POS: "api/master/pos",
+        NER: "api/master/ner",
+        SEMANTIC: "api/master/semantic",
     }
 }

@@ -65,3 +65,15 @@ export const fetchPOS = async (langCode?: string) => {
   if (langCode) params.append("lang_code", langCode);
   return await axiosInstance.get(API.MASTER.POS, { params });
 };
+
+export const fetchNER = async (langCode?: string) => {
+  const params = new URLSearchParams();
+  if (langCode) params.append("lang_code", langCode);
+  return await axiosInstance.get(API.MASTER.NER, { params });
+};
+
+export const fetchSemantic = async (langCode?: string) => {
+  const params = new URLSearchParams();
+  if (langCode) params.append("lang_code", langCode);
+  return await axiosInstance.get(API.MASTER.SEMANTIC, { params });
+};
