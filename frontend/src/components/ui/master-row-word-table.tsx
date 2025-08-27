@@ -10,6 +10,7 @@ import { MasterRowWord } from '@/types/master-row-word.type';
 import Card from 'antd/es/card/Card';
 import Dropdown from 'antd/es/dropdown/dropdown';
 import { EditOutlined } from '@ant-design/icons';
+import { useAuth } from '@/contexts/AuthContext';
 const { Option } = Select;
 
 
@@ -20,7 +21,9 @@ type MasterRowWordTableProps = {
 
 export default function MasterRowWordTable({}: MasterRowWordTableProps) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isModalEditVisible, setIsModalEditVisible] = useState(false);
   const [selectedWord, setSelectedWord] = useState<MasterRowWord | null>(null);
   const [langCode, setLangCode] = useState<string | undefined>('');
   const [search, setSearch] = useState<string | undefined>();
@@ -71,7 +74,11 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
 
     if (key === 'action') {
       const render = (text: string, record: MasterRowWord) => (
-          <Button icon={<EditOutlined />} onClick={() => showModal(record)}>{t('edit')}</Button>
+          <>
+            { user?.role === 'admin' &&
+            <Button icon={<EditOutlined />} onClick={() => showModalEdit(record)}>{t('edit')}</Button>
+          }
+          </>
       );
       return {
         ...column,
@@ -88,7 +95,6 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
     queryKey: ['master-row-word', pagination.current, pagination.pageSize, langCode, search],
     queryFn: async () => {
       const res = await fetchMasterRowWords(pagination.current, pagination.pageSize, langCode, search);
-      console.log(res);
       if (res.status !== 200) {
         message.error(res.statusText);
         return { data: [], total: null };
@@ -132,6 +138,16 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
 
   const handleCancel = () => {
     setIsModalVisible(false);
+    setSelectedWord(null);
+  };
+
+  const showModalEdit = (record: MasterRowWord) => {
+    setSelectedWord(record);
+    setIsModalEditVisible(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsModalEditVisible(false);
     setSelectedWord(null);
   };
 
@@ -192,6 +208,19 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
       </div>
     );
   };
+
+  function handleOkEdit(): void {
+    console.log(selectedWord);
+
+  }
+  const onChangeWord = (key : string, value: string) => {
+    if (selectedWord) {
+      setSelectedWord({
+        ...selectedWord,
+        [key]: value,
+      });
+    }
+  }
 
   return (
     <div>
@@ -264,6 +293,37 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
                       <td><strong>{title}:</strong></td>
                       <td>{(selectedWord as any)[key]}</td>
                     </tr>
+                  ))}
+            </tbody>
+          </table>
+        )}
+      </Modal>
+      
+      <Modal
+        title={`${t('word_edit')}: '${selectedWord?.word}'`}
+        open={isModalEditVisible}
+        onCancel={handleCancelEdit}
+        onOk={handleOkEdit}
+        // footer={null}
+      >
+        {selectedWord && (
+          <table style={{ width: '100%', fontSize: '14px' }} key={selectedWord?.id + "modal"}>
+            <tbody key={selectedWord?.id + "modal-tbody"}>
+                {columns.map(({ key, title }) => (
+                    <>
+                      {key != 'action' && 
+                      <tr key={key + "modalEidt"}>
+                        <td><strong>{title}:</strong></td>
+                        <td>
+                          <Input
+                            placeholder={t(key)}
+                            value={(selectedWord as any)[key]}
+                            onChange={(e) => onChangeWord(key, e.target.value)}
+                          />
+                        </td>
+                      </tr>
+                      }
+                    </>
                   ))}
             </tbody>
           </table>

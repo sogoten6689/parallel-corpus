@@ -79,6 +79,25 @@ def get_all(db: Session = Depends(get_db), response_model=MasterRowWordListRespo
         "total_pages": total_pages,
     }
 
+
+@router.put("/words/{id}")
+def update_word(db: Session = Depends(get_db), response_model=MasterRowWordListResponse,
+                current_user: Optional[User] = Depends(get_current_user), 
+            id: int = 1
+            ):
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="No Permission. Only admin can edit master data")
+    word = db.query(MasterRowWord).filter(MasterRowWord.id == id).first()
+    if not word:
+        raise HTTPException(status_code=404, detail="Word not found - id: " + str(id))
+
+    return {
+        "data": word
+    }
+
+
 @router.delete("/words/delete-all")
 def delete_all(db: Session = Depends(get_db)):
     master_row_word_service.delete_all_fast(db)
