@@ -1,3 +1,4 @@
+import { MasterRowWord } from "@/types/master-row-word.type";
 import { axiosInstance } from "../axios"
 import { API } from "../constants"
 
@@ -31,6 +32,13 @@ export const fetchMasterRowWords = async (page: number, limit: number,  langCode
     API.MASTER.ROW_WORD, { params }
   );
 };
+
+export const updateMasterRowWordApi = async (data: MasterRowWord) => {
+  return await axiosInstance.put(
+    API.MASTER.ROW_WORD_EIDT(data.id),
+    data
+  );
+}
 
 
 export const fetchDict = async (page: number, limit: number,  langCode: string, langPair: string, otherLangCode?: string, search?: string, is_morph?: boolean, is_phrase?: boolean) => {

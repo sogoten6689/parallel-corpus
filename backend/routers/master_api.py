@@ -14,6 +14,7 @@ from sqlalchemy import distinct, func, or_
 
 from responses.master_row_word_list_response import MasterRowWordListResponse
 from responses.row_word_list_response import RowWordListResponse
+from schemas.word_row_master import MasterRowWordUpdate
 from services.master_row_word_service import MasterRowWordService
 
 master_row_word_service = MasterRowWordService(MasterRowWord)
@@ -57,7 +58,8 @@ def get_all(db: Session = Depends(get_db), response_model=MasterRowWordListRespo
         query = query.filter(
             or_(
                 MasterRowWord.word.contains(search),
-                MasterRowWord.id_sen.contains(search)
+                MasterRowWord.id_sen.contains(search),
+                MasterRowWord.id_string.contains(search)
             )
         )
 
@@ -65,7 +67,7 @@ def get_all(db: Session = Depends(get_db), response_model=MasterRowWordListRespo
     total_sen=query.distinct(MasterRowWord.id_sen).count()
     total_pages = (total + limit - 1) // limit
 
-    data = query.offset((page - 1) * limit).limit(limit).all()
+    data = query.order_by(MasterRowWord.id_sen, MasterRowWord.id).offset((page - 1) * limit).limit(limit).all()
     
 
     return {
@@ -116,18 +118,28 @@ def get_all_semantic(db: Session = Depends(get_db), lang_code: str = ""):
 @router.put("/words/{id}")
 def update_word(db: Session = Depends(get_db), response_model=MasterRowWordListResponse,
                 current_user: Optional[User] = Depends(get_current_user), 
-            id: int = 1
+            id: int = 1,
+            payload: MasterRowWordUpdate = MasterRowWordUpdate, 
             ):
     if current_user is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="No Permission. Only admin can edit master data")
-    word = db.query(MasterRowWord).filter(MasterRowWord.id == id).first()
-    if not word:
+    db_word = db.query(MasterRowWord).filter(MasterRowWord.id == id).first()
+    if not db_word:
         raise HTTPException(status_code=404, detail="Word not found - id: " + str(id))
 
+    # Cập nhật các trường
+    update_data = payload.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_word, key, value)
+
+    db.commit()
+    db.refresh(db_word)
+
     return {
-        "data": word
+        "message": "Updated successfully", 
+        "data": db_word
     }
 
 

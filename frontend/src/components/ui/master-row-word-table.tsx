@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Button, Col, Form, Input, message, Row, Select, Space, Table, Tooltip, Typography } from 'antd';
+import { Button, Col, Input, Row, Space, Table, Tooltip, Typography } from 'antd';
 import { useTranslation } from "react-i18next";
 import Modal from 'antd/es/modal/Modal';
 import { useQuery } from "@tanstack/react-query";
-import { fetchMasterRowWords } from '@/services/master/master-api';
+import { fetchMasterRowWords, updateMasterRowWordApi } from '@/services/master/master-api';
 import { MasterRowWord } from '@/types/master-row-word.type';
 import Card from 'antd/es/card/Card';
 import Dropdown from 'antd/es/dropdown/dropdown';
 import { EditOutlined } from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
-const { Option } = Select;
+import useApp from 'antd/es/app/useApp';
 
 
 const { Text } = Typography;
@@ -21,6 +21,7 @@ type MasterRowWordTableProps = {
 
 export default function MasterRowWordTable({}: MasterRowWordTableProps) {
   const { t } = useTranslation();
+  const { message } = useApp();
   const { user } = useAuth();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isModalEditVisible, setIsModalEditVisible] = useState(false);
@@ -209,10 +210,33 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
     );
   };
 
-  function handleOkEdit(): void {
+  async function handleOkEdit(): Promise<void> {
     console.log(selectedWord);
-
+    try {
+      if (selectedWord) {
+        const res = await updateMasterRowWordApi(selectedWord);
+        
+        if (res.status !== 200) {
+          message.error(t('edit_failed'));
+          return;
+        } else {
+          if (res.data?.data) {
+            wordRowMasterData?.data?.forEach((word: MasterRowWord, index: number) => {
+              if (word.id === selectedWord.id) {
+                wordRowMasterData.data[index] = res.data?.data;
+              }
+            })
+          }
+          message.success(t('edit_success'));
+          handleCancelEdit();
+        }
+      }
+    } catch (error) {
+      message.error(t('edit_failed'));
+    }
+    
   }
+
   const onChangeWord = (key : string, value: string) => {
     if (selectedWord) {
       setSelectedWord({
@@ -310,20 +334,17 @@ export default function MasterRowWordTable({}: MasterRowWordTableProps) {
           <table style={{ width: '100%', fontSize: '14px' }} key={selectedWord?.id + "modal"}>
             <tbody key={selectedWord?.id + "modal-tbody"}>
                 {columns.map(({ key, title }) => (
-                    <>
-                      {key != 'action' && 
-                      <tr key={key + "modalEidt"}>
-                        <td><strong>{title}:</strong></td>
-                        <td>
-                          <Input
-                            placeholder={t(key)}
-                            value={(selectedWord as any)[key]}
-                            onChange={(e) => onChangeWord(key, e.target.value)}
-                          />
-                        </td>
-                      </tr>
-                      }
-                    </>
+                    <tr key={key + "modalEidt"} hidden={key === 'action'} >
+                      <td><strong>{title}:</strong></td>
+                      <td>
+                        <Input
+                          placeholder={t(key)}
+                          value={(selectedWord as any)[key]}
+                          disabled={['id', 'id_sen', 'id_string', 'action', 'lang_code', 'lang_pair'].includes(key)}
+                          onChange={(e) => onChangeWord(key, e.target.value)}
+                        />
+                      </td>
+                    </tr>
                   ))}
             </tbody>
           </table>
