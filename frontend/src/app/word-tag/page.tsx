@@ -56,9 +56,12 @@ const WordTag: React.FC = () => {
   const [otherLangCode, setOtherLangCode] = useState('en');
 
   let listSentences: Record<string, RowWord> = {};
-  const posSetLocal = language === '1' ? getPOSSet(rows_1) : getPOSSet(rows_2),
-    nerSetLocal = language === '1' ? getNERSet(rows_1) : getNERSet(rows_2),
-    semSetLocal = language === '1' ? getSEMSet(rows_1) : getSEMSet(rows_2);
+  
+  // Use language from header to determine which data to use for local tag sets
+  const isFirstLang = appLanguage?.currentLanguage === (appLanguage?.languagePair?.split('_')[0] || 'vi');
+  const posSetLocal = isFirstLang ? getPOSSet(rows_1) : getPOSSet(rows_2),
+    nerSetLocal = isFirstLang ? getNERSet(rows_1) : getNERSet(rows_2),
+    semSetLocal = isFirstLang ? getSEMSet(rows_1) : getSEMSet(rows_2);
 
   // Check if using tag filter
   const isUsingTagFilter = tagSelect && tagSelect.length === 2;
@@ -89,8 +92,11 @@ const WordTag: React.FC = () => {
     handleFormFinish();
   }, [page1, limit]);
 
+  // Use current language from header for fetching tag options
+  const currentLangForTags = appLanguage?.currentLanguage || 'vi';
+  
   useEffect(() => {
-    const code = language === '1' ? (lang_1 || '') : (lang_2 || '');
+    const code = currentLangForTags;
     
     // Fetch POS data
     fetchPOS(code).then(res => {
@@ -115,7 +121,7 @@ const WordTag: React.FC = () => {
     }).catch(() => {
       setSemSetRemote([]);
     });
-  }, [language, lang_1, lang_2]);
+  }, [currentLangForTags]);
 
   const handleTagSelect: CascaderProps<Option>['onChange'] = (value: any) => {
     setTagSelect(value);
@@ -127,7 +133,8 @@ const WordTag: React.FC = () => {
     setDicData_1([]);
     setDicData_2([]);
     setTagSelect(['none']);
-    setLanguage(value);
+    // Note: Language change is now handled by the header language selector
+    // This function is kept for backward compatibility but language state is managed by useAppLanguage context
   };
 
   const handleFormFinish = async () => {
@@ -146,11 +153,24 @@ const WordTag: React.FC = () => {
     if (tagSelect && tagSelect.length === 2) {
       // Using tag filter - use new API with tag filter
       try {
-        const currentLang = language === '1' ? (lang_1 || 'vi') : (lang_2 || 'vi');
-        const otherLang = language === '1' ? (lang_2 || 'en') : (lang_1 || 'en');
+        // Use language from header instead of local state
+        const currentLang = appLanguage?.currentLanguage || 'vi';
         const langPair = appLanguage?.languagePair || 'vi_en';
+        
+        // Determine other language from language pair
+        let otherLang = 'en';
+        if (langPair && langPair.includes('_')) {
+          const [lang1, lang2] = langPair.split('_');
+          otherLang = currentLang === lang1 ? lang2 : lang1;
+        }
+        
         const tagType = tagSelect[0]; // 'pos', 'ner', or 'semantic'
         const tagValue = tagSelect[1]; // the actual tag value
+        
+        console.log('=== DEBUG TAG SEARCH ===');
+        console.log('Tag selection:', { tagSelect, tagType, tagValue });
+        console.log('Language settings:', { currentLang, otherLang, langPair });
+        console.log('App language from header:', appLanguage);
         
         const res = await fetchDictWithTagFilter(
           page1, 
@@ -181,9 +201,21 @@ const WordTag: React.FC = () => {
     } else {
       // No tag filter - use DicIdTable like Search Word page
       try {
-        const currentLang = language === '1' ? (lang_1 || 'vi') : (lang_2 || 'vi');
-        const otherLang = language === '1' ? (lang_2 || 'en') : (lang_1 || 'en');
+        // Use language from header instead of local state
+        const currentLang = appLanguage?.currentLanguage || 'vi';
         const langPair = appLanguage?.languagePair || 'vi_en';
+        
+        // Determine other language from language pair
+        let otherLang = 'en';
+        if (langPair && langPair.includes('_')) {
+          const [lang1, lang2] = langPair.split('_');
+          otherLang = currentLang === lang1 ? lang2 : lang1;
+        }
+        
+        console.log('=== DEBUG WORD SEARCH ===');
+        console.log('Search text:', searchText.trim());
+        console.log('Language settings:', { currentLang, otherLang, langPair });
+        console.log('App language from header:', appLanguage);
         
         const res = await fetchDict(
           page1, 
@@ -217,18 +249,22 @@ const WordTag: React.FC = () => {
     setData_1([]);
     setData_2([]);
 
+    // Use language from header to determine which data to use
+    const currentLang = appLanguage?.currentLanguage || 'vi';
+    const isFirstLang = currentLang === (appLanguage?.languagePair?.split('_')[0] || 'vi');
+
     Object.keys(listSentences).forEach((key) => {
       const sentence: Sentence = getSentence(
         listSentences[key],
-        language === '1' ? rows_1 : rows_2,
-        language === '1' ? dicId_1 : dicId_2
+        isFirstLang ? rows_1 : rows_2,
+        isFirstLang ? dicId_1 : dicId_2
       );
       setData_1((prev: Sentence[]) => [...prev, sentence]);
 
       const sentence2: Sentence = getSentenceOther(
         listSentences[key],
-        language === '1' ? rows_2 : rows_1,
-        language === '1' ? dicId_2 : dicId_1
+        isFirstLang ? rows_2 : rows_1,
+        isFirstLang ? dicId_2 : dicId_1
       );
       setData_2((prev: Sentence[]) => [...prev, sentence2]);
     });

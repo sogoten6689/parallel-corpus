@@ -1,19 +1,17 @@
 'use client';
 
-import TagTable from "@/components/ui/tag-table";
+import DicIdTable from "@/components/ui/dicid-table";
 import { useTranslation } from "react-i18next";
 import { Divider, Button, Select, App, Cascader, Typography, Form } from 'antd';
 import { useEffect, useState } from "react";
-import { RowWord } from "@/types/row-word.type";
-import { searchTag } from "@/dao/search-utils";
-import { Sentence } from "@/types/sentence.type";
-import { getSentence, getSentenceOther } from "@/dao/data-utils";
 import { useSelector } from 'react-redux';
 import { RootState } from "@/redux";
 import { getNERSet, getPOSSet, getSEMSet } from "@/dao/data-utils";
 import type { Option } from '@/types/option.type';
 import { getTagOptions } from "@/dao/tag-options";
-import { fetchPOS, fetchNER, fetchSemantic } from "@/services/master/master-api";
+import { fetchPOS, fetchNER, fetchSemantic, fetchDictWithTagFilter } from "@/services/master/master-api";
+import { DicIdItem } from "@/types/dicid-item.type";
+import { useAppLanguage } from "@/contexts/AppLanguageContext";
 
 const { Option } = Select;
 
@@ -21,29 +19,30 @@ const Tag: React.FC = () => {
   const { message } = App.useApp();
   const { t } = useTranslation();
   const [form] = Form.useForm();
-  const [data_1, setData_1] = useState<Sentence[]>([]);
-  const [data_2, setData_2] = useState<Sentence[]>([]);
-  const [selectedRow1, setSelectedRow1] = useState<Sentence | null>(null);
-  const [selectedRow2, setSelectedRow2] = useState<Sentence | null>(null);
+  const [dicData_1, setDicData_1] = useState<DicIdItem[]>([]);
+  const [dicData_2, setDicData_2] = useState<DicIdItem[]>([]);
+  const [selectedDicRow1, setSelectedDicRow1] = useState<DicIdItem | null>(null);
+  const [selectedDicRow2, setSelectedDicRow2] = useState<DicIdItem | null>(null);
   const [page1, setPage1] = useState(1);
-  const [page2, setPage2] = useState(1);
-  const [language, setLanguage] = useState('1');
-
-  const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1),
-    rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2),
-    dicId_1 = useSelector((state: RootState) => state.dataSlice.dicId_1),
-    dicId_2 = useSelector((state: RootState) => state.dataSlice.dicId_2),
-    lang_1 = useSelector((state: RootState) => state.dataSlice.lang_1),
-    lang_2 = useSelector((state: RootState) => state.dataSlice.lang_2);
-
   const [tagSelect, setTagSelect] = useState(['none']);
   const [posSetRemote, setPosSetRemote] = useState<string[]>([]);
   const [nerSetRemote, setNerSetRemote] = useState<string[]>([]);
   const [semSetRemote, setSemSetRemote] = useState<string[]>([]);
+  const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(10);
 
-  const posSetLocal = language === '1' ? getPOSSet(rows_1) : getPOSSet(rows_2),
-    nerSetLocal = language === '1' ? getNERSet(rows_1) : getNERSet(rows_2),
-    semSetLocal = language === '1' ? getSEMSet(rows_1) : getSEMSet(rows_2);
+  const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1),
+    rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2);
+
+  const { appLanguage } = useAppLanguage();
+  const [currentLanguage, setCurrentLanguage] = useState('vi');
+  const [otherLangCode, setOtherLangCode] = useState('en');
+
+  // Use current language from header for fetching tag options
+  const currentLangForTags = appLanguage?.currentLanguage || 'vi';
+  const posSetLocal = getPOSSet(rows_1),
+    nerSetLocal = getNERSet(rows_1),
+    semSetLocal = getSEMSet(rows_1);
 
   const options: Option[] = getTagOptions(
     t, 
@@ -53,7 +52,26 @@ const Tag: React.FC = () => {
   );
 
   useEffect(() => {
-    const code = language === '1' ? (lang_1 || '') : (lang_2 || '');
+    if (appLanguage) {
+      setCurrentLanguage(appLanguage.currentLanguage);
+      if (appLanguage.currentLanguage === appLanguage.languagePair.split('_')[0]) {
+        setOtherLangCode(appLanguage.languagePair.split('_')[1]);
+      } else {
+        setOtherLangCode(appLanguage.languagePair.split('_')[0]);
+      }
+    }
+  }, [appLanguage]);
+
+  // Auto-search when page changes
+  useEffect(() => {
+    if (!tagSelect || tagSelect.length !== 2) {
+      return;
+    }
+    handleFormFinish();
+  }, [page1, limit]);
+
+  useEffect(() => {
+    const code = currentLangForTags;
     
     // Fetch POS data
     fetchPOS(code).then(res => {
@@ -78,103 +96,118 @@ const Tag: React.FC = () => {
     }).catch(() => {
       setSemSetRemote([]);
     });
-  }, [language, lang_1, lang_2]);
+  }, [currentLangForTags]);
 
-  const handleLanguageChange = (value: string) => {
-    setData_1([]);
-    setData_2([]);
-    setTagSelect(['none']);
-    setLanguage(value);
-  };
-
-  const handleFormFinish = () => {
-    if (rows_1.length === 0 || rows_2.length === 0) {
-      message.warning(t('missing_data'));
-      return;
-    }
+  const handleFormFinish = async () => {
     if (!tagSelect || tagSelect.length !== 2) {
       message.warning(t('missing_tag'));
       return;
     }
-    const useRows = language === '1' ? rows_1 : rows_2;
-    let listSentences: Record<string, RowWord> = {};
-    listSentences = searchTag(tagSelect[1].toLowerCase(), tagSelect[0], useRows);
-    searchComplete(listSentences);
-  };
 
-  const searchComplete = (listSentences: Record<string, RowWord>) => {
-    setData_1([]);
-    setData_2([]);
-
-    Object.keys(listSentences).forEach((key) => {
-      const sentence: Sentence = getSentence(
-        listSentences[key],
-        language === '1' ? rows_1 : rows_2,
-        language === '1' ? dicId_1 : dicId_2
+    try {
+      // Use language from header instead of local state
+      const currentLang = appLanguage?.currentLanguage || 'vi';
+      const langPair = appLanguage?.languagePair || 'vi_en';
+      
+      // Determine other language from language pair
+      let otherLang = 'en';
+      if (langPair && langPair.includes('_')) {
+        const [lang1, lang2] = langPair.split('_');
+        otherLang = currentLang === lang1 ? lang2 : lang1;
+      }
+      
+      const tagType = tagSelect[0]; // 'pos', 'ner', or 'semantic'
+      const tagValue = tagSelect[1]; // the actual tag value
+      
+      // Debug logging
+      console.log('=== DEBUG TAG SEARCH ===');
+      console.log('Tag selection:', { tagSelect, tagType, tagValue });
+      console.log('Language settings:', { currentLang, otherLang, langPair });
+      console.log('App language from header:', appLanguage);
+      console.log('Current language from header:', appLanguage?.currentLanguage);
+      console.log('Language pair from header:', appLanguage?.languagePair);
+      
+      // Call API with search="" to get all words with the selected tag
+      const res = await fetchDictWithTagFilter(
+        page1, 
+        limit, 
+        currentLang, 
+        langPair, 
+        otherLang, 
+        "", // search="" to get all words with the tag
+        false, // is_morph = false
+        tagType,
+        tagValue
       );
-      setData_1(prev => [...prev, sentence]);
-
-      const sentence2: Sentence = getSentenceOther(
-        listSentences[key],
-        language === '1' ? rows_2 : rows_1,
-        language === '1' ? dicId_2 : dicId_1
-      );
-      setData_2(prev => [...prev, sentence2]);
-    });
+      
+      console.log('=== API RESPONSE ===');
+      console.log('Full response:', res);
+      console.log('Response status:', res.status);
+      console.log('Response data:', res.data);
+      console.log('Response metadata:', res.data?.metadata);
+      
+      if (res.status !== 200) {
+        message.error(res.statusText);
+        return;
+      } else {
+        console.log('=== PROCESSING RESPONSE ===');
+        console.log('Available languages in response:', Object.keys(res.data.data || {}));
+        console.log('Current lang data:', res.data.data[currentLang]);
+        console.log('Other lang data:', res.data.data[otherLang]);
+        console.log('Data types:', {
+          currentLang: typeof res.data.data[currentLang],
+          otherLang: typeof res.data.data[otherLang],
+          currentLangIsArray: Array.isArray(res.data.data[currentLang]),
+          otherLangIsArray: Array.isArray(res.data.data[otherLang])
+        });
+        
+        const currentLangData = res.data.data[currentLang] || [];
+        const otherLangData = res.data.data[otherLang] || [];
+        
+        console.log('Setting data:', {
+          dicData_1: currentLangData,
+          dicData_2: otherLangData,
+          total: res.data.metadata.total
+        });
+        
+        setDicData_1(currentLangData);
+        setDicData_2(otherLangData);
+        setTotal(res.data.metadata.total);
+        setPage1(res.data.metadata.page);
+        setLimit(res.data.metadata.limit);
+        
+        // Debug: log the data being set
+        console.log('=== FINAL STATE ===');
+        console.log('Total records found:', res.data.metadata.total);
+        console.log('Current language records:', currentLangData.length);
+        console.log('Other language records:', otherLangData.length);
+      }
+    } catch (err) {
+      console.log('=== ERROR IN HANDLEFORMFINISH ===');
+      console.log('Error details:', err);
+      console.log('Error message:', err.message);
+      console.log('Error stack:', err.stack);
+      message.error(t('something_wrong'));
+    }
   };
 
-  const pageSize = 6;
-
-  const handleRowSelect1 = (row: Sentence | null, index: number | null) => {
-    setSelectedRow1(row);
-    if (index !== null && data_2[index]) {
-      setSelectedRow2(data_2[index]);
-      setPage2(Math.floor(index / pageSize) + 1);
+  const handleDicRowSelect1 = (row: DicIdItem | null, index: number | null) => {
+    setSelectedDicRow1(row);
+    if (index !== null && dicData_2[index]) {
+      setSelectedDicRow2(dicData_2.find((item: DicIdItem) => item.id_string === row?.id_string) ?? null);
     } else {
-      setSelectedRow2(null);
+      setSelectedDicRow2(null);
     }
   };
 
-  const handleRowSelect2 = (row: Sentence | null, index: number | null) => {
-    setSelectedRow2(row);
-    if (index !== null && data_1[index]) {
-      setSelectedRow1(data_1[index]);
-      setPage1(Math.floor(index / pageSize) + 1);
+  const handleDicRowSelect2 = (row: DicIdItem | null, index: number | null) => {
+    setSelectedDicRow2(row);
+    if (index !== null && dicData_1[index]) {
+      setSelectedDicRow1(dicData_1.find((item: DicIdItem) => item.id_string === row?.id_string) ?? null);
     } else {
-      setSelectedRow1(null);
+      setSelectedDicRow1(null);
     }
   };
-
-  const handleSaveButton = () => {
-    if (data_1.length === 0 || data_2.length === 0) {
-      return;
-    }
-
-    const lines = data_1.map((row1, idx) => {
-      const row2 = data_2[idx];;
-      const sentence1 =
-        row1.Center === '-' ?
-          row1.Left.trim() + ' ' + row1.Right.trim() :
-          row1.Left.trim() + ' ' + row1.Center + ' ' + row1.Right.trim(),
-        sentence2 =
-          row2.Center === '-' ?
-            row2.Left.trim() + ' ' + row2.Right.trim() :
-            row2.Left.trim() + ' ' + row2.Center + ' ' + row2.Right.trim();
-      return `* ${sentence1}\n+ ${sentence2}`;
-    });
-    const content = lines.join('\n\n');
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'parallel_corpus.txt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    message.success(t('download_ready'));
-  }
 
   return (
     <>
@@ -208,63 +241,41 @@ const Tag: React.FC = () => {
               </Button>
             </Form.Item>
           </Form>
-          {language === '1' && (
-            <>
-              <Divider>
-                {lang_1 ? t(lang_1) : t('source_language')}
-              </Divider>
-              <TagTable
-                data={data_1}
-                selectedRowKey={selectedRow1 ? selectedRow1.ID_sen : null}
-                onRowSelect={handleRowSelect1}
-                currentPage={page1}
-                onPageChange={setPage1}
-                pageSize={pageSize}
-              />
-              <Divider>
-                {lang_2 ? t(lang_2) : t('target_language')}
-              </Divider>
-              <TagTable
-                data={data_2}
-                selectedRowKey={selectedRow2 ? selectedRow2.ID_sen : null}
-                onRowSelect={handleRowSelect2}
-                currentPage={page2}
-                onPageChange={setPage2}
-                pageSize={pageSize}
-              />
-            </>
-          )}
-          {language !== '1' && (
-            <>
-              <Divider>
-                {lang_2 ? t(lang_2) : t('source_language')}
-              </Divider>
-              <TagTable
-                data={data_1}
-                selectedRowKey={selectedRow1 ? selectedRow1.ID_sen : null}
-                onRowSelect={handleRowSelect1}
-                currentPage={page1}
-                onPageChange={setPage1}
-                pageSize={pageSize}
-              />
-              <Divider>
-                {lang_1 ? t(lang_1) : t('target_language')}
-              </Divider>
-              <TagTable
-                data={data_2}
-                selectedRowKey={selectedRow2 ? selectedRow2.ID_sen : null}
-                onRowSelect={handleRowSelect2}
-                currentPage={page2}
-                onPageChange={setPage2}
-                pageSize={pageSize}
-              />
-            </>
-          )}
+
+          {/* Display data using DicIdTable */}
+          <>
+            <Divider>
+              {t(currentLanguage ?? 'en')}
+            </Divider>
+            <DicIdTable
+              data={dicData_1}
+              languageCode={currentLanguage}
+              selectedRowKey={selectedDicRow1 ? selectedDicRow1.id_sen : null}
+              onRowSelect={handleDicRowSelect1}
+              currentPage={page1}
+              total={total}
+              onPageChange={setPage1}
+              pageSize={limit}
+            />
+
+            <Divider>
+              {t(otherLangCode ?? 'en')}
+            </Divider>
+            <DicIdTable
+              data={dicData_2}
+              languageCode={otherLangCode}
+              selectedRowKey={selectedDicRow2 ? selectedDicRow2.id_sen : null}
+              onRowSelect={handleDicRowSelect2}
+              onPageChange={setPage1}
+              currentPage={page1}
+              pageSize={limit}
+              total={total}
+            />
+          </>
         </div>
       </div >
     </>
   );
 };
-
 
 export default Tag;
