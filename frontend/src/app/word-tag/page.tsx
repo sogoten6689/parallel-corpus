@@ -237,6 +237,11 @@ const WordTag: React.FC = () => {
                   ]}
                 />
               </Form.Item>
+              <Form.Item>
+                <Button type="primary" htmlType="submit">
+                  {t('search')}
+                </Button>
+              </Form.Item>
             </div>
             <div className="w-full flex flex-row flex-wrap gap-3 items-center justify-center">
               <Typography.Title level={5} className="font-semibold !mb-0 flex items-center">

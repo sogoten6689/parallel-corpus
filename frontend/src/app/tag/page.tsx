@@ -204,7 +204,7 @@ const Tag: React.FC = () => {
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit">
-                Search
+                {t('search')}
               </Button>
             </Form.Item>
           </Form>
