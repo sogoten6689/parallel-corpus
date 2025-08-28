@@ -447,13 +447,29 @@ def get_dicid_by_lang_with_tag(
         other_lang_sentence_right = ""
         other_lang_sorted_same_sen = sorted(other_lang_new_dic, key=lambda x: x["position"])
 
-        other_lang_center_position = extract_last_key_id(row.id_string)
-        for r in other_lang_sorted_same_sen:
-            if r['position'] < other_lang_center_position:
-                other_lang_sentence_left += f"{r['word']} "
-            if r['position'] > other_lang_center_position:
-                other_lang_sentence_right += f"{r['word']} "
+        # other_lang_center_position = extract_last_key_id(row.id_string)
+        # for r in other_lang_sorted_same_sen:
+        #     if r['position'] < other_lang_center_position:
+        #         other_lang_sentence_left += f"{r['word']} "
+        #     if r['position'] > other_lang_center_position:
+        #         other_lang_sentence_right += f"{r['word']} "
         
+        if row.links == "-":
+            other_lang_row_full["center"] = "-"
+            for r in other_lang_sorted_same_sen:
+                other_lang_sentence_right += f"{r['word']} "
+        else:
+            other_lang_sentence_center = ""
+            for r in other_lang_sorted_same_sen:
+                if r['position'] < int(row_start):
+                    other_lang_sentence_left += f"{r['word']} "
+                else :
+                    if r['position'] > int(row_end):
+                        other_lang_sentence_right += f"{r['word']} "
+                    else :
+                        other_lang_sentence_center += f"{r['word']} "
+                        other_lang_row_full["center"] = other_lang_sentence_center
+
         other_lang_row_full["left"] = other_lang_sentence_left
         other_lang_row_full["right"] = other_lang_sentence_right
 
