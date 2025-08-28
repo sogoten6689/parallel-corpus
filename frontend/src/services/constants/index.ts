@@ -14,6 +14,7 @@ export interface API_PROPS {
         ROW_WORD: string
         ROW_WORD_EIDT: (id: number) => string
         DICID: string
+        DICID_WITH_TAG: string
         ALIGN_SENTENCE: string
         POS: string
         NER: string
@@ -37,6 +38,7 @@ export const API: API_PROPS = {
         ROW_WORD: "api/master/words",
         ROW_WORD_EIDT: (id: number) => `api/master/words/${id}`,
         DICID: "api/master/dicid",
+        DICID_WITH_TAG: "api/master/dicid-with-tag",
         ALIGN_SENTENCE: "api/master/align-sentence",
         POS: "api/master/pos",
         NER: "api/master/ner",

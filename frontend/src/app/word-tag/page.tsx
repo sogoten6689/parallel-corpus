@@ -1,6 +1,7 @@
 'use client';
 
 import TagTable from "@/components/ui/tag-table";
+import DicIdTable from "@/components/ui/dicid-table";
 import { useTranslation } from "react-i18next";
 import { Divider, Button, Select, App, Cascader, Typography, Input, Radio, Form, CascaderProps } from 'antd';
 import { useEffect, useState } from "react";
@@ -13,7 +14,9 @@ import { RootState } from "@/redux";
 import { getNERSet, getPOSSet, getSEMSet } from "@/dao/data-utils";
 import type { Option } from '@/types/option.type';
 import { getTagOptions } from "@/dao/tag-options";
-import { fetchPOS, fetchNER, fetchSemantic } from "@/services/master/master-api";
+import { fetchPOS, fetchNER, fetchSemantic, fetchDict, fetchDictWithTagFilter } from "@/services/master/master-api";
+import { DicIdItem } from "@/types/dicid-item.type";
+import { useAppLanguage } from "@/contexts/AppLanguageContext";
 
 const { Option } = Select;
 
@@ -23,8 +26,12 @@ const WordTag: React.FC = () => {
   const [form] = Form.useForm();
   const [data_1, setData_1] = useState<Sentence[]>([]);
   const [data_2, setData_2] = useState<Sentence[]>([]);
+  const [dicData_1, setDicData_1] = useState<DicIdItem[]>([]);
+  const [dicData_2, setDicData_2] = useState<DicIdItem[]>([]);
   const [selectedRow1, setSelectedRow1] = useState<Sentence | null>(null);
   const [selectedRow2, setSelectedRow2] = useState<Sentence | null>(null);
+  const [selectedDicRow1, setSelectedDicRow1] = useState<DicIdItem | null>(null);
+  const [selectedDicRow2, setSelectedDicRow2] = useState<DicIdItem | null>(null);
   const [page1, setPage1] = useState(1);
   const [page2, setPage2] = useState(1);
   const [searchText, setSearchText] = useState('');
@@ -34,6 +41,8 @@ const WordTag: React.FC = () => {
   const [posSetRemote, setPosSetRemote] = useState<string[]>([]);
   const [nerSetRemote, setNerSetRemote] = useState<string[]>([]);
   const [semSetRemote, setSemSetRemote] = useState<string[]>([]);
+  const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(6);
 
   const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1),
     rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2),
@@ -42,10 +51,17 @@ const WordTag: React.FC = () => {
     lang_1 = useSelector((state: RootState) => state.dataSlice.lang_1),
     lang_2 = useSelector((state: RootState) => state.dataSlice.lang_2);
 
+  const { appLanguage } = useAppLanguage();
+  const [currentLanguage, setCurrentLanguage] = useState('vi');
+  const [otherLangCode, setOtherLangCode] = useState('en');
+
   let listSentences: Record<string, RowWord> = {};
   const posSetLocal = language === '1' ? getPOSSet(rows_1) : getPOSSet(rows_2),
     nerSetLocal = language === '1' ? getNERSet(rows_1) : getNERSet(rows_2),
     semSetLocal = language === '1' ? getSEMSet(rows_1) : getSEMSet(rows_2);
+
+  // Check if using tag filter
+  const isUsingTagFilter = tagSelect && tagSelect.length === 2;
 
   const options: Option[] = getTagOptions(
     t, 
@@ -53,6 +69,25 @@ const WordTag: React.FC = () => {
     nerSetRemote.length ? nerSetRemote : nerSetLocal, 
     semSetRemote.length ? semSetRemote : semSetLocal
   );
+
+  useEffect(() => {
+    if (appLanguage) {
+      setCurrentLanguage(appLanguage.currentLanguage);
+      if (appLanguage.currentLanguage === appLanguage.languagePair.split('_')[0]) {
+        setOtherLangCode(appLanguage.languagePair.split('_')[1]);
+      } else {
+        setOtherLangCode(appLanguage.languagePair.split('_')[0]);
+      }
+    }
+  }, [appLanguage]);
+
+  // Auto-search when page changes for DicIdTable
+  useEffect(() => {
+    if (!searchText.trim()) {
+      return;
+    }
+    handleFormFinish();
+  }, [page1, limit]);
 
   useEffect(() => {
     const code = language === '1' ? (lang_1 || '') : (lang_2 || '');
@@ -82,48 +117,99 @@ const WordTag: React.FC = () => {
     });
   }, [language, lang_1, lang_2]);
 
-  const handleTagSelect: CascaderProps<Option>['onChange'] = (value) => {
+  const handleTagSelect: CascaderProps<Option>['onChange'] = (value: any) => {
     setTagSelect(value);
   };
 
   const handleLanguageChange = (value: string) => {
     setData_1([]);
     setData_2([]);
+    setDicData_1([]);
+    setDicData_2([]);
     setTagSelect(['none']);
     setLanguage(value);
   };
 
-  const handleFormFinish = () => {
-    if (rows_1.length === 0 || rows_2.length === 0) {
-      message.warning(t('missing_data'));
-      return;
-    }
+  const handleFormFinish = async () => {
     if (!searchText.trim()) {
       form.validateFields(['searchText']);
       return;
     }
 
-    if (!tagSelect || (tagSelect.length !== 2 && !(tagSelect.length === 1 && tagSelect[0] === 'none'))) {
-      message.warning(t('missing_tag'));
-      return;
-    }
+    // Clear previous data
+    setData_1([]);
+    setData_2([]);
+    setDicData_1([]);
+    setDicData_2([]);
 
-    if (tagSelect.length === 2) {
-      listSentences = searchWordTag(
-        searchText.trim().toLowerCase(),
-        searchType === 'morphological',
-        tagSelect[1].toLowerCase(),
-        tagSelect[0],
-        language === '1' ? rows_1 : rows_2
-      );
-      searchComplete();
+    // Check if using tag filter or no filter
+    if (tagSelect && tagSelect.length === 2) {
+      // Using tag filter - use new API with tag filter
+      try {
+        const currentLang = language === '1' ? (lang_1 || 'vi') : (lang_2 || 'vi');
+        const otherLang = language === '1' ? (lang_2 || 'en') : (lang_1 || 'en');
+        const langPair = appLanguage?.languagePair || 'vi_en';
+        const tagType = tagSelect[0]; // 'pos', 'ner', or 'semantic'
+        const tagValue = tagSelect[1]; // the actual tag value
+        
+        const res = await fetchDictWithTagFilter(
+          page1, 
+          limit, 
+          currentLang, 
+          langPair, 
+          otherLang, 
+          searchText.trim(), 
+          searchType === 'morphological', 
+          tagType,
+          tagValue
+        );
+        
+        if (res.status !== 200) {
+          message.error(res.statusText);
+          return;
+        } else {
+          setDicData_1(res.data.data[currentLang] || []);
+          setDicData_2(res.data.data[otherLang] || []);
+          setTotal(res.data.metadata.total);
+          setPage1(res.data.metadata.page);
+          setLimit(res.data.metadata.limit);
+        }
+      } catch (err) {
+        console.log(err);
+        message.error(t('something_wrong'));
+      }
     } else {
-      listSentences = searchWord(
-        searchText.trim(),
-        searchType === 'morphological',
-        language === '1' ? rows_1 : rows_2
-      );
-      searchComplete();
+      // No tag filter - use DicIdTable like Search Word page
+      try {
+        const currentLang = language === '1' ? (lang_1 || 'vi') : (lang_2 || 'vi');
+        const otherLang = language === '1' ? (lang_2 || 'en') : (lang_1 || 'en');
+        const langPair = appLanguage?.languagePair || 'vi_en';
+        
+        const res = await fetchDict(
+          page1, 
+          limit, 
+          currentLang, 
+          langPair, 
+          otherLang, 
+          searchText.trim(), 
+          searchType === 'morphological', 
+          false // is_phrase
+        );
+        
+        if (res.status !== 200) {
+          message.error(res.statusText);
+          return;
+        } else {
+          setDicData_1(res.data.data[currentLang] || []);
+          setDicData_2(res.data.data[otherLang] || []);
+          setTotal(res.data.metadata.total);
+          setPage1(res.data.metadata.page);
+          setLimit(res.data.metadata.limit);
+        }
+      } catch (err) {
+        console.log(err);
+        message.error(t('something_wrong'));
+      }
     }
   };
 
@@ -137,14 +223,14 @@ const WordTag: React.FC = () => {
         language === '1' ? rows_1 : rows_2,
         language === '1' ? dicId_1 : dicId_2
       );
-      setData_1(prev => [...prev, sentence]);
+      setData_1((prev: Sentence[]) => [...prev, sentence]);
 
       const sentence2: Sentence = getSentenceOther(
         listSentences[key],
         language === '1' ? rows_2 : rows_1,
         language === '1' ? dicId_2 : dicId_1
       );
-      setData_2(prev => [...prev, sentence2]);
+      setData_2((prev: Sentence[]) => [...prev, sentence2]);
     });
   };
 
@@ -170,12 +256,30 @@ const WordTag: React.FC = () => {
     }
   };
 
+  const handleDicRowSelect1 = (row: DicIdItem | null, index: number | null) => {
+    setSelectedDicRow1(row);
+    if (index !== null && dicData_2[index]) {
+      setSelectedDicRow2(dicData_2.find((item: DicIdItem) => item.id_string === row?.id_string) ?? null);
+    } else {
+      setSelectedDicRow2(null);
+    }
+  };
+
+  const handleDicRowSelect2 = (row: DicIdItem | null, index: number | null) => {
+    setSelectedDicRow2(row);
+    if (index !== null && dicData_1[index]) {
+      setSelectedDicRow1(dicData_1.find((item: DicIdItem) => item.id_string === row?.id_string) ?? null);
+    } else {
+      setSelectedDicRow2(null);
+    }
+  };
+
   const handleSaveButton = () => {
     if (data_1.length === 0 || data_2.length === 0) {
       return;
     }
 
-    const lines = data_1.map((row1, idx) => {
+    const lines = data_1.map((row1: Sentence, idx: number) => {
       const row2 = data_2[idx];;
       const sentence1 =
         row1.Center === '-' ?
@@ -262,63 +366,41 @@ const WordTag: React.FC = () => {
               </Form.Item>
             </div>
           </Form>
-          {language === '1' && (
-            <>
-              <Divider>
-                {lang_1 ? t(lang_1) : t('source_language')}
-              </Divider>
-              <TagTable
-                data={data_1}
-                selectedRowKey={selectedRow1 ? selectedRow1.ID_sen : null}
-                onRowSelect={handleRowSelect1}
-                currentPage={page1}
-                onPageChange={setPage1}
-                pageSize={pageSize}
-              />
-              <Divider>
-                {lang_2 ? t(lang_2) : t('target_language')}
-              </Divider>
-              <TagTable
-                data={data_2}
-                selectedRowKey={selectedRow2 ? selectedRow2.ID_sen : null}
-                onRowSelect={handleRowSelect2}
-                currentPage={page2}
-                onPageChange={setPage2}
-                pageSize={pageSize}
-              />
-            </>
-          )}
-          {language !== '1' && (
-            <>
-              <Divider>
-                {lang_2 ? t(lang_2) : t('source_language')}
-              </Divider>
-              <TagTable
-                data={data_1}
-                selectedRowKey={selectedRow1 ? selectedRow1.ID_sen : null}
-                onRowSelect={handleRowSelect1}
-                currentPage={page1}
-                onPageChange={setPage1}
-                pageSize={pageSize}
-              />
-              <Divider>
-                {lang_1 ? t(lang_1) : t('target_language')}
-              </Divider>
-              <TagTable
-                data={data_2}
-                selectedRowKey={selectedRow2 ? selectedRow2.ID_sen : null}
-                onRowSelect={handleRowSelect2}
-                currentPage={page2}
-                onPageChange={setPage2}
-                pageSize={pageSize}
-              />
-            </>
-          )}
+
+          {/* Display data using DicIdTable for both cases */}
+          <>
+            <Divider>
+              {t(currentLanguage ?? 'en')}
+            </Divider>
+            <DicIdTable
+              data={dicData_1}
+              languageCode={currentLanguage}
+              selectedRowKey={selectedDicRow1 ? selectedDicRow1.id_sen : null}
+              onRowSelect={handleDicRowSelect1}
+              currentPage={page1}
+              total={total}
+              onPageChange={setPage1}
+              pageSize={limit}
+            />
+
+            <Divider>
+              {t(otherLangCode ?? 'en')}
+            </Divider>
+            <DicIdTable
+              data={dicData_2}
+              languageCode={otherLangCode}
+              selectedRowKey={selectedDicRow2 ? selectedDicRow2.id_sen : null}
+              onRowSelect={handleDicRowSelect2}
+              onPageChange={setPage1}
+              currentPage={page1}
+              pageSize={limit}
+              total={total}
+            />
+          </>
         </div>
       </div >
     </>
   );
 };
-
 
 export default WordTag;

@@ -57,6 +57,33 @@ export const fetchDict = async (page: number, limit: number,  langCode: string, 
   );
 };
 
+export const fetchDictWithTagFilter = async (
+  page: number, 
+  limit: number, 
+  langCode: string, 
+  langPair: string, 
+  otherLangCode: string, 
+  search: string, 
+  is_morph: boolean, 
+  tagType: string, 
+  tagValue: string
+) => {
+  const params = new URLSearchParams();
+  params.append("page", String(page));
+  params.append("limit", String(limit));
+  params.append("is_morph", String(is_morph));
+  params.append("lang_pair", langPair);
+  params.append("lang_code", langCode);
+  params.append("other_lang_code", otherLangCode);
+  params.append("search", search);
+  params.append("tag_type", tagType);
+  params.append("tag_value", tagValue);
+  
+  return await axiosInstance.get(
+    API.MASTER.DICID_WITH_TAG, { params }
+  );
+};
+
 export const getAlignSentence = async (idString: string, langCode: string, langPair: string, otherLangCode: string) => {
   const params = new URLSearchParams();
   params.append("id_string", idString);

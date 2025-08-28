@@ -314,6 +314,172 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, lang_pair: str, sear
         "data": data,
     }
 
+@router.get("/dicid-with-tag")
+def get_dicid_by_lang_with_tag(
+    lang_code: str, 
+    other_lang_code: str, 
+    lang_pair: str, 
+    search: str = '', 
+    is_morph: bool = False, 
+    tag_type: str = '', 
+    tag_value: str = '',
+    page: int = 1, 
+    limit: int = 10, 
+    db: Session = Depends(get_db)
+):
+    """
+    Return a dictionary mapping ID_sen -> { start: int, end: int }
+    computed over all RowWord rows for the given lang_code with tag filter.
+    """
+    if not lang_code:
+        raise HTTPException(status_code=400, detail="lang_code is required")
+
+    query = db.query(MasterRowWord).filter(MasterRowWord.lang_code == lang_code)
+    query = query.filter(MasterRowWord.lang_pair == lang_pair)
+
+    # Apply search filter
+    if search != '':
+        norm_key = (search or "").strip().replace(" ", "_")
+        key_lower = norm_key.lower()
+        
+        if not is_morph:
+            query = query.filter(MasterRowWord.word == norm_key)
+        else:
+            # Case-insensitive compare for Morph
+            query = query.filter(func.lower(MasterRowWord.morph) == key_lower)
+    
+    # Apply tag filter
+    if tag_type and tag_value:
+        tag_value_lower = tag_value.lower()
+        if tag_type == 'pos':
+            query = query.filter(func.lower(MasterRowWord.pos) == tag_value_lower)
+        elif tag_type == 'ner':
+            query = query.filter(func.lower(MasterRowWord.ner) == tag_value_lower)
+        elif tag_type == 'semantic':
+            query = query.filter(func.lower(MasterRowWord.semantic) == tag_value_lower)
+            
+    total = query.count()
+    rows = (
+        query
+        .order_by(MasterRowWord.id_sen, MasterRowWord.id)
+        .offset((page - 1) * limit).limit(limit)
+        .all()
+    )
+    list_id_sen = [row.id_sen for row in rows]
+
+    rows_in_list_id_sen = (
+        db.query(MasterRowWord)
+        .filter(MasterRowWord.lang_code.in_([lang_code, other_lang_code]))
+        .filter(MasterRowWord.id_sen.in_(list_id_sen))
+        .filter(MasterRowWord.lang_pair == lang_pair)
+        .order_by(MasterRowWord.id_sen, MasterRowWord.id)
+        .all()
+    )
+    
+    lang_code_dic = []
+    other_lang_code_dic = []
+
+    for row in rows:
+        row_full = {
+            "id_string": row.id_string,
+            "id_sen": row.id_sen,
+            "center": row.word,
+            "position": extract_last_key_id(row.id_string),
+        }
+        rows_same_sen = [r for r in rows_in_list_id_sen if r.id_sen == row.id_sen and r.lang_code == lang_code]
+
+        row_links = [s for s in (row.links or "").split(",") if s]
+        row_start = row_links[0]
+        row_end = row_links[row_links.__len__() - 1]
+        new_dic = []
+        for r in rows_same_sen:
+            position = extract_last_key_id(r.id_string)
+            links = [s for s in (r.links or "").split(",") if s]
+            new_dic.append({
+                "position": position,
+                "word": r.word,
+                "links_array": links,
+                "links": r.links,
+                "start": links[0],
+                "end": links[links.__len__() - 1]
+            })
+
+        sentence_left = ""
+        sentence_right = ""
+        sorted_same_sen = sorted(new_dic, key=lambda x: x["position"])
+
+        center_position = extract_last_key_id(row.id_string)
+        for r in sorted_same_sen:
+            if r['position'] < center_position:
+                sentence_left += f"{r['word']} "
+            if r['position'] > center_position:
+                sentence_right += f"{r['word']} "
+        
+        row_full["left"] = sentence_left
+        row_full["right"] = sentence_right
+
+        lang_code_dic.append(row_full)
+
+        other_lang_row_full = {
+            "id_string": row.id_string,
+            "id_sen": row.id_sen,
+            "start_center": row_start,
+            "end_center": row_end,
+            # "center": row.word,
+            # "position": extract_last_key_id(row.id_string),
+        }
+        other_lang_rows_same_sen = [r for r in rows_in_list_id_sen if r.id_sen == row.id_sen and r.lang_code == other_lang_code]
+
+        other_lang_new_dic = []
+        for r in other_lang_rows_same_sen:
+            position = extract_last_key_id(r.id_string)
+            links = [s for s in (r.links or "").split(",") if s]
+            other_lang_new_dic.append({
+                "position": position,
+                "word": r.word,
+                "links_array": links,
+                "links": r.links,
+                "start": links[0],
+                "end": links[links.__len__() - 1]
+            })
+
+        other_lang_sentence_left = ""
+        other_lang_sentence_right = ""
+        other_lang_sorted_same_sen = sorted(other_lang_new_dic, key=lambda x: x["position"])
+
+        other_lang_center_position = extract_last_key_id(row.id_string)
+        for r in other_lang_sorted_same_sen:
+            if r['position'] < other_lang_center_position:
+                other_lang_sentence_left += f"{r['word']} "
+            if r['position'] > other_lang_center_position:
+                other_lang_sentence_right += f"{r['word']} "
+        
+        other_lang_row_full["left"] = other_lang_sentence_left
+        other_lang_row_full["right"] = other_lang_sentence_right
+
+        other_lang_code_dic.append(other_lang_row_full)
+
+    data = {}
+    data[lang_code] = lang_code_dic
+    data[other_lang_code] = other_lang_code_dic
+        
+    return {
+        "metadata": {
+            "search": search,
+            "lang_pair": lang_pair,
+            "is_morph": is_morph,
+            "tag_type": tag_type,
+            "tag_value": tag_value,
+            "lang_code": lang_code,
+            "other_lang_code": other_lang_code,
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "total_pages": (total + limit - 1) // limit
+        },
+        "data": data,
+    }
+
 @router.get("/align-sentence")
 def get_align_sentence(db: Session = Depends(get_db), id_string: str = '', lang_code: str = 'en', other_lang_code: str = 'vi', lang_pair: str = 'vi_en'):
 
