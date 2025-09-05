@@ -3,9 +3,9 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from database import get_db
-from auth import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, get_current_active_user, add_token_to_blacklist
+from auth import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, get_current_active_user, add_token_to_blacklist, update_current_user
 from crud import get_user_by_email, create_user, get_users
-from schemas.user import UserCreate, UserLogin, UserResponse, Token
+from schemas.user import UserCreate, UserLogin, UserResponse, Token, UserUpdateBase
 from models.user import UserRole, User
 
 router = APIRouter()
@@ -46,6 +46,52 @@ def login(body: UserLogin, db: Session = Depends(get_db)):
 def read_users_me(current_user: User = Depends(get_current_active_user)):
     """Lấy thông tin user hiện tại / Get current user information"""
     return current_user
+
+@router.put("/me")
+def read_users_me(current_user: User = Depends(get_current_active_user), db: Session = Depends(get_db), user_update: UserUpdateBase = UserUpdateBase):
+   
+    """Cập nhật thông tin user hiện tại"""
+
+    try:
+        # Tìm user
+        user = db.query(User).filter(User.id == current_user.id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Cập nhật các field
+        if user_update.full_name:
+            user.full_name = user_update.full_name
+        if user_update.date_of_birth:
+            user.date_of_birth = user_update.date_of_birth
+        if user_update.organization:
+            user.organization = user_update.organization
+
+        # Lưu vào DB
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        return {
+            "message": "User updated successfully",
+            "data": {
+                "id": user.id,
+                "email": user.email,
+                "full_name": user.full_name,
+                "date_of_birth": user.date_of_birth,
+                "organization": user.organization,
+                "role": user.role
+            }
+        }
+
+    except HTTPException:
+        raise  # Bắn lại lỗi đã raise trước đó
+
+    except Exception as e:
+        db.rollback()  # Nếu có lỗi khi commit
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update user: {str(e)}"
+        )
 
 @router.post("/logout")
 def logout(request: Request, current_user: User = Depends(get_current_active_user)):

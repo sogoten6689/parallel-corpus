@@ -9,6 +9,12 @@ class UserBase(BaseModel):
     date_of_birth: date
     organization: str
 
+
+class UserUpdateBase(BaseModel):
+    full_name: str
+    date_of_birth: date
+    organization: str
+
 class UserCreate(UserBase):
     password: str
 

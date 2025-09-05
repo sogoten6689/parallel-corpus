@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from database import get_db
 from models.user import User
-from schemas.user import TokenData
+from schemas.user import TokenData, UserUpdateBase
 
 # Configuration
 SECRET_KEY = "your-secret-key-here-change-in-production"  # Change this in production
@@ -82,3 +82,25 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 
 async def get_current_active_user(current_user: User = Depends(get_current_user)):
     return current_user 
+
+async def update_current_user(current_user: User = Depends(get_current_user)):
+    return current_user
+    user = db.query(User).filter(User.id == current_user.id).first()
+    if not user:
+        return None  # hoặc raise HTTPException(status_code=404, detail="User not found")
+    
+    return user
+
+    # 2. Cập nhật các field
+    user.full_name = update_user.full_name
+    user.date_of_birth = update_user.date_of_birth
+    user.organization = update_user.organization
+
+    # 3. Lưu vào DB
+    db.add(user)
+    db.commit()
+    db.refresh(user)  # để lấy dữ liệu mới nhất từ DB
+
+
+    db.commit()
+    return user
