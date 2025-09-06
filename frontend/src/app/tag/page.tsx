@@ -4,9 +4,7 @@ import DicIdTable from "@/components/ui/dicid-table";
 import { useTranslation } from "react-i18next";
 import { Divider, Button, Select, App, Cascader, Typography, Form } from 'antd';
 import { useEffect, useState } from "react";
-import { useSelector } from 'react-redux';
-import { RootState } from "@/redux";
-import { getNERSet, getPOSSet, getSEMSet } from "@/dao/data-utils";
+// Removed local corpus-derived tag set utilities; now using only remote API tag lists
 import type { Option } from '@/types/option.type';
 import { getTagOptions } from "@/dao/tag-options";
 import { fetchPOS, fetchNER, fetchSemantic, fetchDictWithTagFilter } from "@/services/master/master-api";
@@ -31,8 +29,7 @@ const Tag: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [limit, setLimit] = useState(10);
 
-  const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1),
-    rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2);
+  // Removed rows from redux since tag options now sourced exclusively from remote APIs
 
   const { appLanguage } = useAppLanguage();
   const [currentLanguage, setCurrentLanguage] = useState('vi');
@@ -40,15 +37,11 @@ const Tag: React.FC = () => {
 
   // Use current language from header for fetching tag options
   const currentLangForTags = appLanguage?.currentLanguage || 'vi';
-  const posSetLocal = getPOSSet(rows_1),
-    nerSetLocal = getNERSet(rows_1),
-    semSetLocal = getSEMSet(rows_1);
-
   const options: Option[] = getTagOptions(
-    t, 
-    posSetRemote.length ? posSetRemote : posSetLocal, 
-    nerSetRemote.length ? nerSetRemote : nerSetLocal, 
-    semSetRemote.length ? semSetRemote : semSetLocal
+    t,
+    posSetRemote,
+    nerSetRemote,
+    semSetRemote
   );
 
   useEffect(() => {
@@ -71,32 +64,26 @@ const Tag: React.FC = () => {
   }, [page1, limit]);
 
   useEffect(() => {
+    // Refetch when either current language OR language pair changes (dropdown)
     const code = currentLangForTags;
-    
-    // Fetch POS data
-    fetchPOS(code).then(res => {
-      const arr: string[] = res.data?.data || [];
-      setPosSetRemote(arr);
-    }).catch(() => {
-      setPosSetRemote([]);
-    });
+    const pair = appLanguage?.languagePair;
+    let cancelled = false;
+    setPosSetRemote([]);
+    setNerSetRemote([]);
+    setSemSetRemote([]);
 
-    // Fetch NER data
-    fetchNER(code).then(res => {
-      const arr: string[] = res.data?.data || [];
-      setNerSetRemote(arr);
-    }).catch(() => {
-      setNerSetRemote([]);
+    Promise.all([
+      fetchPOS(code).then(res => res.data?.data || []).catch(() => []),
+      fetchNER(code).then(res => res.data?.data || []).catch(() => []),
+      fetchSemantic(code).then(res => res.data?.data || []).catch(() => [])
+    ]).then(([posArr, nerArr, semArr]) => {
+      if (cancelled) return;
+      setPosSetRemote(posArr);
+      setNerSetRemote(nerArr);
+      setSemSetRemote(semArr);
     });
-
-    // Fetch Semantic data
-    fetchSemantic(code).then(res => {
-      const arr: string[] = res.data?.data || [];
-      setSemSetRemote(arr);
-    }).catch(() => {
-      setSemSetRemote([]);
-    });
-  }, [currentLangForTags]);
+    return () => { cancelled = true; };
+  }, [currentLangForTags, appLanguage?.languagePair]);
 
   const handleFormFinish = async () => {
     if (!tagSelect || tagSelect.length !== 2) {
@@ -185,8 +172,11 @@ const Tag: React.FC = () => {
     } catch (err) {
       console.log('=== ERROR IN HANDLEFORMFINISH ===');
       console.log('Error details:', err);
-      console.log('Error message:', err.message);
-      console.log('Error stack:', err.stack);
+      if (err && typeof err === 'object') {
+        const anyErr = err as { message?: string; stack?: string };
+        if (anyErr.message) console.log('Error message:', anyErr.message);
+        if (anyErr.stack) console.log('Error stack:', anyErr.stack);
+      }
       message.error(t('something_wrong'));
     }
   };

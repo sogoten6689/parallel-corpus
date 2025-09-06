@@ -11,6 +11,7 @@ import { Card, Form, Input, DatePicker, Button, Avatar, Space, Typography, Skele
 import { UserOutlined, SaveOutlined } from "@ant-design/icons";
 import type { AxiosError } from 'axios';
 import dayjs from "dayjs";
+import { getMachineLocale } from "@/dao/utils";
 import viVN from 'antd/locale/vi_VN';
 import enUS from 'antd/locale/en_US';
 import 'dayjs/locale/vi';
@@ -99,15 +100,15 @@ export default function Home() {
           }));
         } catch (e) {
           // fallback to optimistic updatedUser if refetch fails
-            if (updatedUser) {
-              setProfile(updatedUser);
-              form.setFieldsValue({
-                email: updatedUser.email,
-                full_name: updatedUser.full_name,
-                organization: updatedUser.organization,
-                date_of_birth: updatedUser.date_of_birth ? dayjs(updatedUser.date_of_birth) : undefined,
-              });
-            }
+          if (updatedUser) {
+            setProfile(updatedUser);
+            form.setFieldsValue({
+              email: updatedUser.email,
+              full_name: updatedUser.full_name,
+              organization: updatedUser.organization,
+              date_of_birth: updatedUser.date_of_birth ? dayjs(updatedUser.date_of_birth) : undefined,
+            });
+          }
         }
       }
     } catch (err) {
@@ -126,7 +127,8 @@ export default function Home() {
 
   const initialDob = profile?.date_of_birth ? dayjs(profile.date_of_birth) : null;
 
-  const localeCode = appLanguage?.currentLanguage === 'vi' ? 'vi' : 'en';
+  const machineLocale = getMachineLocale('en');
+  const localeCode = appLanguage?.currentLanguage ? (appLanguage.currentLanguage === 'vi' ? 'vi' : 'en') : machineLocale;
   dayjs.locale(localeCode);
   const dateFormat = localeCode === 'vi' ? 'DD/MM/YYYY' : 'YYYY-MM-DD';
 
@@ -142,55 +144,56 @@ export default function Home() {
 
   return (
     <ConfigProvider locale={localeCode === 'vi' ? viVN : enUS}>
-    <div style={{ maxWidth: 720, margin: '48px auto' }}>
-      <Card>
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
-          <Space align="center" size="large">
-            <Avatar size={72} icon={<UserOutlined />} />
-            <div>
-              <Typography.Title level={3} style={{ margin: 0 }}>
-                {profile?.full_name || t('null')}
-              </Typography.Title>
-              <Typography.Text type="secondary">{profile?.email}</Typography.Text>
-            </div>
-          </Space>
-          <Divider style={{ margin: '12px 0' }} />
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={onFinish}
-            initialValues={{ // only used on first mount; subsequent updates via setFieldsValue
-              email: profile?.email,
-              full_name: profile?.full_name,
-              organization: profile?.organization,
-              date_of_birth: initialDob,
-            }}
-          >
-            <Form.Item label={t('email')} name="email">
-              <Input disabled />
-            </Form.Item>
-            <Form.Item
-              label={t('full_name')}
-              name="full_name"
-              rules={[{ required: true, message: t('auth.fullNameRequired') }]}
+      <div style={{ maxWidth: 720, margin: '48px auto' }}>
+        <Card>
+            <Space direction="vertical" style={{ width: '100%' }} size="large">
+            <Space align="center" size="large" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+              <Avatar size={72} icon={<UserOutlined />} />
+              <div>
+                <Typography.Title level={3} style={{ margin: 0 }}>
+                  {profile?.full_name || t('null')}
+                </Typography.Title>
+                <Typography.Text type="secondary">{profile?.email}</Typography.Text>
+              </div>
+            </Space>
+            <Divider style={{ margin: '12px 0' }} />
+            <Form
+              form={form}
+              layout="vertical"
+              requiredMark={false}
+              onFinish={onFinish}
+              initialValues={{ // only used on first mount; subsequent updates via setFieldsValue
+                email: profile?.email,
+                full_name: profile?.full_name,
+                organization: profile?.organization,
+                date_of_birth: initialDob,
+              }}
             >
-              <Input placeholder={t('auth.fullName')} />
-            </Form.Item>
-            <Form.Item label={t('date_of_birth')} name="date_of_birth">
-              <DatePicker style={{ width: '100%' }} format={dateFormat} disabledDate={(d) => d && d.isAfter(dayjs())} />
-            </Form.Item>
-            <Form.Item label={t('organization')} name="organization">
-              <Input placeholder={t('organization')} />
-            </Form.Item>
-            <Form.Item>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-                {t('save')}
-              </Button>
-            </Form.Item>
-          </Form>
-        </Space>
-      </Card>
-    </div>
+              <Form.Item label={t('email')} name="email">
+                <Input disabled />
+              </Form.Item>
+              <Form.Item
+                label={<span>{t('full_name')} <span style={{ color: '#ff4d4f' }}>*</span></span>}
+                name="full_name"
+                rules={[{ required: true, message: t('auth.fullNameRequired') }]}
+              >
+                <Input placeholder={t('auth.fullName')} />
+              </Form.Item>
+              <Form.Item label={t('date_of_birth')} name="date_of_birth">
+                <DatePicker style={{ width: '100%' }} format={dateFormat} disabledDate={(d) => d && d.isAfter(dayjs())} />
+              </Form.Item>
+              <Form.Item label={t('organization')} name="organization">
+                <Input placeholder={t('organization')} />
+              </Form.Item>
+              <Form.Item style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 0 }}>
+                <Button type="primary" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
+                  {t('save')}
+                </Button>
+              </Form.Item>
+            </Form>
+          </Space>
+        </Card>
+      </div>
     </ConfigProvider>
   );
 }

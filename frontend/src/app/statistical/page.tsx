@@ -1,7 +1,6 @@
 'use client';
 
 import StatisticsTable from "@/components/ui/statistics-table";
-import { getNERSet, getPOSSet, getSEMSet } from "@/dao/data-utils";
 import { RootState } from "@/redux";
 import { RowStat } from "@/types/row-stat.type";
 import { Option } from '@/types/option.type';
@@ -39,26 +38,38 @@ const Statistical: React.FC = () => {
   const handleTagSelect: CascaderProps<Option>['onChange'] = (value, _selectedOptions) => {
     setTagSelect(value);
   };
-  // Local fallback sets from current language corpus
-  const posSetLocal = getPOSSet(baseRows);
-  const nerSetLocal = getNERSet(baseRows);
-  const semSetLocal = getSEMSet(baseRows);
+  // Token count still derived from corpus for frequency calculations
   const numTokens = baseRows.length;
 
-  // Effective sets (prefer remote when loaded)
-  const posSet = posSetRemote.length ? posSetRemote : posSetLocal;
-  const nerSet = nerSetRemote.length ? nerSetRemote : nerSetLocal;
-  const semSet = semSetRemote.length ? semSetRemote : semSetLocal;
-
-  // Fetch remote tag options when currentLang changes
+  // Fetch remote tag options when current language (or language pair) changes; remote only (no local fallback)
   useEffect(() => {
-    let isCancelled = false;
+    let cancelled = false;
     const code = currentLang;
-    fetchPOS(code).then(res => { if (!isCancelled) setPosSetRemote(res.data?.data || []); }).catch(()=>{ if (!isCancelled) setPosSetRemote([]); });
-    fetchNER(code).then(res => { if (!isCancelled) setNerSetRemote(res.data?.data || []); }).catch(()=>{ if (!isCancelled) setNerSetRemote([]); });
-    fetchSemantic(code).then(res => { if (!isCancelled) setSemSetRemote(res.data?.data || []); }).catch(()=>{ if (!isCancelled) setSemSetRemote([]); });
-    return () => { isCancelled = true; };
-  }, [currentLang]);
+    setPosSetRemote([]);
+    setNerSetRemote([]);
+    setSemSetRemote([]);
+    Promise.all([
+      fetchPOS(code).then(r => r.data?.data || []).catch(() => []),
+      fetchNER(code).then(r => r.data?.data || []).catch(() => []),
+      fetchSemantic(code).then(r => r.data?.data || []).catch(() => [])
+    ]).then(([posArr, nerArr, semArr]) => {
+      if (cancelled) return;
+      setPosSetRemote(posArr);
+      setNerSetRemote(nerArr);
+      setSemSetRemote(semArr);
+      // If previously selected specific tag no longer exists, reset to 'all'
+      if (tagSelect.length === 2) {
+        const [cat, val] = tagSelect;
+        const exists = (
+          (cat === 'pos' && posArr.includes(val)) ||
+          (cat === 'ner' && nerArr.includes(val)) ||
+          (cat === 'semantic' && semArr.includes(val))
+        );
+        if (!exists) setTagSelect(['all']);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [currentLang, appLanguage?.languagePair]);
 
   const options: Option[] = [
     {
@@ -68,26 +79,17 @@ const Statistical: React.FC = () => {
     {
       value: 'pos',
       label: t('pos'),
-      children: posSet.map((pos: string) => ({
-        value: pos,
-        label: pos,
-      })),
+      children: posSetRemote.map((pos: string) => ({ value: pos, label: pos })),
     },
     {
       value: 'ner',
       label: t('ner'),
-      children: nerSet.map((ner: string) => ({
-        value: ner,
-        label: ner
-      })),
+      children: nerSetRemote.map((ner: string) => ({ value: ner, label: ner })),
     },
     {
       value: 'semantic',
       label: t('semantic'),
-      children: semSet.map((sem: string) => ({
-        value: sem,
-        label: sem
-      })),
+      children: semSetRemote.map((sem: string) => ({ value: sem, label: sem })),
     }
   ];
 

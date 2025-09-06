@@ -17,12 +17,12 @@ import {
   LogoutOutlined,
   SettingOutlined,
   AccountBookOutlined,
+  DownOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useTheme } from '@/app/theme-provider';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from './language-switcher';
-import FileUploader from './file-uploader';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { appRoute } from '@/config/appRoute';
@@ -196,9 +196,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Flex gap="middle" align="center" style={{ flex: 1, justifyContent: 'center' }}>
               <span className="font-semibold">{t("language_pair")}:</span>
               <Dropdown menu={{ items: languageGroupItems }} trigger={['click']}>
-                <Space style={{ cursor: 'pointer' }}>
-                  <Button type={'dashed'} >{appLanguage?.languagePair ? t(appLanguage?.languagePair) : t('en_vi')}</Button>
-                </Space>
+                <Button style={{ display: 'flex', alignItems: 'center' }}>
+                  {appLanguage?.languagePair ? t(appLanguage?.languagePair) : t('en_vi')}
+                  <DownOutlined style={{ marginLeft: 6, fontSize: 12 }} />
+                </Button>
               </Dropdown>
               <span className="font-semibold">{t("current_language")}:</span>
               <Switch

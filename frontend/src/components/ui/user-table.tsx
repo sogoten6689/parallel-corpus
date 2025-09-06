@@ -1,12 +1,17 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, Tooltip, Typography } from 'antd';
+import { Table, Tooltip, Modal, Form, Input, DatePicker, Button, Space } from 'antd';
+import useApp from 'antd/es/app/useApp';
+import dayjs from 'dayjs';
+import 'dayjs/locale/vi';
+import 'dayjs/locale/en';
 import { RowWord } from '@/types/row-word.type';
+import { getMachineLocale } from '@/dao/utils';
 import { useTranslation } from "react-i18next";
-import Modal from 'antd/es/modal/Modal';
 import { useQuery } from "@tanstack/react-query";
-import { getUser } from '@/services/user/user-api';
+import { getUser, updateUserApi } from '@/services/user/user-api';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const fetchRowWords = async (
   page: number,
@@ -52,33 +57,87 @@ const getColumnKey = (key: string) => {
 
 export default function UserTable({ }: UserTableProps) {
   const { t } = useTranslation();
+  const [machineLocale, setMachineLocale] = useState<'vi' | 'en'>(() => getMachineLocale('en'));
+  const { message } = useApp();
+  useEffect(() => { setMachineLocale(getMachineLocale('en')); }, []);
+  useEffect(() => { dayjs.locale(machineLocale); }, [machineLocale]);
+  const dateFormat = machineLocale === 'vi' ? 'DD/MM/YYYY' : 'YYYY-MM-DD';
 
   const getColumnWithTooltip = (key: string) => ({
-    title: <Tooltip title={t(`${key}`)}>{t(key)}</Tooltip>,
+    title: <Tooltip title={t(`${key}_tooltip`)}>{t(key)}</Tooltip>,
     dataIndex: getColumnKey(key),
     key: getColumnKey(key),
   });
 
-  const columnKeys = ['id', 'full_name', 'email', 'organization', 'role', 'date_of_birth'];
+  // Unified column keys list including action like master-row-word-table pattern
+  const columnKeys = ['id', 'full_name', 'email', 'organization', 'role', 'date_of_birth', 'action'];
 
   const columns = columnKeys.map((key) => {
-    const column = getColumnWithTooltip(key);
+    const base = getColumnWithTooltip(key);
 
-    if (key === 'id') {
-      const render = (text: string, record: RowWord) => (
-        <a onClick={() => showModal(record)}>{text}</a>
-      );
+    if (key === 'date_of_birth') {
       return {
-        ...column,
-        render,
-      };
+        ...base,
+        render: (value: string | undefined) => {
+          if (!value) return <span>-</span>;
+          const format = machineLocale === 'vi' ? 'DD/MM/YYYY' : 'YYYY-MM-DD';
+          const d = dayjs(value);
+          return d.isValid() ? d.format(format) : value;
+        }
+      } as any;
     }
 
-    return column;
+    if (key === 'action') {
+      return {
+        ...base,
+        render: (_: any, record: any) => (
+          <Space>
+            <Button size="small" onClick={() => openEdit(record)}>{t('edit')}</Button>
+          </Space>
+        )
+      } as any;
+    }
 
+    return base as any;
   });
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [selectedWord, setSelectedWord] = useState<RowWord | null>(null);
+
+  // Edit modal state & form
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [editForm] = Form.useForm();
+
+  const openEdit = (record: any) => {
+    setEditingUser(record);
+    editForm.setFieldsValue({
+      full_name: record.full_name,
+      organization: record.organization,
+      role: record.role,
+      date_of_birth: record.date_of_birth ? dayjs(record.date_of_birth) : null,
+      email: record.email,
+    });
+    setEditOpen(true);
+  };
+
+  const handleEditOk = () => {
+    editForm.validateFields().then(values => {
+      if (!editingUser) return;
+      const payload = {
+        full_name: values.full_name?.trim(),
+        date_of_birth: values.date_of_birth ? values.date_of_birth.format('YYYY-MM-DD') : '',
+        organization: values.organization || '',
+        role: values.role || editingUser.role,
+      };
+      mutationUpdate.mutate({ id: editingUser.id, payload, formValues: values });
+    });
+  };
+
+  const handleEditCancel = () => {
+    setEditOpen(false);
+    setEditingUser(null);
+  };
+
+  // (Action column already included in dynamic columns mapping above)
+  // Removed modal state (no detail modal on click)
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -89,6 +148,27 @@ export default function UserTable({ }: UserTableProps) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['users', pagination],
     queryFn: () => fetchRowWords(pagination.current, pagination.pageSize),
+  });
+
+  const queryClient = useQueryClient();
+  interface UpdateVars { id: number; payload: any; formValues: any }
+  const mutationUpdate = useMutation({
+    mutationFn: async ({ id, payload }: UpdateVars) => {
+      return await updateUserApi(id, payload);
+    },
+    onSuccess: (res, variables: UpdateVars) => {
+      // Update cache: refetch or manual patch
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      // Also close modal
+      setEditOpen(false);
+      if (editingUser) {
+        setEditingUser({ ...editingUser, ...variables.formValues, date_of_birth: variables.formValues.date_of_birth ? variables.formValues.date_of_birth.format('YYYY-MM-DD') : '' });
+      }
+      message.success(t('edit_success'));
+    },
+    onError: () => {
+      message.error(t('edit_failed'));
+    }
   });
 
   useEffect(() => {
@@ -107,15 +187,7 @@ export default function UserTable({ }: UserTableProps) {
       pageSize: pagination.pageSize,
     });
   };
-  const showModal = (record: RowWord) => {
-    setSelectedWord(record);
-    setIsModalVisible(true);
-  };
-
-  const handleCancel = () => {
-    setIsModalVisible(false);
-    setSelectedWord(null);
-  };
+  // Removed showModal and handleCancel (modal deleted)
 
   return (
     <div>
@@ -128,7 +200,8 @@ export default function UserTable({ }: UserTableProps) {
           <Table
             dataSource={data.data}
             columns={columns}
-            rowKey="ID"
+            // Prefer 'id', fallback to 'ID' or 'email' to ensure uniqueness
+            rowKey={(record: any) => record.id ?? record.ID ?? record.email}
             scroll={{ x: 'max-content' }}
             className='w-full'
             bordered
@@ -142,45 +215,40 @@ export default function UserTable({ }: UserTableProps) {
               handleTableChange(pagination, filters, sorter);
             }}
           />
+          <Modal
+            title={t('edit')}
+            open={editOpen}
+            onOk={handleEditOk}
+            onCancel={handleEditCancel}
+            okText={t('save')}
+            cancelText={t('cancel')}
+            confirmLoading={mutationUpdate.isPending}
+          >
+            <Form layout='vertical' form={editForm}>
+              <Form.Item label={t('email')} name='email'>
+                <Input disabled />
+              </Form.Item>
+              <Form.Item label={t('full_name')} name='full_name' rules={[{ required: true }]}> 
+                <Input />
+              </Form.Item>
+              <Form.Item label={t('organization')} name='organization'>
+                <Input />
+              </Form.Item>
+              <Form.Item label={t('role')} name='role'>
+                <Input />
+              </Form.Item>
+              <Form.Item label={t('date_of_birth')} name='date_of_birth'>
+                <DatePicker
+                  style={{ width: '100%' }}
+                  format={dateFormat}
+                  disabledDate={(d) => d && d.isAfter(dayjs())}
+                />
+              </Form.Item>
+            </Form>
+          </Modal>
         </>
       )}
-      <Modal
-        title={`${t('word_detail')}: '${selectedWord?.Word}'`}
-        open={isModalVisible}
-        onCancel={handleCancel}
-        footer={null}
-      >
-        {selectedWord && (
-          <table style={{ width: '100%', fontSize: '14px' }}>
-            <tbody>
-              <tr>
-                <td><strong>{t('id')}:</strong></td>
-                <td>{selectedWord.Word}</td>
-              </tr>
-              <tr>
-                <td><strong>{t('lemma')}:</strong></td>
-                <td>{selectedWord.Lemma}</td>
-              </tr>
-              <tr>
-                <td><strong>{t('pos')}:</strong></td>
-                <td>{selectedWord.POS}</td>
-              </tr>
-              <tr>
-                <td><strong>{t('morph')}:</strong></td>
-                <td>{selectedWord.Morph}</td>
-              </tr>
-              <tr>
-                <td><strong>{t('ner')}:</strong></td>
-                <td>{selectedWord.NER}</td>
-              </tr>
-              <tr>
-                <td><strong>{t('semantic')}:</strong></td>
-                <td>{selectedWord.Semantic}</td>
-              </tr>
-            </tbody>
-          </table>
-        )}
-      </Modal>
+  {/* Modal removed as per request (ID click no longer opens details) */}
     </div>
   );
 }

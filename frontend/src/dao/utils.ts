@@ -1,15 +1,15 @@
 import { RowWord } from "@/types/row-word.type";
 
 export function containsSublistUnordered<T>(mainList: T[], subList: T[]): boolean {
-  const mainSet = new Set(mainList);
-  const subSet = new Set(subList);
+    const mainSet = new Set(mainList);
+    const subSet = new Set(subList);
 
-  for (const item of subSet) {
-    if (!mainSet.has(item)) {
-      return false;
+    for (const item of subSet) {
+        if (!mainSet.has(item)) {
+            return false;
+        }
     }
-  }
-  return true;
+    return true;
 }
 
 export function convertLemma(text: string): string {
@@ -382,23 +382,87 @@ export function convertLemma(text: string): string {
     return result.slice(0, -1);
 }
 
+/**
+ * Parse a tab-delimited line into a RowWord structure.
+ * Expected order (min 10 fields):
+ * 0: ID
+ * 1: Word
+ * 2: Lemma
+ * 3: Links
+ * 4: Morph
+ * 5: POS
+ * 6: Phrase
+ * 7: Grm
+ * 8: NER
+ * 9: Semantic
+ * 10 (optional): Lang_code
+ * Any extra fields are ignored. Missing optional Lang_code becomes ''.
+ */
 export const parseLine = (line: string): RowWord => {
-    const fields = line.split('\t');
-    if (fields.length !== 10) {
-      return {} as RowWord;
+    if (!line || !line.trim()) {
+        return {
+            ID: '', ID_sen: '', Word: '', Lemma: '', Links: '', Morph: '', POS: '', Phrase: '', Grm: '', NER: '', Semantic: '', Lang_code: ''
+        };
+    }
+
+    const rawFields = line.split('\t');
+    // Ensure we have at least mandatory 10 fields
+    if (rawFields.length < 10) {
+        return {
+            ID: '', ID_sen: '', Word: '', Lemma: '', Links: '', Morph: '', POS: '', Phrase: '', Grm: '', NER: '', Semantic: '', Lang_code: ''
+        };
+    }
+
+    // Trim all fields
+    const fields = rawFields.map(f => f.trim());
+
+    const id = fields[0] || '';
+    // Attempt to derive sentence ID: if pattern like XX<number>XX, fallback to id.
+    let ID_sen = '';
+    // Example heuristic: extract longest digit sequence
+    const digitMatch = id.match(/\d+/g);
+    if (digitMatch && digitMatch.length) {
+        ID_sen = digitMatch.join('_');
+    } else if (id.length > 4) {
+        // fallback to previous slice logic if meaningful
+        ID_sen = id.slice(2, -2) || id;
+    } else {
+        ID_sen = id;
     }
 
     return {
-      ID: fields[0],
-      ID_sen: fields[0].slice(2, -2),
-      Word: fields[1],
-      Lemma: fields[2],
-      Links: fields[3],
-      Morph: fields[4],
-      POS: fields[5],
-      Phrase: fields[6],
-      Grm: fields[7],
-      NER: fields[8],
-      Semantic: fields[9],
+        ID: id,
+        ID_sen,
+        Word: fields[1] || '',
+        Lemma: fields[2] || '',
+        Links: fields[3] || '',
+        Morph: fields[4] || '',
+        POS: fields[5] || '',
+        Phrase: fields[6] || '',
+        Grm: fields[7] || '',
+        NER: fields[8] || '',
+        Semantic: fields[9] || '',
+        Lang_code: fields[10] || ''
     };
-  };
+};
+
+/**
+ * Detect machine/browser locale (client-side) and map to supported codes.
+ * Currently supports 'vi' and 'en'; defaults to fallback (default 'en').
+ * Safe for SSR: returns fallback when navigator / Intl not available.
+ */
+export function getMachineLocale(fallback: 'en' | 'vi' = 'en'): 'en' | 'vi' {
+    try {
+        let locale = '';
+        if (typeof navigator !== 'undefined' && navigator.language) {
+            locale = navigator.language.toLowerCase();
+        } else if (typeof Intl !== 'undefined') {
+            locale = Intl.DateTimeFormat().resolvedOptions().locale.toLowerCase();
+        }
+        if (locale.startsWith('vi')) return 'vi';
+        if (locale.startsWith('en')) return 'en';
+        return fallback;
+    } catch {
+        return fallback;
+    }
+}

@@ -7,7 +7,8 @@ export interface API_PROPS {
     },
     USER: {
         MY_PROFILE: string
-        LIST: string
+    LIST: string
+    UPDATE: (id: number) => string
     },
     MASTER: {
         IMPORT_UPLOAD: string
@@ -31,7 +32,8 @@ export const API: API_PROPS = {
     },
     USER: {
         MY_PROFILE: "/user/my-profile",
-        LIST: "/users"
+    LIST: "/users",
+    UPDATE: (id: number) => `/users/${id}`
     },
     MASTER: {
         IMPORT_UPLOAD: "api/master/import",
