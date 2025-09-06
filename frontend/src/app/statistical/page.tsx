@@ -5,40 +5,60 @@ import { getNERSet, getPOSSet, getSEMSet } from "@/dao/data-utils";
 import { RootState } from "@/redux";
 import { RowStat } from "@/types/row-stat.type";
 import { Option } from '@/types/option.type';
-import { Button, Cascader, CascaderProps, Col, Flex, Row, Select, Switch, Typography } from "antd";
-import React, { useState } from "react";
+import { Button, Cascader, CascaderProps, Col, Flex, Row, Select, Typography, Form } from "antd";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
+import { fetchPOS, fetchNER, fetchSemantic } from '@/services/master/master-api';
+import { useAppLanguage } from '@/contexts/AppLanguageContext';
 
 const Statistical: React.FC = () => {
   const { t } = useTranslation();
-  const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1),
-    rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2),
-    lang_1 = useSelector((state: RootState) => state.dataSlice.lang_1),
-    lang_2 = useSelector((state: RootState) => state.dataSlice.lang_2);
+  const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1);
+  const rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2);
+  const lang_1 = useSelector((state: RootState) => state.dataSlice.lang_1);
+  const lang_2 = useSelector((state: RootState) => state.dataSlice.lang_2);
 
-  const [showFirst, setShowFirst] = useState(true),
-    [topResults, setTopResults] = useState('all'),
-    [tagSelect, setTagSelect] = useState(['all']),
-    [numTypes, setNumTypes] = useState(1),
-    [data, setData] = useState<RowStat[]>([]);
+  const { appLanguage } = useAppLanguage();
+  const currentLang = appLanguage?.currentLanguage || lang_1 || 'vi';
+
+  const baseRows = currentLang === lang_2 ? rows_2 : rows_1; // decide which corpus aligns with header language
+
+  const [topResults, setTopResults] = useState('all');
+  const [tagSelect, setTagSelect] = useState(['all']);
+  const [numTypes, setNumTypes] = useState(1);
+  const [data, setData] = useState<RowStat[]>([]);
+  const [posSetRemote, setPosSetRemote] = useState<string[]>([]);
+  const [nerSetRemote, setNerSetRemote] = useState<string[]>([]);
+  const [semSetRemote, setSemSetRemote] = useState<string[]>([]);
 
   const handleTopResults = (value: string) => {
     setTopResults(value);
   };
 
-  const handleSwitch = (checked: boolean) => {
-    setShowFirst(checked);
-  };
-
-  const handleTagSelect: CascaderProps<Option>['onChange'] = (value) => {
+  const handleTagSelect: CascaderProps<Option>['onChange'] = (value, _selectedOptions) => {
     setTagSelect(value);
   };
+  // Local fallback sets from current language corpus
+  const posSetLocal = getPOSSet(baseRows);
+  const nerSetLocal = getNERSet(baseRows);
+  const semSetLocal = getSEMSet(baseRows);
+  const numTokens = baseRows.length;
 
-  const posSet = showFirst ? getPOSSet(rows_1) : getPOSSet(rows_2),
-    nerSet = showFirst ? getNERSet(rows_1) : getNERSet(rows_2),
-    semSet = showFirst ? getSEMSet(rows_1) : getSEMSet(rows_2),
-    numTokens = showFirst ? rows_1.length : rows_2.length;
+  // Effective sets (prefer remote when loaded)
+  const posSet = posSetRemote.length ? posSetRemote : posSetLocal;
+  const nerSet = nerSetRemote.length ? nerSetRemote : nerSetLocal;
+  const semSet = semSetRemote.length ? semSetRemote : semSetLocal;
+
+  // Fetch remote tag options when currentLang changes
+  useEffect(() => {
+    let isCancelled = false;
+    const code = currentLang;
+    fetchPOS(code).then(res => { if (!isCancelled) setPosSetRemote(res.data?.data || []); }).catch(()=>{ if (!isCancelled) setPosSetRemote([]); });
+    fetchNER(code).then(res => { if (!isCancelled) setNerSetRemote(res.data?.data || []); }).catch(()=>{ if (!isCancelled) setNerSetRemote([]); });
+    fetchSemantic(code).then(res => { if (!isCancelled) setSemSetRemote(res.data?.data || []); }).catch(()=>{ if (!isCancelled) setSemSetRemote([]); });
+    return () => { isCancelled = true; };
+  }, [currentLang]);
 
   const options: Option[] = [
     {
@@ -72,7 +92,7 @@ const Statistical: React.FC = () => {
   ];
 
   const getData = () => {
-    const corpus = showFirst ? rows_1 : rows_2;
+  const corpus = baseRows;
     const data: Record<string, number> = {};
 
     corpus.map(row => {
@@ -117,50 +137,25 @@ const Statistical: React.FC = () => {
     showData(data);
   };
 
-  const handleSaveButton = () => {
-    if (!data || data.length === 0) {
-      return;
-    }
-
-    const header = "Word\tCount\tPercent\tF=-log(n/N)";
-    const rows = data.map(row =>
-      `${row.Word}\t${row.Count}\t${row.Percent.toFixed(2)}\t${row.F.toFixed(4)}`
-    );
-    const content = [header, ...rows].join('\n');
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'statistical_data.txt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
+  const [form] = Form.useForm();
 
   return (
     <>
       <div className="grid grid-rows-[auto_1fr]">
         <div className="p-3">
-          <Row gutter={24}>
+          <Row gutter={16}>
             <Col span={16}>
               <StatisticsTable data={data}></StatisticsTable>
             </Col>
             <Col span={8}>
-              <Flex vertical gap={24}>
-                <Flex gap='middle'>
-                  <Typography.Title level={5} className="font-semibold">{t("select_language")}</Typography.Title>
-                  <Switch
-                    checked={showFirst}
-                    onChange={handleSwitch}
-                    checkedChildren={lang_1 ? t(lang_1) : t("lang1")}
-                    unCheckedChildren={lang_2 ? t(lang_2) : t("lang2")}
-                  />
+              <Flex vertical gap={16}>
+                <Flex gap='small' align='center'>
+                  <Typography.Title level={5} className="font-semibold !mb-0">{t('current_language')}:</Typography.Title>
+                  <Typography.Text strong>{t(currentLang)}</Typography.Text>
                 </Flex>
-                <Typography.Title level={5}>{t('total_types')}: {numTypes}, {t('total_tokens')}: {numTokens}</Typography.Title>
-                <Flex gap='middle'>
-                  <Typography.Title level={5}>{t('select_top')}</Typography.Title>
+                <Typography.Title level={5} className='!mb-0'>{t('total_types')}: {numTypes}, {t('total_tokens')}: {numTokens}</Typography.Title>
+                <Flex gap='small' align='center'>
+                  <Typography.Title level={5} className='!mb-0'>{t('select_top')}</Typography.Title>
                   <Select
                     defaultValue={topResults}
                     style={{ width: 120 }}
@@ -180,16 +175,23 @@ const Statistical: React.FC = () => {
                     ]}
                   />
                 </Flex>
-                <Flex gap='middle'>
-                  <Typography.Title level={5}>{t('filter_tag')}</Typography.Title>
-                  <Cascader options={options} onChange={handleTagSelect} placeholder={t('please_select')} value={tagSelect} />
+                <Flex gap='small' align="center">
+                  <Typography.Title level={5} className="!mb-0">{t('filter_tag')}</Typography.Title>
+                  <Form form={form} layout="inline" className="flex items-center" style={{ marginBottom: 0 }}>
+                    <Form.Item name="tagSelect" initialValue={tagSelect} className="flex items-center !mb-0">
+                      <Cascader
+                        options={options}
+                        onChange={(value, opts) => { handleTagSelect(value, opts); form.setFieldsValue({ tagSelect: value }); }}
+                        placeholder={t('please_select')}
+                        value={tagSelect}
+                        className="flex items-center"
+                      />
+                    </Form.Item>
+                  </Form>
                 </Flex>
-                <Flex gap='middle' justify="center">
+                <Flex gap='small' justify="center">
                   <Button type='primary' onClick={handleViewButton}>
                     {t('view')}
-                  </Button>
-                  <Button color="cyan" variant="solid" onClick={handleSaveButton}>
-                    {t('save')}
                   </Button>
                 </Flex>
               </Flex>

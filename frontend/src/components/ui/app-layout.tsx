@@ -158,7 +158,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const handleSwitch = (checked: boolean) => {
     const currentLanguage = appLanguage?.lang_1 === appLanguage?.currentLanguage ? appLanguage?.lang_2 : appLanguage?.lang_1;
-    setCurrentLanguage(currentLanguage ?? 'en', appLanguage ?? {languagePair: 'en_vi', currentLanguage: 'en', lang_1: 'en', lang_2: 'vi'});
+    setCurrentLanguage(currentLanguage ?? 'en', appLanguage ?? { languagePair: 'en_vi', currentLanguage: 'en', lang_1: 'en', lang_2: 'vi' });
   };
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -184,8 +184,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             { key: '3', icon: <TagOutlined />, label: <Link href="/tag">{t('menu_tag')}</Link> },
             { key: '4', icon: <TagsOutlined />, label: <Link href="/word-tag">{t('menu_word_tag')}</Link> },
             { key: '5', icon: <StockOutlined />, label: <Link href="/statistical">{t('statistical')}</Link> },
-             user?.role === 'admin' ? { key: '6', icon: <SettingOutlined />, label: <Link href="/users">{t('user')}</Link> } : null,  
-             user?.id ? { key: '8', icon: <AccountBookOutlined />, label: <Link href="/my-profile">{t('profile')}</Link> } : null,  
+            user?.role === 'admin' ? { key: '6', icon: <SettingOutlined />, label: <Link href="/users">{t('user')}</Link> } : null,
+            user?.id ? { key: '8', icon: <AccountBookOutlined />, label: <Link href="/my-profile">{t('profile')}</Link> } : null,
             { key: '7', icon: <InfoOutlined />, label: <Link href="/introduction">{t('introduction')}</Link> },
           ]}
         />
@@ -195,21 +195,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Flex gap="middle" align="center" style={{ width: '100%' }}>
             <Flex gap="middle" align="center" style={{ flex: 1, justifyContent: 'center' }}>
               <span className="font-semibold">{t("language_pair")}:</span>
-                <Dropdown menu={{ items: languageGroupItems }} trigger={['click']}>
-                  <Space style={{ cursor: 'pointer' }}>
-                    <Button type={'dashed'} >{appLanguage?.languagePair ? t(appLanguage?.languagePair) : t('en_vi')}</Button>
-                  </Space>
-                </Dropdown>
+              <Dropdown menu={{ items: languageGroupItems }} trigger={['click']}>
+                <Space style={{ cursor: 'pointer' }}>
+                  <Button type={'dashed'} >{appLanguage?.languagePair ? t(appLanguage?.languagePair) : t('en_vi')}</Button>
+                </Space>
+              </Dropdown>
               <span className="font-semibold">{t("current_language")}:</span>
               <Switch
                 checked={appLanguage?.lang_1 === appLanguage?.currentLanguage}
                 onChange={handleSwitch}
-                checkedChildren={appLanguage?.lang_1 === appLanguage?.currentLanguage ? t(appLanguage?.lang_1 ?? "null") : t("null") }
-                unCheckedChildren={appLanguage?.lang_2 === appLanguage?.currentLanguage ? t(appLanguage?.lang_2 ?? "null") : t("null") }
+                checkedChildren={appLanguage?.lang_1 === appLanguage?.currentLanguage ? t(appLanguage?.lang_1 ?? "null") : t("null")}
+                unCheckedChildren={appLanguage?.lang_2 === appLanguage?.currentLanguage ? t(appLanguage?.lang_2 ?? "null") : t("null")}
               />
-            {user?.role === 'admin' ? <FileUploaderMaster /> : null}
-            
-            
+              {user?.role === 'admin' ? <FileUploaderMaster /> : null}
 
             </Flex>
             <Flex gap="middle" align="center" style={{ justifyContent: 'flex-end', marginRight: 20 }}>
