@@ -15,6 +15,13 @@ class UserUpdateBase(BaseModel):
     date_of_birth: date
     organization: str
 
+
+class UserUpdateByAdminBase(BaseModel):
+    full_name: str
+    date_of_birth: date
+    organization: str
+    role: UserRole
+
 class UserCreate(UserBase):
     password: str
 
