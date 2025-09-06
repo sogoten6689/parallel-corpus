@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { appRoute } from '@/config/appRoute';
 import { useAuth } from '@/contexts/AuthContext';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import useApp from 'antd/es/app/useApp';
 
 const { Title } = Typography;
@@ -19,7 +19,7 @@ interface SignupFormValues {
   password: string;
   confirmPassword: string;
   organization: string;
-  dateOfBirth: Date;
+  dateOfBirth: dayjs.Dayjs; // Ant Design DatePicker returns Dayjs
 }
 
 export default function SignupPage() {
@@ -34,13 +34,13 @@ export default function SignupPage() {
   const onFinish = async (values: SignupFormValues) => {
     setLoading(true);
     try {
-
-      const { confirmPassword, ...signupData } = values;
-      const dob = signupData.dateOfBirth ? signupData.dateOfBirth.toISOString().split('T')[0] : null // YYYY-MM-DD
+      // Build signup data without confirmPassword to avoid unused var lint
+      const { fullName, email, password, organization, dateOfBirth } = values;
+      const dob = dateOfBirth ? dateOfBirth.format('YYYY-MM-DD') : null; // YYYY-MM-DD
+      const signupData = { fullName, email, password, organization, dateOfBirth };
 
       if (!dob || !dayjs(dob).isValid()) {
-        // throw new Error('Date of birth is required');
-        message.error('Date of birth is required');
+        message.error(t('auth.birthdayRequired'));
         return;
       }
       const res = await signup({ ...signupData, dateOfBirth: dob ?? '', role: "user" });
@@ -53,6 +53,7 @@ export default function SignupPage() {
         router.push(appRoute.login);
       }
     } catch (error) {
+      console.error('Signup failed', error);
       message.error(t('auth.signupFailed'));
     } finally {
       setLoading(false);

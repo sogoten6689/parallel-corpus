@@ -90,13 +90,13 @@ export default function FileUploaderMaster() {
   const handleSubmit = async () => {
     try {
       if (fileList.length === 0) {
-        message.warning("Hãy chọn 1 file cần upload");
+        message.warning(t('select_file_upload_warning'));
         return;
       }
 
       const file = fileList[0].originFileObj as File | undefined;
       if (!file) {
-        message.error("File không hợp lệ");
+        message.error(t('file_invalid'));
         return;
       }
 
@@ -105,13 +105,13 @@ export default function FileUploaderMaster() {
       // console.log(res);
 
       if (res.status !== 200) {
-        message.error("Upload thất bại!");
+        message.error(t('upload_failed'));
         if (res.status === 401) {
           logout();
         }
         return;
       } else {
-        message.success("Upload thành công!");
+        message.success(t('upload_success'));
         console.log("Upload response:", res.data);
         // reset
         form.resetFields();
@@ -123,7 +123,7 @@ export default function FileUploaderMaster() {
         return;
       }
       console.error(err);
-      message.error(err?.message || "Có lỗi khi upload");
+  message.error(err?.message || t('upload_error_generic'));
     } finally {
       setLoading(false);
     }
@@ -139,7 +139,7 @@ export default function FileUploaderMaster() {
       </Button>
 
       <Modal
-        title="Upload dữ liệu & chọn ngôn ngữ"
+        title={t('upload_modal_title')}
         open={open}
         onCancel={() => {
           if (!loading) {
@@ -151,7 +151,7 @@ export default function FileUploaderMaster() {
       >
         <Space direction="vertical" size="large" style={{ width: "100%" }}>
           <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-            Hỗ trợ định dạng: {accept}
+            {t('supported_formats', { formats: accept })}
           </Typography.Paragraph>
 
 
@@ -160,8 +160,8 @@ export default function FileUploaderMaster() {
               <Col span={12}>
                 <Form.Item
                   name="lang_pair"
-                  label="Cặp ngôn ngữ"
-                  rules={[{ required: true, message: "Vui lòng chọn cặp ngôn ngữ" }]}
+                  label={t('lang_pair')}
+                  rules={[{ required: true, message: t('please_select_language_pair') }]}
                 >
                   <Dropdown menu={{ items: languageGroupItems }} trigger={['click']}>
                     <Space style={{ cursor: 'pointer' }}>
@@ -174,8 +174,8 @@ export default function FileUploaderMaster() {
               <Col span={12}>
                 <Form.Item
                   name="lang_code"
-                  label="Ngôn ngữ"
-                  rules={[{ required: true, message: "Vui lòng chọn ngôn ngữ" }]}
+                  label={t('language')}
+                  rules={[{ required: true, message: t('please_select_language') }]}
                 >
                   <Dropdown menu={{ items: langOptions }} trigger={['click']}>
                     <Space style={{ cursor: 'pointer' }}>
@@ -187,14 +187,14 @@ export default function FileUploaderMaster() {
               </Col>
             </Row>
 
-            <Form.Item label="File">
+            <Form.Item label={t('file')}>
 
               <Upload.Dragger {...uploadProps}>
                 <p className="ant-upload-drag-icon">
                   <InboxOutlined />
                 </p>
-                <p className="ant-upload-text">Kéo thả file vào đây hoặc bấm để chọn</p>
-                <p className="ant-upload-hint">Chỉ 1 file, dữ liệu sẽ được gửi khi bấm nút OK</p>
+                <p className="ant-upload-text">{t('drag_file_here')}</p>
+                <p className="ant-upload-hint">{t('single_file_hint')}</p>
               </Upload.Dragger>
 
             </Form.Item>
@@ -202,8 +202,7 @@ export default function FileUploaderMaster() {
 
 
           <Typography.Paragraph type="secondary">
-            Lưu ý: Nếu file CSV có BOM (UTF-8 with BOM), hãy xử lý trên server (ví dụ đọc với
-            encoding \"utf-8-sig\") để tránh lỗi ID dạng \"\ufeff...\".
+            {t('note_bom')}
           </Typography.Paragraph>
         </Space>
       </Modal>

@@ -20,7 +20,7 @@ import 'dayjs/locale/en';
 export default function Home() {
   const { message } = useApp();
   const { t } = useTranslation();
-  const { appLanguage, setCurrentLanguage } = useAppLanguage();
+  const { appLanguage } = useAppLanguage(); // removed unused setCurrentLanguage
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
@@ -59,7 +59,14 @@ export default function Home() {
     }
   }, [loading, profile, form]);
 
-  const onFinish = async (values: any) => {
+  interface ProfileFormValues {
+    email?: string;
+    full_name?: string;
+    organization?: string;
+    date_of_birth?: dayjs.Dayjs;
+  }
+
+  const onFinish = async (values: ProfileFormValues) => {
     if (!profile) return;
     setSaving(true);
     try {
@@ -98,7 +105,8 @@ export default function Home() {
             role: freshUser.role,
             dateOfBirth: freshUser.date_of_birth,
           }));
-        } catch (e) {
+        } catch (e) { // use e to satisfy lint
+          console.warn('Refetch profile failed, falling back to optimistic update', e);
           // fallback to optimistic updatedUser if refetch fails
           if (updatedUser) {
             setProfile(updatedUser);
@@ -113,10 +121,15 @@ export default function Home() {
       }
     } catch (err) {
       console.error(err);
-      const axiosErr = err as AxiosError<any>;
+      interface ApiErrorResponse { detail?: unknown; message?: string; [key: string]: unknown }
+      const axiosErr = err as AxiosError<ApiErrorResponse>;
       if (axiosErr?.response?.status === 422) {
         const detail = axiosErr.response?.data?.detail;
-        message.error(detail ? `Validation error: ${JSON.stringify(detail)}` : 'Validation error (422)');
+        if (detail) {
+          message.error(t('validation_error_detail', { detail: JSON.stringify(detail) }));
+        } else {
+          message.error(t('validation_error_422'));
+        }
       } else {
         message.error(t('edit_failed'));
       }

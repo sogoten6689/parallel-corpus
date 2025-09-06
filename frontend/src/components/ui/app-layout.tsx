@@ -178,16 +178,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           theme="dark"
           mode="inline"
           selectedKeys={[selectedKey]}
-          items={[
-            { key: '1', icon: <FontColorsOutlined />, label: <Link href="/">{t('home')}</Link> },
-            { key: '2', icon: <SearchOutlined />, label: <Link href="/word">{t('menu_word')}</Link> },
-            { key: '3', icon: <TagOutlined />, label: <Link href="/tag">{t('menu_tag')}</Link> },
-            { key: '4', icon: <TagsOutlined />, label: <Link href="/word-tag">{t('menu_word_tag')}</Link> },
-            { key: '5', icon: <StockOutlined />, label: <Link href="/statistical">{t('statistical')}</Link> },
-            user?.role === 'admin' ? { key: '6', icon: <SettingOutlined />, label: <Link href="/users">{t('user')}</Link> } : null,
-            user?.id ? { key: '8', icon: <AccountBookOutlined />, label: <Link href="/my-profile">{t('profile')}</Link> } : null,
-            { key: '7', icon: <InfoOutlined />, label: <Link href="/introduction">{t('introduction')}</Link> },
-          ]}
+          defaultOpenKeys={['mgmt']}
+          items={(function(){
+            const base = [
+              { key: '1', icon: <FontColorsOutlined />, label: <Link href="/">{t('home')}</Link> },
+              { key: '2', icon: <SearchOutlined />, label: <Link href="/word">{t('menu_word')}</Link> },
+              { key: '3', icon: <TagOutlined />, label: <Link href="/tag">{t('menu_tag')}</Link> },
+              { key: '4', icon: <TagsOutlined />, label: <Link href="/word-tag">{t('menu_word_tag')}</Link> },
+              { key: '5', icon: <StockOutlined />, label: <Link href="/statistical">{t('statistical')}</Link> },
+              { key: '7', icon: <InfoOutlined />, label: <Link href="/introduction">{t('introduction')}</Link> },
+            ];
+            const mgmtChildren = [
+              user?.role === 'admin' ? { key: '6', icon: <SettingOutlined />, label: <Link href="/users">{t('user')}</Link> } : null,
+              user?.id ? { key: '8', icon: <AccountBookOutlined />, label: <Link href="/my-profile">{t('profile')}</Link> } : null,
+            ].filter(Boolean) as any[];
+            if (mgmtChildren.length > 0) {
+              base.splice(5, 0, { key: 'mgmt', icon: <SettingOutlined />, label: <span>{t('management')}</span>, children: mgmtChildren } as any);
+            }
+            return base;
+          })()}
         />
       </Sider>
       <Layout>
