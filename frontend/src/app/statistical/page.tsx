@@ -128,10 +128,20 @@ const Statistical: React.FC = () => {
     setData(newData);
   }
 
-  const handleViewButton = () => {
-    const data = getData();
-    setNumTypes(Object.keys(data).length);
-    showData(data);
+  const handleViewButton = async () => {
+    try {
+      const res = await fetchSemantic(currentLang);
+      const words: string[] = res.data?.data || [];
+      const limited = topResults !== 'all' ? words.slice(0, Number(topResults)) : words;
+      const newData: RowStat[] = limited.map(w => new RowStat(w, 0, 0, 0));
+      setData(newData);
+      setNumTypes(words.length);
+    } catch (e) {
+      // Fallback to local computation if API fails
+      const data = getData();
+      setNumTypes(Object.keys(data).length);
+      showData(data);
+    }
   };
 
   const [form] = Form.useForm();

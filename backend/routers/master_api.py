@@ -107,7 +107,7 @@ def get_all_ner(db: Session = Depends(get_db), lang_code: str = ""):
 @router.get("/semantic")
 def get_all_semantic(db: Session = Depends(get_db), lang_code: str = ""):
     # SELECT semantic FROM master_row_words [WHERE lang_code=?] GROUP BY semantic;
-    query = db.query(distinct(MasterRowWord.semantic))
+    query = db.query(distinct(MasterRowWord.word))
     if lang_code:
         query = query.filter(MasterRowWord.lang_code == lang_code)
     rows = query.all()
