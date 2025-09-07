@@ -8,7 +8,7 @@ import { Button, Cascader, CascaderProps, Col, Flex, Row, Select, Typography, Fo
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
-import { fetchPOS, fetchNER, fetchSemantic, fetchStatistics } from '@/services/master/master-api';
+import { fetchPOS, fetchNER, fetchSemantic, fetchStatistics, fetchStatisticWithTag } from '@/services/master/master-api';
 import { useAppLanguage } from '@/contexts/AppLanguageContext';
 
 const Statistical: React.FC = () => {
@@ -130,7 +130,10 @@ const Statistical: React.FC = () => {
 
   const handleViewButton = async () => {
     try {
-      const res = await fetchStatistics(currentLang);
+      const isAll = tagSelect.length === 1 && tagSelect[0] === 'all';
+      const res = isAll
+        ? await fetchStatistics(currentLang)
+        : await fetchStatisticWithTag(currentLang, tagSelect[0], tagSelect[1]);
       const items: Array<{ Word: string; Count: number; Percent: number; F: number; }> = res.data?.data || [];
 
       const sorted = items.sort((a, b) => (b.Count - a.Count) || a.Word.localeCompare(b.Word));
@@ -152,6 +155,12 @@ const Statistical: React.FC = () => {
     handleViewButton();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLang]);
+
+  // Auto refresh when filter tag or top N selection changes
+  useEffect(() => {
+    handleViewButton();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tagSelect, topResults]);
 
   const [form] = Form.useForm();
 

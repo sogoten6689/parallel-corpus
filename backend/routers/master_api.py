@@ -94,8 +94,8 @@ def get_all_pos(db: Session = Depends(get_db), lang_code: str = ""):
     values = sorted(values)
     return {"data": values}
 
-@router.get("/semantic-with-tag")
-def get_semantic_with_tag(
+@router.get("/statistic-with-tag")
+def get_statistic_with_tag(
     db: Session = Depends(get_db),
     lang_code: str = "",
     tag_type: str = "",
