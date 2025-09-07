@@ -92,7 +92,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
-    } catch (error) {
+  } catch {
       // throw new Error('Login failed');
     } finally {
       setIsLoading(false);
@@ -106,9 +106,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Simulate API call
       // await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const { role, ...rest } = userData;
-      const res = await signUpApi(rest);
-        console.log(res);
+      // Build signup payload without role
+      const res = await signUpApi({
+        email: userData.email,
+        password: userData.password,
+        fullName: userData.fullName,
+        organization: userData.organization,
+        dateOfBirth: userData.dateOfBirth,
+      });
+  // console.debug('signup response', res);
       if (res.status !== 200) {
         
         message.error(t('auth.signupFailed'));
@@ -119,14 +125,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 
       return { success: true, message: t('auth.signupSuccess') };
-    } catch (error: any) {
-      // throw new Error('Signup failed');
-        console.log(error);
-      if (error.response.status === 400) {
-        return { success: false, message: error.response.data.detail };
+    } catch (err) {
+      // console.debug('signup error', err);
+      if (typeof err === 'object' && err && 'response' in err) {
+        const maybeResp = (err as { response?: { status?: number; data?: { detail?: string } } }).response;
+        if (maybeResp?.status === 400) {
+          return { success: false, message: maybeResp.data?.detail || 'Bad Request' };
+        }
       }
-
-      return { success: false, message: error.message };
+      return { success: false, message: err instanceof Error ? err.message : 'Unknown error' };
     } finally {
       setIsLoading(false);
     }

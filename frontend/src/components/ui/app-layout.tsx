@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Image, Layout, Menu, theme, Typography, Flex, Divider, FloatButton, Drawer, Radio, RadioChangeEvent, Button, Dropdown, Avatar, Space, Switch } from 'antd';
+import type { MenuProps } from 'antd';
 import {
   SunOutlined,
   MoonOutlined,
@@ -138,7 +139,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const menuKeyMap: Record<string, string> = {
     '/': '1',
-    '/word': '12',
+  // Fix: incorrect key '12' prevented highlighting the Word menu item
+  '/word': '2',
     '/tag': '3',
     '/word-tag': '4',
     '/statistical': '5',
@@ -156,7 +158,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     "4": { group: "tags.VN_NER", label: "tags.vn_ner_tag" },
   };
 
-  const handleSwitch = (checked: boolean) => {
+  const handleSwitch = () => {
     const currentLanguage = appLanguage?.lang_1 === appLanguage?.currentLanguage ? appLanguage?.lang_2 : appLanguage?.lang_1;
     setCurrentLanguage(currentLanguage ?? 'en', appLanguage ?? { languagePair: 'en_vi', currentLanguage: 'en', lang_1: 'en', lang_2: 'vi' });
   };
@@ -179,8 +181,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           mode="inline"
           selectedKeys={[selectedKey]}
           defaultOpenKeys={['mgmt']}
-          items={(function(){
-            const base = [
+          items={(function(): MenuProps['items'] {
+            const base: Exclude<MenuProps['items'], undefined> = [
               { key: '1', icon: <FontColorsOutlined />, label: <Link href="/">{t('home')}</Link> },
               { key: '2', icon: <SearchOutlined />, label: <Link href="/word">{t('menu_word')}</Link> },
               { key: '3', icon: <TagOutlined />, label: <Link href="/tag">{t('menu_tag')}</Link> },
@@ -188,12 +190,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               { key: '5', icon: <StockOutlined />, label: <Link href="/statistical">{t('statistical')}</Link> },
               { key: '7', icon: <InfoOutlined />, label: <Link href="/introduction">{t('introduction')}</Link> },
             ];
-            const mgmtChildren = [
+            const mgmtChildren: Exclude<MenuProps['items'], undefined> = [
               user?.role === 'admin' ? { key: '6', icon: <SettingOutlined />, label: <Link href="/users">{t('user')}</Link> } : null,
               user?.id ? { key: '8', icon: <AccountBookOutlined />, label: <Link href="/my-profile">{t('profile')}</Link> } : null,
-            ].filter(Boolean) as any[];
+            ].filter((i): i is NonNullable<typeof i> => i !== null);
             if (mgmtChildren.length > 0) {
-              base.splice(5, 0, { key: 'mgmt', icon: <SettingOutlined />, label: <span>{t('management')}</span>, children: mgmtChildren } as any);
+              base.splice(5, 0, { key: 'mgmt', icon: <SettingOutlined />, label: <span>{t('management')}</span>, children: mgmtChildren });
             }
             return base;
           })()}

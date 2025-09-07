@@ -1,9 +1,5 @@
 'use client';
 
-import { getProfileMeApi, logInApi, signUpApi } from '@/services/auth/auth-api';
-import { setToken } from '@/services/axios';
-import { App, message } from 'antd';
-import { t } from 'i18next';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface AppLanguage {

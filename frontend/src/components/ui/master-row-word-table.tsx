@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button, Col, Input, Row, Space, Table, Tooltip, Typography, Tag, Descriptions } from 'antd';
+import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import { useTranslation } from "react-i18next";
 import Modal from 'antd/es/modal/Modal';
 import { useQuery } from "@tanstack/react-query";
@@ -16,10 +17,7 @@ import useApp from 'antd/es/app/useApp';
 
 const { Text } = Typography;
 
-type MasterRowWordTableProps = {
-}
-
-export default function MasterRowWordTable({ }: MasterRowWordTableProps) {
+export default function MasterRowWordTable() {
   const { t } = useTranslation();
   const { message } = useApp();
   const { user } = useAuth();
@@ -28,8 +26,9 @@ export default function MasterRowWordTable({ }: MasterRowWordTableProps) {
   const [selectedWord, setSelectedWord] = useState<MasterRowWord | null>(null);
   const [langCode, setLangCode] = useState<string | undefined>('');
   const [search, setSearch] = useState<string | undefined>();
-  const [totalAll, setTotalAll] = useState<number | null>(null);
-  const [totalAllSen, setTotalAllSen] = useState<number | null>(null);
+  // Keeping these commented until needed to avoid unused variable lint errors
+  // const [totalAll, setTotalAll] = useState<number | null>(null);
+  // const [totalAllSen, setTotalAllSen] = useState<number | null>(null);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -44,7 +43,7 @@ export default function MasterRowWordTable({ }: MasterRowWordTableProps) {
 
   const columnKeys = ['id_string', 'id_sen', 'word', 'lemma', 'links', 'morph', 'pos', 'phrase', 'grm', 'ner', 'semantic', 'lang_pair', 'action'];
 
-  const columns = columnKeys.map((key) => {
+  const columns: ColumnsType<MasterRowWord> = columnKeys.map((key) => {
     const column = getColumnWithTooltip(key);
 
     if (key === 'id_string') {
@@ -104,7 +103,7 @@ export default function MasterRowWordTable({ }: MasterRowWordTableProps) {
   });
 
   // Query for WordRowMaster
-  const { data: wordRowMasterData, isLoading: isLoadingMaster, error: errorMaster } = useQuery({
+  const { data: wordRowMasterData, isLoading: isLoadingMaster } = useQuery({
     queryKey: ['master-row-word', pagination.current, pagination.pageSize, langCode, search],
     queryFn: async () => {
       const res = await fetchMasterRowWords(pagination.current, pagination.pageSize, langCode, search);
@@ -112,8 +111,8 @@ export default function MasterRowWordTable({ }: MasterRowWordTableProps) {
         message.error(res.statusText);
         return { data: [], total: null };
       }
-      setTotalAll(res.data.total_all);
-      setTotalAllSen(res.data.total_all_sen);
+  // setTotalAll(res.data.total_all);
+  // setTotalAllSen(res.data.total_all_sen);
       return {
         data: res.data.data,
         total: res.data.total,
@@ -137,12 +136,12 @@ export default function MasterRowWordTable({ }: MasterRowWordTableProps) {
     }
   }, [wordRowMasterData]);
 
-  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
-    setPagination({
-      ...pagination,
-      current: pagination.current,
-      pageSize: pagination.pageSize,
-    });
+  const handleTableChange = (pager: TablePaginationConfig) => {
+    setPagination(prev => ({
+      ...prev,
+      current: pager.current || 1,
+      pageSize: pager.pageSize || prev.pageSize,
+    }));
   };
   const showModal = (record: MasterRowWord) => {
     setSelectedWord(record);
@@ -235,7 +234,7 @@ export default function MasterRowWordTable({ }: MasterRowWordTableProps) {
           handleCancelEdit();
         }
       }
-    } catch (error) {
+  } catch {
       message.error(t('edit_failed'));
     }
 
@@ -264,22 +263,24 @@ export default function MasterRowWordTable({ }: MasterRowWordTableProps) {
         labelStyle={{ width: 180, fontWeight: 600 }}
         contentStyle={{ background: '#fff' }}
       >
-        {fieldOrder.map(key => {
-          const rawVal = (selectedWord as any)[key];
-          let value: any = rawVal;
+        {fieldOrder.map((key: string) => {
+          const rw = selectedWord as unknown as Record<string, unknown>;
+          const rawVal = rw[key];
+          let value: React.ReactNode = rawVal as React.ReactNode;
           if (key === 'lang_pair') {
             const lp = rawVal ?? 'null';
-            const lc = (selectedWord as any).lang_code ?? 'null';
+            const lc = rw.lang_code ?? 'null';
             value = (
               <Space size={4} wrap>
-                <Tag color={langColorMap[lp] || 'geekblue'}>{t(lp)}</Tag>
-                <Tag color={langColorMap[lc] || 'default'}>{t(lc)}</Tag>
+                <Tag color={langColorMap[String(lp)] || 'geekblue'}>{t(String(lp))}</Tag>
+                <Tag color={langColorMap[String(lc)] || 'default'}>{t(String(lc))}</Tag>
               </Space>
             );
           }
+          const display = (value === undefined || value === null || value === '' ? '-' : value);
           return (
             <Descriptions.Item key={key} label={t(key)}>
-              {value === undefined || value === null || value === '' ? '-' : value}
+              {display}
             </Descriptions.Item>
           );
         })}
@@ -344,8 +345,8 @@ export default function MasterRowWordTable({ }: MasterRowWordTableProps) {
           showQuickJumper: true,
           pageSizeOptions: ['10', '20', '50', '100'],
         }}
-        onChange={(pagination, filters, sorter) => {
-          handleTableChange(pagination, filters, sorter);
+        onChange={(pager) => {
+          handleTableChange(pager as TablePaginationConfig);
         }}
       />
       <Modal
@@ -369,26 +370,34 @@ export default function MasterRowWordTable({ }: MasterRowWordTableProps) {
         {selectedWord && (
           <table style={{ width: '100%', fontSize: '14px' }} key={selectedWord?.id + "modal"}>
             <tbody key={selectedWord?.id + "modal-tbody"}>
-              {columns.map(({ key, title }, idx) => (
+              {columns.map(col => {
+                const k = col.key as string | undefined;
+                if (!k) return null;
+                const rw = selectedWord as unknown as Record<string, unknown>;
+                const val = rw[k];
+                const inputValue = typeof val === 'string' || typeof val === 'number' ? val : '';
+                const titleNode = col.title && typeof col.title === 'string' ? col.title : t(k);
+                return (
                   <tr
-                    key={key + "modalEidt"}
-                    hidden={key === 'action'}
+                    key={k + 'modalEdit'}
+                    hidden={k === 'action'}
                     style={{ verticalAlign: 'top' }}
                   >
                     <td style={{ padding: '6px 12px 4px 0', width: 160 }}>
-                      <strong>{title}:</strong>
+                      <strong>{titleNode}:</strong>
                     </td>
                     <td style={{ padding: '4px 0 14px' }}>
                       <Input
                         size="small"
-                        placeholder={t(key)}
-                        value={(selectedWord as any)[key]}
-                        disabled={['id', 'id_sen', 'id_string', 'action', 'lang_code', 'lang_pair'].includes(key)}
-                        onChange={(e) => onChangeWord(key, e.target.value)}
+                        placeholder={t(k)}
+                        value={inputValue as string | number | undefined}
+                        disabled={['id', 'id_sen', 'id_string', 'action', 'lang_code', 'lang_pair'].includes(k)}
+                        onChange={(e) => onChangeWord(k, e.target.value)}
                       />
                     </td>
                   </tr>
-                ))}
+                );
+              })}
             </tbody>
           </table>
         )}

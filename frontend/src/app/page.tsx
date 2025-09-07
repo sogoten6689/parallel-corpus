@@ -1,5 +1,4 @@
 'use client';
-import { useAppLanguage } from "@/contexts/AppLanguageContext";
 import MasterRowWordTable from "@/components/ui/master-row-word-table";
 
 export default function Home() {

@@ -19,8 +19,6 @@ const Tag: React.FC = () => {
   const [form] = Form.useForm();
   const [dicData_1, setDicData_1] = useState<DicIdItem[]>([]);
   const [dicData_2, setDicData_2] = useState<DicIdItem[]>([]);
-  const [selectedDicRow1, setSelectedDicRow1] = useState<DicIdItem | null>(null);
-  const [selectedDicRow2, setSelectedDicRow2] = useState<DicIdItem | null>(null);
   const [page1, setPage1] = useState(1);
   const [tagSelect, setTagSelect] = useState(['none']);
   const [posSetRemote, setPosSetRemote] = useState<string[]>([]);
@@ -55,18 +53,11 @@ const Tag: React.FC = () => {
     }
   }, [appLanguage]);
 
-  // Auto-search when page changes
-  useEffect(() => {
-    if (!tagSelect || tagSelect.length !== 2) {
-      return;
-    }
-    handleFormFinish();
-  }, [page1, limit]);
+  // Auto-search when page changes (will invoke after handleFormFinish definition)
 
   useEffect(() => {
     // Refetch when either current language OR language pair changes (dropdown)
     const code = currentLangForTags;
-    const pair = appLanguage?.languagePair;
     let cancelled = false;
     setPosSetRemote([]);
     setNerSetRemote([]);
@@ -181,23 +172,14 @@ const Tag: React.FC = () => {
     }
   };
 
-  const handleDicRowSelect1 = (row: DicIdItem | null, index: number | null) => {
-    setSelectedDicRow1(row);
-    if (index !== null && dicData_2[index]) {
-      setSelectedDicRow2(dicData_2.find((item: DicIdItem) => item.id_string === row?.id_string) ?? null);
-    } else {
-      setSelectedDicRow2(null);
-    }
-  };
+  useEffect(() => {
+    if (!tagSelect || tagSelect.length !== 2) return;
+    handleFormFinish();
+  // Only re-run when pagination or tag changes intentionally
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page1, limit, tagSelect]);
 
-  const handleDicRowSelect2 = (row: DicIdItem | null, index: number | null) => {
-    setSelectedDicRow2(row);
-    if (index !== null && dicData_1[index]) {
-      setSelectedDicRow1(dicData_1.find((item: DicIdItem) => item.id_string === row?.id_string) ?? null);
-    } else {
-      setSelectedDicRow1(null);
-    }
-  };
+  // Removed row selection handlers as they were unused in UI
 
   return (
     <>
@@ -240,8 +222,8 @@ const Tag: React.FC = () => {
             <DicIdTable
               data={dicData_1}
               languageCode={currentLanguage}
-              selectedRowKey={selectedDicRow1 ? selectedDicRow1.id_sen : null}
-              onRowSelect={handleDicRowSelect1}
+              selectedRowKey={null}
+              onRowSelect={() => {}}
               currentPage={page1}
               total={total}
               onPageChange={setPage1}
@@ -254,8 +236,8 @@ const Tag: React.FC = () => {
             <DicIdTable
               data={dicData_2}
               languageCode={otherLangCode}
-              selectedRowKey={selectedDicRow2 ? selectedDicRow2.id_sen : null}
-              onRowSelect={handleDicRowSelect2}
+              selectedRowKey={null}
+              onRowSelect={() => {}}
               onPageChange={setPage1}
               currentPage={page1}
               pageSize={limit}

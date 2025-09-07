@@ -1,14 +1,14 @@
 'use client';
 
 import { useTranslation } from "react-i18next";
-import { Divider, Input, Button, Select, Radio, App, Form, Typography } from 'antd';
-import { useEffect, useState } from "react";
+import { Divider, Input, Button, Radio, App, Form, Typography } from 'antd';
+import { useEffect, useState, useCallback } from "react";
 import { useAppLanguage } from "@/contexts/AppLanguageContext";
 import { fetchDict } from "@/services/master/master-api";
 import DicIdTable from "@/components/ui/dicid-table";
 import { DicIdItem } from "@/types/dicid-item.type";
 
-const { Option } = Select;
+// Removed unused Select.Option destructuring
 
 const Word: React.FC = () => {
   const { message } = App.useApp();
@@ -22,7 +22,7 @@ const Word: React.FC = () => {
   const [data_1, setData_1] = useState<DicIdItem[]>([]);
   const [data_2, setData_2] = useState<DicIdItem[]>([]);
   const [selectedRow1, setSelectedRow1] = useState<DicIdItem | null>(null);
-  const [selectedRow2, setSelectedRow2] = useState<DicIdItem | null>(null);
+  const [selectedRow2, setSelectedRow2] = useState<DicIdItem | null>(null); // used for second table selection
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(6);
   const [total, setTotal] = useState(0);
@@ -58,7 +58,7 @@ const Word: React.FC = () => {
       setSelectedRow1(null);
     }
   };
-  const handleSearch = async () => {
+  const handleSearch = useCallback(async () => {
     if (!searchText.trim()) {
       message.warning(t('missing_input'))
       return;
@@ -83,7 +83,7 @@ const Word: React.FC = () => {
 
       message.error(t('something_wrong'));
     }
-  };
+  }, [searchText, message, t, page, limit, currentLanguage, appLanguage?.languagePair, otherLangCode, searchType]);
 
   const handleFormFinish = () => {
     if (!searchText.trim()) {
@@ -94,11 +94,9 @@ const Word: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!searchText.trim()) {
-      return;
-    }
+    if (!searchText.trim()) return;
     handleSearch();
-  }, [searchType, currentLanguage, otherLangCode, page, limit]);
+  }, [handleSearch, searchText]);
 
 
   return (
@@ -164,7 +162,7 @@ const Word: React.FC = () => {
           <DicIdTable
             data={data_2}
             languageCode={otherLangCode}
-            selectedRowKey={selectedRow1 ? selectedRow1.id_sen : null}
+            selectedRowKey={selectedRow2 ? selectedRow2.id_sen : null}
             onRowSelect={handleRowSelect2}
             onPageChange={setPage}
             currentPage={page}

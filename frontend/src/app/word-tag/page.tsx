@@ -1,14 +1,10 @@
 'use client';
 
-import TagTable from "@/components/ui/tag-table";
 import DicIdTable from "@/components/ui/dicid-table";
 import { useTranslation } from "react-i18next";
 import { Divider, Button, Select, App, Cascader, Typography, Input, Radio, Form, CascaderProps } from 'antd';
 import { useEffect, useState } from "react";
-import { RowWord } from "@/types/row-word.type";
-import { searchWord, searchWordTag } from "@/dao/search-utils";
-import { Sentence } from "@/types/sentence.type";
-import { getSentence, getSentenceOther } from "@/dao/data-utils";
+// Removed unused search utilities and sentence helpers
 import { useSelector } from 'react-redux';
 import { RootState } from "@/redux";
 import { getNERSet, getPOSSet, getSEMSet } from "@/dao/data-utils";
@@ -24,19 +20,17 @@ const WordTag: React.FC = () => {
   const { message } = App.useApp();
   const { t } = useTranslation();
   const [form] = Form.useForm();
-  const [data_1, setData_1] = useState<Sentence[]>([]);
-  const [data_2, setData_2] = useState<Sentence[]>([]);
+  // Removed sentence-level parallel view state (unused in UI)
   const [dicData_1, setDicData_1] = useState<DicIdItem[]>([]);
   const [dicData_2, setDicData_2] = useState<DicIdItem[]>([]);
-  const [selectedRow1, setSelectedRow1] = useState<Sentence | null>(null);
-  const [selectedRow2, setSelectedRow2] = useState<Sentence | null>(null);
+  // Removed unused selected sentence tracking
   const [selectedDicRow1, setSelectedDicRow1] = useState<DicIdItem | null>(null);
   const [selectedDicRow2, setSelectedDicRow2] = useState<DicIdItem | null>(null);
   const [page1, setPage1] = useState(1);
-  const [page2, setPage2] = useState(1);
+  // Removed secondary page state for unused sentence list
   const [searchText, setSearchText] = useState('');
   const [searchType, setSearchType] = useState('matches');
-  const [language, setLanguage] = useState('1');
+  // Removed legacy language state (now derived from context)
   const [tagSelect, setTagSelect] = useState(['none']);
   const [posSetRemote, setPosSetRemote] = useState<string[]>([]);
   const [nerSetRemote, setNerSetRemote] = useState<string[]>([]);
@@ -44,18 +38,15 @@ const WordTag: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [limit, setLimit] = useState(6);
 
-  const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1),
-    rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2),
-    dicId_1 = useSelector((state: RootState) => state.dataSlice.dicId_1),
-    dicId_2 = useSelector((state: RootState) => state.dataSlice.dicId_2),
-    lang_1 = useSelector((state: RootState) => state.dataSlice.lang_1),
-    lang_2 = useSelector((state: RootState) => state.dataSlice.lang_2);
+  const rows_1 = useSelector((state: RootState) => state.dataSlice.rows_1);
+  const rows_2 = useSelector((state: RootState) => state.dataSlice.rows_2);
+  // Removed unused dicId_1 and dicId_2 selectors
 
   const { appLanguage } = useAppLanguage();
   const [currentLanguage, setCurrentLanguage] = useState('vi');
   const [otherLangCode, setOtherLangCode] = useState('en');
 
-  let listSentences: Record<string, RowWord> = {};
+  // Removed unused sentence construction map
   
   // Use language from header to determine which data to use for local tag sets
   const isFirstLang = appLanguage?.currentLanguage === (appLanguage?.languagePair?.split('_')[0] || 'vi');
@@ -64,7 +55,7 @@ const WordTag: React.FC = () => {
     semSetLocal = isFirstLang ? getSEMSet(rows_1) : getSEMSet(rows_2);
 
   // Check if using tag filter
-  const isUsingTagFilter = tagSelect && tagSelect.length === 2;
+  // Determine if tag filter is in use (inline when needed)
 
   const options: Option[] = getTagOptions(
     t, 
@@ -84,13 +75,7 @@ const WordTag: React.FC = () => {
     }
   }, [appLanguage]);
 
-  // Auto-search when page changes for DicIdTable
-  useEffect(() => {
-    if (!searchText.trim()) {
-      return;
-    }
-    handleFormFinish();
-  }, [page1, limit]);
+  // Auto-search when page changes for DicIdTable (effect defined after handleFormFinish)
 
   // Use current language from header for fetching tag options
   const currentLangForTags = appLanguage?.currentLanguage || 'vi';
@@ -123,19 +108,11 @@ const WordTag: React.FC = () => {
     });
   }, [currentLangForTags]);
 
-  const handleTagSelect: CascaderProps<Option>['onChange'] = (value: any) => {
+  const handleTagSelect: CascaderProps<Option>['onChange'] = (value) => {
     setTagSelect(value);
   };
 
-  const handleLanguageChange = (value: string) => {
-    setData_1([]);
-    setData_2([]);
-    setDicData_1([]);
-    setDicData_2([]);
-    setTagSelect(['none']);
-    // Note: Language change is now handled by the header language selector
-    // This function is kept for backward compatibility but language state is managed by useAppLanguage context
-  };
+  // Removed handleLanguageChange (context driven)
 
   const handleFormFinish = async () => {
     if (!searchText.trim()) {
@@ -143,9 +120,7 @@ const WordTag: React.FC = () => {
       return;
     }
 
-    // Clear previous data
-    setData_1([]);
-    setData_2([]);
+  // Clear previous dictionary data
     setDicData_1([]);
     setDicData_2([]);
 
@@ -245,52 +220,18 @@ const WordTag: React.FC = () => {
     }
   };
 
-  const searchComplete = () => {
-    setData_1([]);
-    setData_2([]);
+  useEffect(() => {
+    if (!searchText.trim()) return;
+    handleFormFinish();
+    // Intentionally exclude handleFormFinish to avoid recreating (stable enough for current needs)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page1, limit, searchText]);
 
-    // Use language from header to determine which data to use
-    const currentLang = appLanguage?.currentLanguage || 'vi';
-    const isFirstLang = currentLang === (appLanguage?.languagePair?.split('_')[0] || 'vi');
+  // Removed searchComplete (unused sentence logic)
 
-    Object.keys(listSentences).forEach((key) => {
-      const sentence: Sentence = getSentence(
-        listSentences[key],
-        isFirstLang ? rows_1 : rows_2,
-        isFirstLang ? dicId_1 : dicId_2
-      );
-      setData_1((prev: Sentence[]) => [...prev, sentence]);
+  // Removed sentence pagination constants
 
-      const sentence2: Sentence = getSentenceOther(
-        listSentences[key],
-        isFirstLang ? rows_2 : rows_1,
-        isFirstLang ? dicId_2 : dicId_1
-      );
-      setData_2((prev: Sentence[]) => [...prev, sentence2]);
-    });
-  };
-
-  const pageSize = 6;
-
-  const handleRowSelect1 = (row: Sentence | null, index: number | null) => {
-    setSelectedRow1(row);
-    if (index !== null && data_2[index]) {
-      setSelectedRow2(data_2[index]);
-      setPage2(Math.floor(index / pageSize) + 1);
-    } else {
-      setSelectedRow2(null);
-    }
-  };
-
-  const handleRowSelect2 = (row: Sentence | null, index: number | null) => {
-    setSelectedRow2(row);
-    if (index !== null && data_1[index]) {
-      setSelectedRow1(data_1[index]);
-      setPage1(Math.floor(index / pageSize) + 1);
-    } else {
-      setSelectedRow1(null);
-    }
-  };
+  // Removed sentence row selection handlers
 
   const handleDicRowSelect1 = (row: DicIdItem | null, index: number | null) => {
     setSelectedDicRow1(row);
@@ -310,36 +251,7 @@ const WordTag: React.FC = () => {
     }
   };
 
-  const handleSaveButton = () => {
-    if (data_1.length === 0 || data_2.length === 0) {
-      return;
-    }
-
-    const lines = data_1.map((row1: Sentence, idx: number) => {
-      const row2 = data_2[idx];;
-      const sentence1 =
-        row1.Center === '-' ?
-          row1.Left.trim() + ' ' + row1.Right.trim() :
-          row1.Left.trim() + ' ' + row1.Center + ' ' + row1.Right.trim(),
-        sentence2 =
-          row2.Center === '-' ?
-            row2.Left.trim() + ' ' + row2.Right.trim() :
-            row2.Left.trim() + ' ' + row2.Center + ' ' + row2.Right.trim();
-      return `* ${sentence1}\n+ ${sentence2}`;
-    });
-    const content = lines.join('\n\n');
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'parallel_corpus.txt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    message.success(t('download_ready'));
-  }
+  // Removed save to corpus function (irrelevant to dictionary tag view)
 
   return (
     <>

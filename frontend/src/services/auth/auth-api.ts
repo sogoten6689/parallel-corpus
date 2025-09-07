@@ -26,7 +26,7 @@ export const logInApi = async (data: {email: string, password: string}) => {
 }
 
 
-export const logOutApi = async (data: {}) => {
+export const logOutApi = async (data: Record<string, unknown>) => {
   return await axiosInstance.post(
     API.AUTH.LOGOUT,
     data

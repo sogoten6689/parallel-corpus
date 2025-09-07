@@ -1,4 +1,3 @@
-import { appRoute } from "@/config/appRoute";
 import axios from "axios";
 
 const axiosInstance = axios.create({
@@ -39,31 +38,27 @@ const axiosInstanceAzure = axios.create({
   },
 });
 
-axiosInstanceAzure.interceptors.request.use((config) => {
-  const refreshToken = localStorage.getItem("refresh_token");
-
-  return config;
-});
+axiosInstanceAzure.interceptors.request.use((config) => config);
 
 export const setRefreshToken = (refreshToken: string) => {
   localStorage.setItem("refresh_token", refreshToken);
-  axiosInstanceAzure.defaults.headers.common['Authorization'] = refreshToken
-}
+  axiosInstanceAzure.defaults.headers.common['Authorization'] = refreshToken;
+};
 
 
 export const removeRefreshToken = () => {
   localStorage.removeItem("refresh_token");
-  axiosInstanceAzure.defaults.headers.common['Authorization'] = ''
-}
+  axiosInstanceAzure.defaults.headers.common['Authorization'] = '';
+};
 export const setToken = (token: string) => {
   localStorage.setItem("token", token);
-  axiosInstance.defaults.headers.common['Authorization'] = token
-}
+  axiosInstance.defaults.headers.common['Authorization'] = token;
+};
 
 export const removeToken = () => {
   localStorage.removeItem("token");
-  axiosInstance.defaults.headers.common['Authorization'] = ''
-}
+  axiosInstance.defaults.headers.common['Authorization'] = '';
+};
 
 
 export { axiosInstance, axiosInstanceAzure };

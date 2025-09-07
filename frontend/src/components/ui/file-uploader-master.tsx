@@ -33,7 +33,7 @@ export default function FileUploaderMaster() {
     ];
     setLangOptions(langOptions);
     setLangCode(lang_1);
-  }, [languagePair]);
+  }, [languagePair, t]);
 
   const languageGroupItems = [
     {
@@ -117,13 +117,16 @@ export default function FileUploaderMaster() {
         form.resetFields();
         setFileList([]);
       }
-    } catch (err: any) {
-      if (err?.errorFields) {
-        // lỗi validate form của antd
+    } catch (err: unknown) {
+      // AntD form validation error structure
+      if (typeof err === 'object' && err && 'errorFields' in err) {
         return;
       }
+      // Extract message if standard Error
+      const fallback = t('upload_error_generic');
+      const msg = err instanceof Error ? err.message : fallback;
       console.error(err);
-  message.error(err?.message || t('upload_error_generic'));
+      message.error(msg || fallback);
     } finally {
       setLoading(false);
     }

@@ -1,9 +1,7 @@
 'use client';
-import { useTranslation } from "react-i18next";
 import UserTable from "@/components/ui/user-table";
 
 export default function UserList() {
-  const { t } = useTranslation();
 
   return (
     <>

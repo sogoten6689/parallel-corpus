@@ -2,23 +2,32 @@
 
 import React, { useEffect, useState } from 'react';
 import { Table, Tooltip, Modal, Form, Input, DatePicker, Button, Space } from 'antd';
+import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import useApp from 'antd/es/app/useApp';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import 'dayjs/locale/en';
-import { RowWord } from '@/types/row-word.type';
+// RowWord removed – defining a dedicated User interface instead
 import { getMachineLocale } from '@/dao/utils';
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { getUser, updateUserApi } from '@/services/user/user-api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-const fetchRowWords = async (
+interface User {
+  id: number;
+  full_name: string;
+  email: string;
+  organization?: string;
+  role: string;
+  date_of_birth?: string; // ISO date (YYYY-MM-DD)
+}
+
+const fetchUsers = async (
   page: number,
   limit: number,
   search?: string,
-  lang?: string
-): Promise<{ data: RowWord[]; total: number }> => {
+): Promise<{ data: User[]; total: number }> => {
   const params = new URLSearchParams({
     page: String(page),
     limit: String(limit),
@@ -32,30 +41,9 @@ const fetchRowWords = async (
 
 };
 
+type ColumnKey = keyof User | 'action';
 
-type UserTableProps = {
-}
-
-const getColumnKey = (key: string) => {
-  switch (key) {
-    // case 'id':
-    //   return 'ID';
-    // case 'full_name':
-    //   return 'Full name';
-    // case 'email':
-    //   return 'Email';
-    // case 'organization':
-    //   return 'Organization';
-    // case 'role':
-    //   return 'Role';
-    // case 'date_of_birth':
-    //   return 'Date of birth';
-    default:
-    return key;
-  }
-}
-
-export default function UserTable({ }: UserTableProps) {
+export default function UserTable() {
   const { t } = useTranslation();
   const [machineLocale, setMachineLocale] = useState<'vi' | 'en'>(() => getMachineLocale('en'));
   const { message } = useApp();
@@ -63,50 +51,47 @@ export default function UserTable({ }: UserTableProps) {
   useEffect(() => { dayjs.locale(machineLocale); }, [machineLocale]);
   const dateFormat = machineLocale === 'vi' ? 'DD/MM/YYYY' : 'YYYY-MM-DD';
 
-  const getColumnWithTooltip = (key: string) => ({
-    title: <Tooltip title={t(`${key}_tooltip`)}>{t(key)}</Tooltip>,
-    dataIndex: getColumnKey(key),
-    key: getColumnKey(key),
+  const getColumnWithTooltip = (key: ColumnKey) => ({
+    title: <Tooltip title={t(`${String(key)}_tooltip`)}>{t(String(key))}</Tooltip>,
+    dataIndex: key === 'action' ? undefined : key,
+    key: String(key),
   });
 
   // Unified column keys list including action like master-row-word-table pattern
-  const columnKeys = ['id', 'full_name', 'email', 'organization', 'role', 'date_of_birth', 'action'];
+  const columnKeys: ColumnKey[] = ['id', 'full_name', 'email', 'organization', 'role', 'date_of_birth', 'action'];
 
-  const columns = columnKeys.map((key) => {
+  const columns: ColumnsType<User> = columnKeys.map((key) => {
     const base = getColumnWithTooltip(key);
-
     if (key === 'date_of_birth') {
       return {
         ...base,
-        render: (value: string | undefined) => {
+        render: (value: User['date_of_birth']) => {
           if (!value) return <span>-</span>;
-          const format = machineLocale === 'vi' ? 'DD/MM/YYYY' : 'YYYY-MM-DD';
-          const d = dayjs(value);
-          return d.isValid() ? d.format(format) : value;
+            const format = machineLocale === 'vi' ? 'DD/MM/YYYY' : 'YYYY-MM-DD';
+            const d = dayjs(value);
+            return d.isValid() ? d.format(format) : value;
         }
-      } as any;
+      };
     }
-
     if (key === 'action') {
       return {
         ...base,
-        render: (_: any, record: any) => (
+        render: (_: unknown, record: User) => (
           <Space>
             <Button size="small" onClick={() => openEdit(record)}>{t('edit')}</Button>
           </Space>
         )
-      } as any;
+      };
     }
-
-    return base as any;
+    return base;
   });
 
   // Edit modal state & form
   const [editOpen, setEditOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editForm] = Form.useForm();
 
-  const openEdit = (record: any) => {
+  const openEdit = (record: User) => {
     setEditingUser(record);
     editForm.setFieldsValue({
       full_name: record.full_name,
@@ -118,13 +103,15 @@ export default function UserTable({ }: UserTableProps) {
     setEditOpen(true);
   };
 
+  interface FormValues { full_name: string; organization?: string; role?: string; date_of_birth?: dayjs.Dayjs | null; email: string }
+  interface UpdatePayload { full_name?: string; date_of_birth?: string; organization?: string; role?: string }
   const handleEditOk = () => {
-    editForm.validateFields().then(values => {
+    editForm.validateFields().then((values: FormValues) => {
       if (!editingUser) return;
-      const payload = {
-        full_name: values.full_name?.trim(),
-        date_of_birth: values.date_of_birth ? values.date_of_birth.format('YYYY-MM-DD') : '',
-        organization: values.organization || '',
+      const payload: UpdatePayload = {
+        full_name: values.full_name?.trim() || undefined,
+        date_of_birth: values.date_of_birth ? values.date_of_birth.format('YYYY-MM-DD') : undefined,
+        organization: values.organization || undefined,
         role: values.role || editingUser.role,
       };
       mutationUpdate.mutate({ id: editingUser.id, payload, formValues: values });
@@ -145,18 +132,16 @@ export default function UserTable({ }: UserTableProps) {
   });
 
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['users', pagination],
-    queryFn: () => fetchRowWords(pagination.current, pagination.pageSize),
+  const { data, isLoading, error } = useQuery<{ data: User[]; total: number }, Error>({
+    queryKey: ['users', pagination.current, pagination.pageSize],
+    queryFn: () => fetchUsers(pagination.current, pagination.pageSize),
   });
 
   const queryClient = useQueryClient();
-  interface UpdateVars { id: number; payload: any; formValues: any }
+  interface UpdateVars { id: number; payload: UpdatePayload; formValues: FormValues }
   const mutationUpdate = useMutation({
-    mutationFn: async ({ id, payload }: UpdateVars) => {
-      return await updateUserApi(id, payload);
-    },
-    onSuccess: (res, variables: UpdateVars) => {
+    mutationFn: async ({ id, payload }: UpdateVars) => updateUserApi(id, payload),
+    onSuccess: (_res, variables: UpdateVars) => {
       // Update cache: refetch or manual patch
       queryClient.invalidateQueries({ queryKey: ['users'] });
       // Also close modal
@@ -173,19 +158,16 @@ export default function UserTable({ }: UserTableProps) {
 
   useEffect(() => {
     if (data) {
-      setPagination({
-        ...pagination,
-        total: data.total,
-      });
+      setPagination(prev => ({ ...prev, total: data.total }));
     }
   }, [data]);
   
-  const handleTableChange = (pagination: any, filters: any, sorter: any) => {
-    setPagination({
-      ...pagination,
-      current: pagination.current,
-      pageSize: pagination.pageSize,
-    });
+  const handleTableChange = (pager: TablePaginationConfig) => {
+    setPagination(prev => ({
+      ...prev,
+      current: pager.current || 1,
+      pageSize: pager.pageSize || prev.pageSize,
+    }));
   };
   // Removed showModal and handleCancel (modal deleted)
 
@@ -197,11 +179,10 @@ export default function UserTable({ }: UserTableProps) {
       {error && <p>{t('error')}: {error.message}</p>}
       {data && (
         <>
-          <Table
+          <Table<User>
             dataSource={data.data}
             columns={columns}
-            // Prefer 'id', fallback to 'ID' or 'email' to ensure uniqueness
-            rowKey={(record: any) => record.id ?? record.ID ?? record.email}
+            rowKey={(record) => record.id}
             scroll={{ x: 'max-content' }}
             className='w-full'
             bordered
@@ -211,9 +192,7 @@ export default function UserTable({ }: UserTableProps) {
               total: pagination.total,
               showSizeChanger: true,
             }}
-            onChange={(pagination, filters, sorter) => {
-              handleTableChange(pagination, filters, sorter);
-            }}
+            onChange={(pager: TablePaginationConfig) => handleTableChange(pager)}
           />
           <Modal
             title={t('edit')}

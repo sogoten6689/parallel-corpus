@@ -35,7 +35,7 @@ const Statistical: React.FC = () => {
     setTopResults(value);
   };
 
-  const handleTagSelect: CascaderProps<Option>['onChange'] = (value, _selectedOptions) => {
+  const handleTagSelect: CascaderProps<Option>['onChange'] = (value) => {
     setTagSelect(value);
   };
   // Token count still derived from corpus for frequency calculations
@@ -69,7 +69,7 @@ const Statistical: React.FC = () => {
       }
     });
     return () => { cancelled = true; };
-  }, [currentLang, appLanguage?.languagePair]);
+  }, [currentLang, appLanguage?.languagePair, tagSelect]);
 
   const options: Option[] = [
     {
@@ -94,23 +94,18 @@ const Statistical: React.FC = () => {
   ];
 
   const getData = () => {
-  const corpus = baseRows;
     const data: Record<string, number> = {};
-
-    corpus.map(row => {
-      if ((tagSelect.length === 1 && tagSelect[0] === 'all') ||
+    for (const row of baseRows) {
+      const wordKey = row.Word.toLowerCase();
+      const matches = (tagSelect.length === 1 && tagSelect[0] === 'all') ||
         (tagSelect.length === 2 && tagSelect[0] === 'pos' && row.POS.toLowerCase() === tagSelect[1].toLowerCase()) ||
         (tagSelect.length === 2 && tagSelect[0] === 'ner' && row.NER.toLowerCase() === tagSelect[1].toLowerCase()) ||
-        (tagSelect.length === 2 && tagSelect[0] === 'semantic' && row.Semantic.toLowerCase() === tagSelect[1].toLowerCase())) {
-        if (Object.keys(data).includes(row.Word.toLowerCase())) {
-          data[row.Word.toLowerCase()] += 1;
-        } else {
-          data[row.Word.toLowerCase()] = 1;
-        }
-      }
-    });
+        (tagSelect.length === 2 && tagSelect[0] === 'semantic' && row.Semantic.toLowerCase() === tagSelect[1].toLowerCase());
+      if (!matches) continue;
+      data[wordKey] = (data[wordKey] || 0) + 1;
+    }
     return data;
-  }
+  };
 
   const showData = (data: Record<string, number>) => {
     const punc = [",", ".", "\"", "\\", "/", ":", ";", "'", "?", "<", ">", "|", "!", "#", "-", "_", "`", "~", "&", "*", "(", ")"];

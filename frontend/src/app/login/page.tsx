@@ -33,6 +33,8 @@ export default function LoginPage() {
       message.success(t('auth.loginSuccess'));
       router.push(appRoute.home);
     } catch (error) {
+      // Log error for debugging while satisfying lint rule
+      console.error('Login failed', error);
       message.error(t('auth.loginFailed'));
     } finally {
       setLoading(false);
