@@ -10,6 +10,7 @@ from auth import get_current_user
 from models.user import User, UserRole
 from typing import List, Optional
 from sqlalchemy import distinct, func, or_
+import math
 
 
 from responses.master_row_word_list_response import MasterRowWordListResponse
@@ -106,14 +107,58 @@ def get_all_ner(db: Session = Depends(get_db), lang_code: str = ""):
 
 @router.get("/semantic")
 def get_all_semantic(db: Session = Depends(get_db), lang_code: str = ""):
-    # SELECT semantic FROM master_row_words [WHERE lang_code=?] GROUP BY semantic;
-    query = db.query(distinct(MasterRowWord.word))
+    """
+    Return frequency statistics per word with optional language filter.
+
+    Response format:
+    {
+        "data": [
+            {"Word": str, "Count": int, "Percent": float, "F": float},
+            ...
+        ]
+    }
+    where Percent = 100 * Count / N and F = -log10(Count / N), with N being total tokens under the same filter.
+    """
+    total_query = db.query(func.count(MasterRowWord.id))
     if lang_code:
-        query = query.filter(MasterRowWord.lang_code == lang_code)
-    rows = query.all()
-    values = [r[0] for r in rows if r[0] is not None and str(r[0]).strip() != ""]
-    values = sorted(values)
-    return {"data": values}
+        total_query = total_query.filter(MasterRowWord.lang_code == lang_code)
+    total_tokens = total_query.scalar() or 0
+
+    if total_tokens == 0:
+        return {"data": []}
+
+    agg_query = (
+        db.query(
+            MasterRowWord.word.label("word"),
+            func.count(MasterRowWord.id).label("count")
+        )
+    )
+    if lang_code:
+        agg_query = agg_query.filter(MasterRowWord.lang_code == lang_code)
+    agg_query = (
+        agg_query
+        .filter(MasterRowWord.word.isnot(None))
+        .filter(func.trim(MasterRowWord.word) != "")
+        .group_by(MasterRowWord.word)
+        .order_by(func.count(MasterRowWord.id).desc(), MasterRowWord.word.asc())
+    )
+
+    rows = agg_query.all()
+
+    data = []
+    for word, cnt in rows:
+        n = int(cnt)
+        percent = (n * 100.0) / float(total_tokens)
+        ratio = n / float(total_tokens)
+        f_value = -math.log10(ratio) if ratio > 0 else float("inf")
+        data.append({
+            "Word": word,
+            "Count": n,
+            "Percent": percent,
+            "F": f_value,
+        })
+
+    return {"data": data}
 
 @router.put("/words/{id}")
 def update_word(db: Session = Depends(get_db), response_model=MasterRowWordListResponse,

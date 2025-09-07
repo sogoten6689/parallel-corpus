@@ -131,11 +131,14 @@ const Statistical: React.FC = () => {
   const handleViewButton = async () => {
     try {
       const res = await fetchSemantic(currentLang);
-      const words: string[] = res.data?.data || [];
-      const limited = topResults !== 'all' ? words.slice(0, Number(topResults)) : words;
-      const newData: RowStat[] = limited.map(w => new RowStat(w, 0, 0, 0));
-      setData(newData);
-      setNumTypes(words.length);
+      const items: Array<{ Word: string; Count: number; Percent: number; F: number; }> = res.data?.data || [];
+
+      const sorted = items.sort((a, b) => (b.Count - a.Count) || a.Word.localeCompare(b.Word));
+      const limitedItems = topResults !== 'all' ? sorted.slice(0, Number(topResults)) : sorted;
+
+      const rows: RowStat[] = limitedItems.map(it => new RowStat(it.Word, it.Count, it.Percent, it.F));
+      setData(rows);
+      setNumTypes(items.length);
     } catch (e) {
       // Fallback to local computation if API fails
       const data = getData();
@@ -143,6 +146,12 @@ const Statistical: React.FC = () => {
       showData(data);
     }
   };
+
+  // Auto load default data on mount and when language changes
+  useEffect(() => {
+    handleViewButton();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLang]);
 
   const [form] = Form.useForm();
 
