@@ -184,6 +184,17 @@ def get_all_ner(db: Session = Depends(get_db), lang_code: str = ""):
 
 @router.get("/semantic")
 def get_all_semantic(db: Session = Depends(get_db), lang_code: str = ""):
+    # SELECT semantic FROM master_row_words [WHERE lang_code=?] GROUP BY semantic;
+    query = db.query(distinct(MasterRowWord.semantic))
+    if lang_code:
+        query = query.filter(MasterRowWord.lang_code == lang_code)
+    rows = query.all()
+    values = [r[0] for r in rows if r[0] is not None and str(r[0]).strip() != ""]
+    values = sorted(values)
+    return {"data": values}
+
+@router.get("/statistics")
+def get_all_statistics(db: Session = Depends(get_db), lang_code: str = ""):
     """
     Return frequency statistics per word with optional language filter.
 
@@ -236,7 +247,6 @@ def get_all_semantic(db: Session = Depends(get_db), lang_code: str = ""):
         })
 
     return {"data": data}
-
 @router.put("/words/{id}")
 def update_word(db: Session = Depends(get_db), response_model=MasterRowWordListResponse,
                 current_user: Optional[User] = Depends(get_current_user), 

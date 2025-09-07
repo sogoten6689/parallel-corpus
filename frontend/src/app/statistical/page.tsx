@@ -8,7 +8,7 @@ import { Button, Cascader, CascaderProps, Col, Flex, Row, Select, Typography, Fo
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
-import { fetchPOS, fetchNER, fetchSemantic } from '@/services/master/master-api';
+import { fetchPOS, fetchNER, fetchSemantic, fetchStatistics } from '@/services/master/master-api';
 import { useAppLanguage } from '@/contexts/AppLanguageContext';
 
 const Statistical: React.FC = () => {
@@ -35,7 +35,7 @@ const Statistical: React.FC = () => {
     setTopResults(value);
   };
 
-  const handleTagSelect: CascaderProps<Option>['onChange'] = (value) => {
+  const handleTagSelect: CascaderProps<Option>['onChange'] = (value: string[]) => {
     setTagSelect(value);
   };
   // Token count still derived from corpus for frequency calculations
@@ -130,7 +130,7 @@ const Statistical: React.FC = () => {
 
   const handleViewButton = async () => {
     try {
-      const res = await fetchSemantic(currentLang);
+      const res = await fetchStatistics(currentLang);
       const items: Array<{ Word: string; Count: number; Percent: number; F: number; }> = res.data?.data || [];
 
       const sorted = items.sort((a, b) => (b.Count - a.Count) || a.Word.localeCompare(b.Word));
@@ -197,7 +197,7 @@ const Statistical: React.FC = () => {
                     <Form.Item name="tagSelect" initialValue={tagSelect} className="flex items-center !mb-0">
                       <Cascader
                         options={options}
-                        onChange={(value, opts) => { handleTagSelect(value, opts); form.setFieldsValue({ tagSelect: value }); }}
+                        onChange={(value: string[]) => { handleTagSelect(value); form.setFieldsValue({ tagSelect: value }); }}
                         placeholder={t('please_select')}
                         value={tagSelect}
                         className="flex items-center"

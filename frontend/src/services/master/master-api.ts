@@ -120,3 +120,9 @@ export const fetchSemanticWithTag = async (langCode?: string, tagType?: string, 
   if (tagValue) params.append("tag_value", tagValue);
   return await axiosInstance.get(API.MASTER.SEMANTIC_WITH_TAG, { params });
 };
+
+export const fetchStatistics = async (langCode?: string) => {
+  const params = new URLSearchParams();
+  if (langCode) params.append("lang_code", langCode);
+  return await axiosInstance.get(API.MASTER.STATISTICS, { params });
+};
