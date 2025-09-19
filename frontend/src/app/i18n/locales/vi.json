@@ -290,5 +290,14 @@
     "organization": "Tổ chức",
     "birthday": "Ngày sinh",
     "birthdayRequired": "Vui lòng nhập ngày sinh"
-  }
+  },
+  "menu": "Menu",
+  "language_settings": "Cài đặt ngôn ngữ",
+  "interface_language": "Ngôn ngữ giao diện",
+  "settings": "Cài đặt",
+  "theme": "Giao diện",
+  "light_mode": "Sáng",
+  "dark_mode": "Tối",
+  "admin_tools": "Công cụ quản trị",
+  "account": "Tài khoản"
 }

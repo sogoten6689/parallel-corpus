@@ -290,5 +290,14 @@
     "organization": "Organization",
     "birthday": "Birthday",
     "birthdayRequired": "Please enter your birthday!"
-  }
+  },
+  "menu": "Menu",
+  "language_settings": "Language Settings",
+  "interface_language": "Interface Language",
+  "settings": "Settings",
+  "theme": "Theme",
+  "light_mode": "Light",
+  "dark_mode": "Dark",
+  "admin_tools": "Admin Tools",
+  "account": "Account"
 }

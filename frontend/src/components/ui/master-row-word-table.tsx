@@ -73,7 +73,7 @@ export default function MasterRowWordTable() {
       const render = (text: string, record: MasterRowWord) => {
         const lp = text ?? 'null';
         const lc = record.lang_code ?? 'null';
-        const langColorMap: Record<string,string> = {
+        const langColorMap: Record<string, string> = {
           vi: 'green',
           en: 'blue',
           ja: 'red',
@@ -134,8 +134,8 @@ export default function MasterRowWordTable() {
         message.error(res.statusText);
         return { data: [], total: null };
       }
-  // setTotalAll(res.data.total_all);
-  // setTotalAllSen(res.data.total_all_sen);
+      // setTotalAll(res.data.total_all);
+      // setTotalAllSen(res.data.total_all_sen);
       return {
         data: res.data.data,
         total: res.data.total,
@@ -448,7 +448,7 @@ export default function MasterRowWordTable() {
           handleCancelEdit();
         }
       }
-  } catch {
+    } catch {
       message.error(t('edit_failed'));
     }
 
@@ -466,7 +466,7 @@ export default function MasterRowWordTable() {
   const renderViewDetails = () => {
     if (!selectedWord) return null;
     const fieldOrder = columnKeys.filter(k => k !== 'action');
-    const langColorMap: Record<string,string> = {
+    const langColorMap: Record<string, string> = {
       vi: 'green', en: 'blue', ja: 'red', ko: 'magenta', zh: 'volcano'
     };
     return (
@@ -597,10 +597,10 @@ export default function MasterRowWordTable() {
                   const val = rw[k];
                   const inputValue = typeof val === 'string' || typeof val === 'number' ? val : '';
                   const titleNode = col.title && typeof col.title === 'string' ? col.title : t(k);
-                  
+
                   // Check if this field should be a dropdown
                   const isDropdownField = ['pos', 'ner', 'semantic'].includes(k);
-                  
+
                   return (
                     <tr
                       key={k + 'modalEdit'}
