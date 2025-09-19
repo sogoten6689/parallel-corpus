@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Image, Layout, Menu, theme, Typography, Flex, Divider, FloatButton, Drawer, Radio, RadioChangeEvent, Button, Dropdown, Avatar, Space, Switch } from 'antd';
 import type { MenuProps } from 'antd';
 import {
@@ -19,6 +19,7 @@ import {
   SettingOutlined,
   AccountBookOutlined,
   DownOutlined,
+  MenuOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useTheme } from '@/app/theme-provider';
@@ -37,7 +38,9 @@ const { Header, Sider, Content } = Layout;
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [open, setOpen] = useState(false);
+  const [menuDrawerOpen, setMenuDrawerOpen] = useState(false);
   const [radioValue, setRadioValue] = useState('1');
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1024);
   const { t } = useTranslation();
   const { mode, toggleTheme } = useTheme();
   const { user, isAuthenticated, logout } = useAuth();
@@ -45,12 +48,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { appLanguage, setLanguageGroup, setCurrentLanguage } = useAppLanguage();
 
-  const showDrawer = () => {
+  // Handle window resize for responsive drawer width
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
+
+  const showHelpDrawer = () => {
     setOpen(true);
   };
 
-  const onClose = () => {
+  const onHelpDrawerClose = () => {
     setOpen(false);
+  };
+
+  const showMenuDrawer = () => {
+    setMenuDrawerOpen(true);
+  };
+
+  const onMenuDrawerClose = () => {
+    setMenuDrawerOpen(false);
   };
 
   const handleRadioChange = (e: RadioChangeEvent) => {
@@ -139,8 +162,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const menuKeyMap: Record<string, string> = {
     '/': '1',
-  // Fix: incorrect key '12' prevented highlighting the Word menu item
-  '/word': '2',
+    // Fix: incorrect key '12' prevented highlighting the Word menu item
+    '/word': '2',
     '/tag': '3',
     '/word-tag': '4',
     '/statistical': '5',
@@ -182,7 +205,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           mode="inline"
           selectedKeys={[selectedKey]}
           defaultOpenKeys={['mgmt']}
-          items={(function(): MenuProps['items'] {
+          items={(function (): MenuProps['items'] {
             const base: Exclude<MenuProps['items'], undefined> = [
               { key: '1', icon: <FontColorsOutlined />, label: <Link href="/">{t('home')}</Link> },
               { key: '2', icon: <SearchOutlined />, label: <Link href="/word">{t('menu_word')}</Link> },
@@ -204,57 +227,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         />
       </Sider>
       <Layout>
-        <Header style={{ background: colorBgContainer }}>
-          <Flex gap="middle" align="center" style={{ width: '100%' }}>
-            <Flex gap="middle" align="center" style={{ flex: 1, justifyContent: 'center' }}>
-              <span className="font-semibold">{t("language_pair")}:</span>
-              <Dropdown menu={{ items: languageGroupItems }} trigger={['click']}>
-                <Button style={{ display: 'flex', alignItems: 'center' }}>
-                  {appLanguage?.languagePair ? t(appLanguage?.languagePair) : t('en_vi')}
-                  <DownOutlined style={{ marginLeft: 6, fontSize: 12 }} />
-                </Button>
-              </Dropdown>
-              <span className="font-semibold">{t("current_language")}:</span>
-              <Switch
-                checked={appLanguage?.lang_1 === appLanguage?.currentLanguage}
-                onChange={handleSwitch}
-                checkedChildren={appLanguage?.lang_1 === appLanguage?.currentLanguage ? t(appLanguage?.lang_1 ?? "null") : t("null")}
-                unCheckedChildren={appLanguage?.lang_2 === appLanguage?.currentLanguage ? t(appLanguage?.lang_2 ?? "null") : t("null")}
-              />
-              {user?.role === 'admin' ? <FileUploaderMaster /> : null}
-
-            </Flex>
-            <Flex gap="middle" align="center" style={{ justifyContent: 'flex-end', marginRight: 20 }}>
-              {mode === 'light' ? (
-                <SunOutlined onClick={toggleTheme} style={{ fontSize: 20, verticalAlign: 'middle' }} />
-              ) : (
-                <MoonOutlined onClick={toggleTheme} style={{ fontSize: 20, verticalAlign: 'middle' }} />
-              )}
-              <Divider type="vertical" />
-              <LanguageSwitcher />
-              <Divider type="vertical" />
-              {isAuthenticated ? (
-                <Dropdown menu={{ items: userMenuItems }} trigger={['click']}>
-                  <Space style={{ cursor: 'pointer' }}>
-                    <Avatar icon={<UserOutlined />} />
-                    <span>{getKeyName(user?.fullName ?? "Unknown")}</span>
-                  </Space>
-                </Dropdown>
-              ) : (
-                <Space>
-                  <Link href={appRoute.login}>
-                    <Button type="text" icon={<LoginOutlined />}>
-                      {t('auth.login')}
-                    </Button>
-                  </Link>
-                  <Link href={appRoute.signup}>
-                    <Button type="primary" icon={<UserOutlined />}>
-                      {t('auth.signup')}
-                    </Button>
-                  </Link>
-                </Space>
-              )}
-            </Flex>
+        <Header style={{ background: colorBgContainer, padding: '0 16px' }}>
+          <Flex align="center" justify="flex-end" style={{ width: '100%', height: '100%' }}>
+            <Button
+              type="text"
+              icon={<MenuOutlined />}
+              onClick={showMenuDrawer}
+              style={{ fontSize: '18px', padding: '8px' }}
+              aria-label="Open menu"
+            />
           </Flex>
         </Header>
         <Content style={{ margin: '16px' }}>
@@ -279,11 +260,176 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <a target="_blank" href="https://dost.hochiminhcity.gov.vn"> Sở Khoa học & Công nghệ TpHCM</a>.
           </p>
         </div>
-        <FloatButton icon={<QuestionCircleOutlined />} type="primary" style={{ insetInlineEnd: 24 }} onClick={showDrawer} />
+
+        {/* Menu Drawer */}
+        <Drawer
+          title={t('menu')}
+          placement="right"
+          closable={{ 'aria-label': 'Close Menu' }}
+          onClose={onMenuDrawerClose}
+          open={menuDrawerOpen}
+          width={windowWidth > 768 ? 400 : windowWidth > 480 ? '90vw' : '95vw'}
+          styles={{
+            body: { padding: '16px' },
+            header: { paddingBottom: '12px' }
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: windowWidth > 480 ? '24px' : '16px' }}>
+            {/* Language Settings Section */}
+            <div>
+              <Typography.Title level={5} style={{ marginBottom: '12px', fontSize: windowWidth > 480 ? '16px' : '14px' }}>
+                {t("language_settings")}
+              </Typography.Title>
+
+              {/* 2 cột 1 dòng cho Language Pair và Current Language */}
+              <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexDirection: windowWidth > 600 ? 'row' : 'column' }}>
+                {/* Language Pair Column */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Typography.Text className="font-semibold" style={{ display: 'block', marginBottom: '8px', fontSize: windowWidth > 480 ? '14px' : '12px' }}>
+                    {t("language_pair")}:
+                  </Typography.Text>
+                  <Dropdown menu={{ items: languageGroupItems }} trigger={['click']} placement="bottomLeft">
+                    <Button style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: windowWidth > 480 ? '14px' : '12px' }}>
+                      {appLanguage?.languagePair ? t(appLanguage?.languagePair) : t('en_vi')}
+                      <DownOutlined />
+                    </Button>
+                  </Dropdown>
+                </div>
+
+                {/* Current Language Column */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Typography.Text className="font-semibold" style={{ display: 'block', marginBottom: '8px', fontSize: windowWidth > 480 ? '14px' : '12px' }}>
+                    {t("current_language")}:
+                  </Typography.Text>
+                  <Switch
+                    checked={appLanguage?.lang_1 === appLanguage?.currentLanguage}
+                    onChange={handleSwitch}
+                    checkedChildren={appLanguage?.lang_1 === appLanguage?.currentLanguage ? t(appLanguage?.lang_1 ?? "null") : t("null")}
+                    unCheckedChildren={appLanguage?.lang_2 === appLanguage?.currentLanguage ? t(appLanguage?.lang_2 ?? "null") : t("null")}
+                    size={windowWidth > 480 ? 'default' : 'small'}
+                  />
+                </div>
+              </div>
+
+              {/* Interface Language - riêng biệt */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <Typography.Text className="font-semibold" style={{ display: 'block', marginBottom: '8px', fontSize: windowWidth > 480 ? '14px' : '12px' }}>
+                  {t("interface_language")}:
+                </Typography.Text>
+                <LanguageSwitcher />
+              </div>
+            </div>
+
+            <Divider style={{ margin: '0' }} />
+
+            {/* Theme & Tools Section */}
+            <div>
+              <Typography.Title level={5} style={{ marginBottom: '12px', fontSize: windowWidth > 480 ? '16px' : '14px' }}>
+                {t("settings")}
+              </Typography.Title>
+
+              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '16px' }}>
+                <Typography.Text style={{ fontSize: windowWidth > 480 ? '14px' : '12px' }}>{t("theme")}:</Typography.Text>
+                <Button
+                  type="text"
+                  onClick={toggleTheme}
+                  icon={mode === 'light' ? <SunOutlined /> : <MoonOutlined />}
+                  size={windowWidth > 480 ? 'middle' : 'small'}
+                  style={{ fontSize: windowWidth > 480 ? '14px' : '12px' }}
+                >
+                  {mode === 'light' ? t('light_mode') : t('dark_mode')}
+                </Button>
+              </div>
+
+              {user?.role === 'admin' && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
+                  <Typography.Text style={{ display: 'block', marginBottom: '8px', fontSize: windowWidth > 480 ? '14px' : '12px', textAlign: 'center' }}>
+                    {t("admin_tools")}:
+                  </Typography.Text>
+                  <FileUploaderMaster />
+                </div>
+              )}
+            </div>
+
+            <Divider style={{ margin: '0' }} />
+
+            {/* User Section */}
+            <div>
+              <Typography.Title level={5} style={{ marginBottom: '12px', fontSize: windowWidth > 480 ? '16px' : '14px' }}>
+                {t("account")}
+              </Typography.Title>
+
+              {isAuthenticated ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+                  <Flex align="center" gap="middle">
+                    <Avatar icon={<UserOutlined />} size={windowWidth > 480 ? 'default' : 'small'} />
+                    <Typography.Text strong style={{ fontSize: windowWidth > 480 ? '14px' : '12px' }}>
+                      {getKeyName(user?.fullName ?? "Unknown")}
+                    </Typography.Text>
+                  </Flex>
+
+                  <div style={{ display: 'flex', flexDirection: 'row', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <Button
+                      type="text"
+                      icon={<UserOutlined />}
+                      onClick={handleMyProfile}
+                      style={{ fontSize: windowWidth > 480 ? '14px' : '12px' }}
+                      size={windowWidth > 480 ? 'middle' : 'small'}
+                    >
+                      {t('profile')}
+                    </Button>
+                    <Button
+                      type="text"
+                      icon={<SettingOutlined />}
+                      style={{ fontSize: windowWidth > 480 ? '14px' : '12px' }}
+                      size={windowWidth > 480 ? 'middle' : 'small'}
+                    >
+                      {t('settings')}
+                    </Button>
+                    <Button
+                      type="text"
+                      icon={<LogoutOutlined />}
+                      onClick={handleLogout}
+                      style={{ color: '#ff4d4f', fontSize: windowWidth > 480 ? '14px' : '12px' }}
+                      size={windowWidth > 480 ? 'middle' : 'small'}
+                    >
+                      {t('auth.logout')}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'row', gap: '8px', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <Link href={appRoute.login}>
+                    <Button
+                      type="text"
+                      icon={<LoginOutlined />}
+                      style={{ fontSize: windowWidth > 480 ? '14px' : '12px' }}
+                      size={windowWidth > 480 ? 'middle' : 'small'}
+                    >
+                      {t('auth.login')}
+                    </Button>
+                  </Link>
+                  <Link href={appRoute.signup}>
+                    <Button
+                      type="primary"
+                      icon={<UserOutlined />}
+                      style={{ fontSize: windowWidth > 480 ? '14px' : '12px' }}
+                      size={windowWidth > 480 ? 'middle' : 'small'}
+                    >
+                      {t('auth.signup')}
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </Drawer>
+
+        <FloatButton icon={<QuestionCircleOutlined />} type="primary" style={{ insetInlineEnd: 24 }} onClick={showHelpDrawer} />
         <Drawer
           title={t('help')}
           closable={{ 'aria-label': 'Close Button' }}
-          onClose={onClose}
+          onClose={onHelpDrawerClose}
           open={open}
         >
           <Typography.Title level={5}>{t('select_tag')}</Typography.Title>
