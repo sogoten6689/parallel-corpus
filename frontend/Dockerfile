@@ -1,48 +1,28 @@
-FROM node:21.5.0 AS deps
-# To make sure path exists, if we don't add this mkdir, the following errno -2
-# [Error: ENOENT: no such file or directory, open '/usr/src/app/.next/BUILD_ID']
-# will happen
-RUN mkdir -p /usr/src/app
+# Stage 1: Install dependencies
+FROM node:21.5.0 AS base
+# Sử dụng Node LTS
 
-WORKDIR /usr/src/app
-COPY package.json package-lock.json ./
-RUN echo "Step 1: Installing production dependencies"
-RUN npm install --save-dev
+# Đặt thư mục làm việc
+WORKDIR /app
 
-# Step 1: Installing production dependencies
-# This is a comment or log statement to indicate the current step
+# Fix HOME cho npm (tránh lỗi /nonexistent)
+ENV HOME=/app
+ENV NPM_CONFIG_CACHE=/app/.npm
 
-FROM node:21.5.0 AS builder
-WORKDIR /usr/src/app
-COPY --from=deps /usr/src/app/node_modules ./node_modules
+# Copy file package trước để cache dependencies
+COPY package*.json ./
+
+# Cài dependencies
+RUN npm install
+
+# Copy toàn bộ code
 COPY . .
-ENV NEXT_TELEMETRY_DISABLED 1
-RUN echo "Step 2: Building the application"
+
+# Build Next app
 RUN npm run build
 
-# Step 2: Building the application
-# This is a comment or log statement to indicate the current step
-
-FROM node:21.5.0 AS runner
-WORKDIR /usr/src/app
-RUN echo "Step 3: Setting up user and permissions"
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Step 3: Setting up user and permissions
-# This is a comment or log statement to indicate the current step
-
-RUN echo "Step 4: Copying build artifacts and package.json"
-COPY --from=builder --chown=nextjs:nodejs /usr/src/app/.next ./.next
-COPY --from=builder /usr/src/app/node_modules ./node_modules
-COPY --from=builder /usr/src/app/package.json ./package.json
-
-# Step 4: Copying build artifacts and package.json
-# This is a comment or log statement to indicate the current step
-
-# RUN sleep 8  # Optional sleep to slow down the build process for observation
-
+# Expose port
 EXPOSE 3000
 
-CMD [ "npm", "run", "dev" ]
-# CMD [ "npm", "run", "start" ]
+# Start Next.js
+CMD ["npm", "start"]
