@@ -20,6 +20,8 @@ export interface API_PROPS {
         POS: string
         NER: string
         SEMANTIC: string
+        STATISTIC_WITH_TAG: string,
+        STATISTICS: string
     }
 }
 
@@ -45,5 +47,7 @@ export const API: API_PROPS = {
         POS: "api/master/pos",
         NER: "api/master/ner",
         SEMANTIC: "api/master/semantic",
+        STATISTIC_WITH_TAG: "api/master/statistic-with-tag",
+        STATISTICS: "api/master/statistics",
     }
 }

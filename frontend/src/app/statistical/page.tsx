@@ -8,7 +8,7 @@ import { Button, Cascader, CascaderProps, Col, Flex, Row, Select, Typography, Fo
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSelector } from "react-redux";
-import { fetchPOS, fetchNER, fetchSemantic } from '@/services/master/master-api';
+import { fetchPOS, fetchNER, fetchSemantic, fetchStatistics, fetchStatisticWithTag } from '@/services/master/master-api';
 import { useAppLanguage } from '@/contexts/AppLanguageContext';
 
 const Statistical: React.FC = () => {
@@ -35,7 +35,7 @@ const Statistical: React.FC = () => {
     setTopResults(value);
   };
 
-  const handleTagSelect: CascaderProps<Option>['onChange'] = (value) => {
+  const handleTagSelect: CascaderProps<Option>['onChange'] = (value: string[]) => {
     setTagSelect(value);
   };
   // Token count still derived from corpus for frequency calculations
@@ -128,11 +128,39 @@ const Statistical: React.FC = () => {
     setData(newData);
   }
 
-  const handleViewButton = () => {
-    const data = getData();
-    setNumTypes(Object.keys(data).length);
-    showData(data);
+  const handleViewButton = async () => {
+    try {
+      const isAll = tagSelect.length === 1 && tagSelect[0] === 'all';
+      const res = isAll
+        ? await fetchStatistics(currentLang)
+        : await fetchStatisticWithTag(currentLang, tagSelect[0], tagSelect[1]);
+      const items: Array<{ Word: string; Count: number; Percent: number; F: number; }> = res.data?.data || [];
+
+      const sorted = items.sort((a, b) => (b.Count - a.Count) || a.Word.localeCompare(b.Word));
+      const limitedItems = topResults !== 'all' ? sorted.slice(0, Number(topResults)) : sorted;
+
+      const rows: RowStat[] = limitedItems.map(it => new RowStat(it.Word, it.Count, it.Percent, it.F));
+      setData(rows);
+      setNumTypes(items.length);
+    } catch (e) {
+      // Fallback to local computation if API fails
+      const data = getData();
+      setNumTypes(Object.keys(data).length);
+      showData(data);
+    }
   };
+
+  // Auto load default data on mount and when language changes
+  useEffect(() => {
+    handleViewButton();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLang]);
+
+  // Auto refresh when filter tag or top N selection changes
+  useEffect(() => {
+    handleViewButton();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tagSelect, topResults]);
 
   const [form] = Form.useForm();
 
@@ -178,7 +206,7 @@ const Statistical: React.FC = () => {
                     <Form.Item name="tagSelect" initialValue={tagSelect} className="flex items-center !mb-0">
                       <Cascader
                         options={options}
-                        onChange={(value, opts) => { handleTagSelect(value, opts); form.setFieldsValue({ tagSelect: value }); }}
+                        onChange={(value: string[]) => { handleTagSelect(value); form.setFieldsValue({ tagSelect: value }); }}
                         placeholder={t('please_select')}
                         value={tagSelect}
                         className="flex items-center"

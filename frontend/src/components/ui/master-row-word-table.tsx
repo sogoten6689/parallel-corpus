@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Button, Col, Input, Row, Space, Table, Tooltip, Typography, Tag, Descriptions } from 'antd';
+import { Button, Col, Input, Row, Space, Table, Tooltip, Typography, Tag, Descriptions, Select, Spin } from 'antd';
 import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import { useTranslation } from "react-i18next";
 import Modal from 'antd/es/modal/Modal';
 import { useQuery } from "@tanstack/react-query";
-import { fetchMasterRowWords, updateMasterRowWordApi } from '@/services/master/master-api';
+import { fetchMasterRowWords, updateMasterRowWordApi, fetchPOS, fetchNER, fetchSemantic } from '@/services/master/master-api';
 import { MasterRowWord } from '@/types/master-row-word.type';
 import Card from 'antd/es/card/Card';
 import Dropdown from 'antd/es/dropdown/dropdown';
@@ -26,6 +26,11 @@ export default function MasterRowWordTable() {
   const [selectedWord, setSelectedWord] = useState<MasterRowWord | null>(null);
   const [langCode, setLangCode] = useState<string | undefined>('');
   const [search, setSearch] = useState<string | undefined>();
+  // Dropdown data states
+  const [posOptions, setPosOptions] = useState<{ value: string; label: string }[]>([]);
+  const [nerOptions, setNerOptions] = useState<{ value: string; label: string }[]>([]);
+  const [semanticOptions, setSemanticOptions] = useState<{ value: string; label: string }[]>([]);
+  const [isLoadingDropdowns, setIsLoadingDropdowns] = useState(false);
   // Keeping these commented until needed to avoid unused variable lint errors
   // const [totalAll, setTotalAll] = useState<number | null>(null);
   // const [totalAllSen, setTotalAllSen] = useState<number | null>(null);
@@ -153,9 +158,48 @@ export default function MasterRowWordTable() {
     setSelectedWord(null);
   };
 
+  const fetchDropdownData = async (langCode?: string) => {
+    setIsLoadingDropdowns(true);
+    try {
+      const [posRes, nerRes, semanticRes] = await Promise.all([
+        fetchPOS(langCode),
+        fetchNER(langCode),
+        fetchSemantic(langCode)
+      ]);
+
+      if (posRes.status === 200 && posRes.data?.data) {
+        setPosOptions(posRes.data.data.map((item: any) => ({
+          value: item.value || item,
+          label: item.label || item
+        })));
+      }
+
+      if (nerRes.status === 200 && nerRes.data?.data) {
+        setNerOptions(nerRes.data.data.map((item: any) => ({
+          value: item.value || item,
+          label: item.label || item
+        })));
+      }
+
+      if (semanticRes.status === 200 && semanticRes.data?.data) {
+        setSemanticOptions(semanticRes.data.data.map((item: any) => ({
+          value: item.value || item,
+          label: item.label || item
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching dropdown data:', error);
+      message.error('Failed to load dropdown options');
+    } finally {
+      setIsLoadingDropdowns(false);
+    }
+  };
+
   const showModalEdit = (record: MasterRowWord) => {
     setSelectedWord(record);
     setIsModalEditVisible(true);
+    // Fetch dropdown data when opening edit modal
+    fetchDropdownData(record.lang_code);
   };
 
   const handleCancelEdit = () => {
@@ -368,38 +412,66 @@ export default function MasterRowWordTable() {
         cancelText={t('cancel')}
       >
         {selectedWord && (
-          <table style={{ width: '100%', fontSize: '14px' }} key={selectedWord?.id + "modal"}>
-            <tbody key={selectedWord?.id + "modal-tbody"}>
-              {columns.map(col => {
-                const k = col.key as string | undefined;
-                if (!k) return null;
-                const rw = selectedWord as unknown as Record<string, unknown>;
-                const val = rw[k];
-                const inputValue = typeof val === 'string' || typeof val === 'number' ? val : '';
-                const titleNode = col.title && typeof col.title === 'string' ? col.title : t(k);
-                return (
-                  <tr
-                    key={k + 'modalEdit'}
-                    hidden={k === 'action'}
-                    style={{ verticalAlign: 'top' }}
-                  >
-                    <td style={{ padding: '6px 12px 4px 0', width: 160 }}>
-                      <strong>{titleNode}:</strong>
-                    </td>
-                    <td style={{ padding: '4px 0 14px' }}>
-                      <Input
-                        size="small"
-                        placeholder={t(k)}
-                        value={inputValue as string | number | undefined}
-                        disabled={['id', 'id_sen', 'id_string', 'action', 'lang_code', 'lang_pair'].includes(k)}
-                        onChange={(e) => onChangeWord(k, e.target.value)}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div>
+            {isLoadingDropdowns && (
+              <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                <Spin size="small" /> <span style={{ marginLeft: 8 }}>Loading dropdown options...</span>
+              </div>
+            )}
+            <table style={{ width: '100%', fontSize: '14px' }} key={selectedWord?.id + "modal"}>
+              <tbody key={selectedWord?.id + "modal-tbody"}>
+                {columns.map(col => {
+                  const k = col.key as string | undefined;
+                  if (!k) return null;
+                  const rw = selectedWord as unknown as Record<string, unknown>;
+                  const val = rw[k];
+                  const inputValue = typeof val === 'string' || typeof val === 'number' ? val : '';
+                  const titleNode = col.title && typeof col.title === 'string' ? col.title : t(k);
+                  
+                  // Check if this field should be a dropdown
+                  const isDropdownField = ['pos', 'ner', 'semantic'].includes(k);
+                  
+                  return (
+                    <tr
+                      key={k + 'modalEdit'}
+                      hidden={k === 'action'}
+                      style={{ verticalAlign: 'top' }}
+                    >
+                      <td style={{ padding: '6px 12px 4px 0', width: 160 }}>
+                        <strong>{titleNode}:</strong>
+                      </td>
+                      <td style={{ padding: '4px 0 14px' }}>
+                        {isDropdownField ? (
+                          <Select
+                            size="small"
+                            style={{ width: '100%' }}
+                            placeholder={t(k)}
+                            value={inputValue as string | undefined}
+                            disabled={['id', 'id_sen', 'id_string', 'action', 'lang_code', 'lang_pair'].includes(k)}
+                            onChange={(value) => onChangeWord(k, value)}
+                            options={k === 'pos' ? posOptions : k === 'ner' ? nerOptions : semanticOptions}
+                            loading={isLoadingDropdowns}
+                            showSearch
+                            filterOption={(input, option) =>
+                              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                            }
+                          />
+                        ) : (
+                          <Input
+                            size="small"
+                            placeholder={t(k)}
+                            value={inputValue as string | number | undefined}
+                            disabled={['id', 'id_sen', 'id_string', 'action', 'lang_code', 'lang_pair'].includes(k)}
+                            onChange={(e) => onChangeWord(k, e.target.value)}
+                          />
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </Modal>
     </div>

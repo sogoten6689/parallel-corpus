@@ -147,6 +147,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     '/introduction': '7',
     '/users': '6',
     '/my-profile': '8',
+    '/my-word': '9',
   };
 
   const selectedKey = menuKeyMap[pathname] || '1';
@@ -189,6 +190,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               { key: '4', icon: <TagsOutlined />, label: <Link href="/word-tag">{t('menu_word_tag')}</Link> },
               { key: '5', icon: <StockOutlined />, label: <Link href="/statistical">{t('statistical')}</Link> },
               { key: '7', icon: <InfoOutlined />, label: <Link href="/introduction">{t('introduction')}</Link> },
+              user?.id ? { key: '9', icon: <UserOutlined />, label: <Link href="/my-word">{t('my_word')}</Link> } : null,
             ];
             const mgmtChildren: Exclude<MenuProps['items'], undefined> = [
               user?.role === 'admin' ? { key: '6', icon: <SettingOutlined />, label: <Link href="/users">{t('user')}</Link> } : null,

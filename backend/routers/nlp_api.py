@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import spacy
 import logging
+from services.vietnamese_nlp_service import vietnamese_nlp_service
 
 # Cấu hình logging
 logging.basicConfig(level=logging.INFO)
@@ -41,6 +42,40 @@ class EntityInfo(BaseModel):
 class SentenceInfo(BaseModel):
     text: str
     tokens: List[TokenInfo]
+
+class VietnameseTokenInfo(BaseModel):
+    text: str
+    pos: str
+    pos_explanation: str
+    lemma: str
+    dep: str
+    head: int
+    index: int
+
+class VietnameseSentenceInfo(BaseModel):
+    text: str
+    tokens: List[VietnameseTokenInfo]
+
+class VietnameseEntityInfo(BaseModel):
+    text: str
+    label: str
+    label_explanation: str
+    start: int
+    end: int
+
+class VietnameseNLPResponse(BaseModel):
+    original_text: str
+    sentences: List[VietnameseSentenceInfo]
+    entities: List[VietnameseEntityInfo]
+    token_count: int
+    sentence_count: int
+
+class DependencyInfo(BaseModel):
+    text: str
+    pos: str
+    head: int
+    dep_label: str
+    index: int
 
 class NLPResponse(BaseModel):
     original_text: str
@@ -243,6 +278,132 @@ async def health_check():
             detail="NLP model not available"
         )
 
+# Vietnamese NLP Endpoints
+
+@router.post("/vietnamese/word-segmentation", response_model=List[str])
+async def vietnamese_word_segmentation(request: TextRequest):
+    """
+    Perform word segmentation on Vietnamese text using VnCoreNLP
+    """
+    if not vietnamese_nlp_service.is_available():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Vietnamese NLP service not available. Please ensure VnCoreNLP is properly installed."
+        )
+    
+    try:
+        words = vietnamese_nlp_service.word_segmentation(request.text)
+        return words
+    except Exception as e:
+        logger.error(f"Error in Vietnamese word segmentation: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error during Vietnamese word segmentation: {str(e)}"
+        )
+
+@router.post("/vietnamese/pos-tagging", response_model=List[Dict[str, str]])
+async def vietnamese_pos_tagging(request: TextRequest):
+    """
+    Perform Part-of-Speech tagging on Vietnamese text using VnCoreNLP
+    """
+    if not vietnamese_nlp_service.is_available():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Vietnamese NLP service not available. Please ensure VnCoreNLP is properly installed."
+        )
+    
+    try:
+        pos_tags = vietnamese_nlp_service.pos_tagging(request.text)
+        return pos_tags
+    except Exception as e:
+        logger.error(f"Error in Vietnamese POS tagging: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error during Vietnamese POS tagging: {str(e)}"
+        )
+
+@router.post("/vietnamese/ner", response_model=List[VietnameseEntityInfo])
+async def vietnamese_named_entity_recognition(request: TextRequest):
+    """
+    Perform Named Entity Recognition on Vietnamese text using VnCoreNLP
+    """
+    if not vietnamese_nlp_service.is_available():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Vietnamese NLP service not available. Please ensure VnCoreNLP is properly installed."
+        )
+    
+    try:
+        entities = vietnamese_nlp_service.named_entity_recognition(request.text)
+        return [VietnameseEntityInfo(**entity) for entity in entities]
+    except Exception as e:
+        logger.error(f"Error in Vietnamese NER: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error during Vietnamese NER: {str(e)}"
+        )
+
+@router.post("/vietnamese/dependency-parsing", response_model=List[List[DependencyInfo]])
+async def vietnamese_dependency_parsing(request: TextRequest):
+    """
+    Perform dependency parsing on Vietnamese text using VnCoreNLP
+    """
+    if not vietnamese_nlp_service.is_available():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Vietnamese NLP service not available. Please ensure VnCoreNLP is properly installed."
+        )
+    
+    try:
+        dependencies = vietnamese_nlp_service.dependency_parsing(request.text)
+        return [[DependencyInfo(**dep) for dep in sentence_deps] for sentence_deps in dependencies]
+    except Exception as e:
+        logger.error(f"Error in Vietnamese dependency parsing: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error during Vietnamese dependency parsing: {str(e)}"
+        )
+
+@router.post("/vietnamese/analyze", response_model=VietnameseNLPResponse)
+async def vietnamese_full_analysis(request: TextRequest):
+    """
+    Perform complete Vietnamese text analysis including word segmentation, POS tagging, NER, and dependency parsing
+    """
+    if not vietnamese_nlp_service.is_available():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Vietnamese NLP service not available. Please ensure VnCoreNLP is properly installed."
+        )
+    
+    try:
+        analysis_result = vietnamese_nlp_service.full_analysis(request.text)
+        
+        # Convert to Pydantic models
+        sentences = []
+        for sent in analysis_result["sentences"]:
+            tokens = [VietnameseTokenInfo(**token) for token in sent["tokens"]]
+            sentences.append(VietnameseSentenceInfo(
+                text=sent["text"],
+                tokens=tokens
+            ))
+        
+        entities = [VietnameseEntityInfo(**entity) for entity in analysis_result["entities"]]
+        
+        return VietnameseNLPResponse(
+            original_text=analysis_result["original_text"],
+            sentences=sentences,
+            entities=entities,
+            token_count=analysis_result["token_count"],
+            sentence_count=analysis_result["sentence_count"]
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in Vietnamese full analysis: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error during Vietnamese text analysis: {str(e)}"
+        )
+
 @router.get("/supported-languages")
 async def get_supported_languages():
     """
@@ -255,6 +416,12 @@ async def get_supported_languages():
                 "name": "English",
                 "model": "en_core_web_sm",
                 "status": "available" if nlp else "not_installed"
+            },
+            {
+                "code": "vi",
+                "name": "Vietnamese",
+                "model": "VnCoreNLP",
+                "status": "available" if vietnamese_nlp_service.is_available() else "not_installed"
             }
         ],
         "note": "To add more languages, install additional spaCy models using: python -m spacy download [model_name]"
