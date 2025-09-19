@@ -7,6 +7,7 @@ import os
 import logging
 from typing import List, Dict, Any, Optional
 import py_vncorenlp
+from .pos_ner_mapping import map_pos_tag, map_ner_label
 
 logger = logging.getLogger(__name__)
 
@@ -231,10 +232,13 @@ class VietnameseNLPService:
                     word_start = char_offset
                     word_end = char_offset + len(word)
                     
+                    # Map POS tag to specific value
+                    specific_pos, pos_explanation = map_pos_tag(word_info['posTag'], "vi")
+                    
                     token_info = {
                         "text": word,
-                        "pos": word_info['posTag'],
-                        "pos_explanation": self._get_pos_explanation(word_info['posTag']),
+                        "pos": specific_pos,
+                        "pos_explanation": pos_explanation,
                         "lemma": word,  # VnCoreNLP doesn't provide lemmatization
                         "dep": word_info['depLabel'],
                         "head": word_info['head'],
@@ -250,10 +254,13 @@ class VietnameseNLPService:
                         if current_entity:
                             entities.append(current_entity)
                         
+                        # Map NER label to specific value
+                        specific_ner, ner_explanation = map_ner_label(ner_tag[2:], "vi")
+                        
                         current_entity = {
                             "text": word,
-                            "label": ner_tag[2:],
-                            "label_explanation": self._get_ner_explanation(ner_tag[2:]),
+                            "label": specific_ner,
+                            "label_explanation": ner_explanation,
                             "start": word_start,
                             "end": word_end
                         }

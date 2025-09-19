@@ -7,10 +7,12 @@ import { useTranslation } from "react-i18next";
 import Modal from 'antd/es/modal/Modal';
 import { useQuery } from "@tanstack/react-query";
 import { fetchMasterRowWords, updateMasterRowWordApi, fetchPOS, fetchNER, fetchSemantic } from '@/services/master/master-api';
+import { fullTextAnalysis, vietnameseFullAnalysis } from '@/services/nlp/nlp-api';
+import { normalizeVietnameseSyllable } from '@/services/vietnamese/vietnamese-normalization-api';
 import { MasterRowWord } from '@/types/master-row-word.type';
 import Card from 'antd/es/card/Card';
 import Dropdown from 'antd/es/dropdown/dropdown';
-import { EditOutlined, DownOutlined } from '@ant-design/icons';
+import { EditOutlined, DownOutlined, RobotOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
 import useApp from 'antd/es/app/useApp';
 
@@ -23,7 +25,13 @@ export default function MasterRowWordTable() {
   const { user } = useAuth();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isModalEditVisible, setIsModalEditVisible] = useState(false);
+  const [isModalAIEditVisible, setIsModalAIEditVisible] = useState(false);
   const [selectedWord, setSelectedWord] = useState<MasterRowWord | null>(null);
+  const [aiEditedWord, setAiEditedWord] = useState<MasterRowWord | null>(null);
+  const [aiEditedWords, setAiEditedWords] = useState<MasterRowWord[] | null>(null);
+  const [originalSentenceRows, setOriginalSentenceRows] = useState<MasterRowWord[] | null>(null);
+  const [aiCellDecisions, setAiCellDecisions] = useState<Record<number, { pos?: boolean; lemma?: boolean; morph?: boolean; ner?: boolean; grm?: boolean }>>({});
+  const [isAIProcessing, setIsAIProcessing] = useState(false);
   const [langCode, setLangCode] = useState<string | undefined>('');
   const [search, setSearch] = useState<string | undefined>();
   // Dropdown data states
@@ -91,11 +99,21 @@ export default function MasterRowWordTable() {
 
     if (key === 'action') {
       const render = (text: string, record: MasterRowWord) => (
-        <>
-          {user?.role === 'admin' &&
-            <Button icon={<EditOutlined />} onClick={() => showModalEdit(record)}>{t('edit')}</Button>
-          }
-        </>
+        <Space>
+          {user?.role === 'admin' && (
+            <>
+              <Button icon={<EditOutlined />} onClick={() => showModalEdit(record)}>{t('edit')}</Button>
+              <Button 
+                icon={<RobotOutlined />} 
+                onClick={() => showModalAIEdit(record)}
+                type="primary"
+                ghost
+              >
+                {t('edit_by_ai')}
+              </Button>
+            </>
+          )}
+        </Space>
       );
       return {
         ...column,
@@ -205,6 +223,158 @@ export default function MasterRowWordTable() {
   const handleCancelEdit = () => {
     setIsModalEditVisible(false);
     setSelectedWord(null);
+  };
+
+  const showModalAIEdit = (record: MasterRowWord) => {
+    setSelectedWord(record);
+    setIsModalAIEditVisible(true);
+  };
+
+  const handleCancelAIEdit = () => {
+    setIsModalAIEditVisible(false);
+    setSelectedWord(null);
+    setAiEditedWord(null);
+    setAiEditedWords(null);
+    setOriginalSentenceRows(null);
+    setIsAIProcessing(false);
+  };
+
+  const handleAIEditConfirm = async () => {
+    if (!selectedWord) return;
+    setIsAIProcessing(true);
+    try {
+      // Fetch all rows in the sentence (by id_sen) for current language
+      const searchId = selectedWord.id_sen || '';
+      const lang = selectedWord.lang_code || '';
+      const resAll = await fetchMasterRowWords(1, 1000, lang, searchId);
+      const allRows: MasterRowWord[] = (resAll?.data?.data || []).filter((r: MasterRowWord) => r.id_sen === searchId && r.lang_code === lang);
+      setOriginalSentenceRows(allRows);
+
+      // Build sentence text from words
+      const joinWithSpace = (tokens: string[]) => tokens.join(' ')
+        .replace(/_/g, ' ')
+        .replace(/\s+([\.,\?/:;\\!%\)\}\]])/g, '$1')
+        .replace(/([\(\[\{])\s+/g, '$1')
+        .trim();
+      const sentenceText = joinWithSpace(allRows.map(r => r.word || ''));
+
+      // Analyze full sentence
+      const analysisResult = selectedWord.lang_code === 'vi'
+        ? await vietnameseFullAnalysis(sentenceText)
+        : await fullTextAnalysis(sentenceText);
+
+      // Map token results back to rows by order
+      const firstSentence = analysisResult.sentences && analysisResult.sentences.length > 0 ? analysisResult.sentences[0] : null;
+      const tokens = (firstSentence?.tokens || []) as any[];
+      const updatedRows: MasterRowWord[] = await Promise.all(allRows.map(async (row, index) => {
+        const token = tokens[index];
+        const updated: MasterRowWord = { ...row };
+        if (token) {
+          if (token.pos) updated.pos = token.pos as any;
+          if (token.lemma) updated.lemma = token.lemma as any;
+          if (token.dep) updated.grm = token.dep as any;
+          
+          // For Vietnamese text, normalize lemma and morph using Vietnamese normalization
+          if (selectedWord.lang_code === 'vi') {
+            try {
+              if (token.lemma) {
+                const normalizedLemma = await normalizeVietnameseSyllable(token.lemma);
+                updated.lemma = normalizedLemma.normalized_syllable as any;
+              }
+              // Also normalize the word itself for morph field
+              if (row.word) {
+                const normalizedMorph = await normalizeVietnameseSyllable(row.word);
+                updated.morph = normalizedMorph.normalized_syllable as any;
+              }
+            } catch (error) {
+              console.warn('Vietnamese normalization failed for word:', row.word, error);
+              // Keep original values if normalization fails
+            }
+          }
+        }
+        return updated;
+      }));
+
+      // Assign NER labels best-effort
+      if ((analysisResult as any).entities && (analysisResult as any).entities.length > 0) {
+        ((analysisResult as any).entities as any[]).forEach((ent: any) => {
+          const label = ent.label;
+          const entText = (ent.text || '').trim();
+          if (!entText) return;
+          updatedRows.forEach((row, idx) => {
+            const token = tokens[idx];
+            if (token && (token.text || '').trim() && entText.includes(token.text)) {
+              (row as any).ner = label;
+            }
+          });
+        });
+      }
+
+      // Initialize decisions as undecided; icons will be shown only for changed fields
+      const decisions: Record<number, { pos?: boolean; lemma?: boolean; ner?: boolean; grm?: boolean }> = {};
+      updatedRows.forEach((row) => {
+        decisions[row.id] = {};
+      });
+      setAiCellDecisions(decisions);
+
+      setAiEditedWords(updatedRows);
+      setAiEditedWord(null);
+      message.success(t('ai_edit_success'));
+    } catch (error) {
+      console.error('AI edit error:', error);
+      message.error(t('ai_edit_failed'));
+    } finally {
+      setIsAIProcessing(false);
+    }
+  };
+
+  const handleAISave = async () => {
+    try {
+      if (aiEditedWords && aiEditedWords.length > 0) {
+        const finalRows = aiEditedWords.map((row, idx) => {
+          const orig = (originalSentenceRows || [])[idx] || row;
+          const decide = aiCellDecisions[row.id] || {};
+          const merged: MasterRowWord = { ...orig };
+          // Only apply AI when the field changed AND user accepted. Otherwise keep original.
+          const hasPosChanged = (orig.pos || '') !== (row.pos || '');
+          const hasLemmaChanged = (orig.lemma || '') !== (row.lemma || '');
+          const hasMorphChanged = (orig.morph || '') !== (row.morph || '');
+          const hasNerChanged = (orig.ner || '') !== (row.ner || '');
+          const hasGrmChanged = (orig.grm || '') !== (row.grm || '');
+
+          merged.pos = hasPosChanged && decide.pos === true ? row.pos : orig.pos;
+          merged.lemma = hasLemmaChanged && decide.lemma === true ? row.lemma : orig.lemma;
+          merged.morph = hasMorphChanged && decide.morph === true ? row.morph : orig.morph;
+          merged.ner = hasNerChanged && decide.ner === true ? row.ner : orig.ner;
+          merged.grm = hasGrmChanged && decide.grm === true ? row.grm : orig.grm;
+          return merged;
+        });
+        for (const w of finalRows) {
+          await updateMasterRowWordApi(w);
+        }
+        message.success(t('edit_success'));
+        handleCancelAIEdit();
+      } else if (aiEditedWord) {
+        const res = await updateMasterRowWordApi(aiEditedWord);
+        if (res.status !== 200) {
+          message.error(t('edit_failed'));
+          return;
+        } else {
+          if (res.data?.data) {
+            wordRowMasterData?.data?.forEach((word: MasterRowWord, index: number) => {
+              if (word.id === aiEditedWord.id) {
+                wordRowMasterData.data[index] = res.data?.data;
+              }
+            });
+          }
+          message.success(t('edit_success'));
+          handleCancelAIEdit();
+        }
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      message.error(t('edit_failed'));
+    }
   };
 
   const isLoading = isLoadingMaster;
@@ -471,6 +641,184 @@ export default function MasterRowWordTable() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+      </Modal>
+
+      {/* AI Edit Modal */}
+      <Modal
+        title={t('edit_by_ai')}
+        open={isModalAIEditVisible}
+        onCancel={handleCancelAIEdit}
+        footer={null}
+        width={800}
+      >
+        {selectedWord && (
+          <div>
+            {!aiEditedWord && !aiEditedWords ? (
+              <div>
+                <p style={{ marginBottom: 16, fontSize: 16 }}>
+                  {(() => {
+                    const joinWithSpace = (tokens: string[]) => tokens.join(' ')
+                      .replace(/_/g, ' ')
+                      .replace(/\s+([\.,\?/:;\\!%\)\}\]])/g, '$1')
+                      .replace(/([\(\[\{])\s+/g, '$1')
+                      .trim();
+                    const sentenceText = originalSentenceRows && originalSentenceRows.length > 0
+                      ? joinWithSpace(originalSentenceRows.map(r => r.word || ''))
+                      : (selectedWord.word || '');
+                    return t('ai_edit_confirm', { sentence: sentenceText });
+                  })()}
+                </p>
+                <div style={{ textAlign: 'center', marginTop: 24 }}>
+                  <Button 
+                    type="primary" 
+                    onClick={handleAIEditConfirm}
+                    loading={isAIProcessing}
+                    size="large"
+                    icon={<RobotOutlined />}
+                  >
+                    {isAIProcessing ? t('ai_edit_processing') : t('edit_by_ai')}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h3 style={{ marginBottom: 16 }}>{t('ai_edit_preview')}</h3>
+                {(() => {
+                  const joinWithSpace = (tokens: string[]) => tokens.join(' ')
+                    .replace(/_/g, ' ')
+                    .replace(/\s+([\.,\?/:;\\!%\)\}\]])/g, '$1')
+                    .replace(/([\(\[\{])\s+/g, '$1')
+                    .trim();
+                  const beforeRows = originalSentenceRows || [];
+                  const afterRows = aiEditedWords || [];
+                  const beforeSentence = beforeRows.length > 0 ? joinWithSpace(beforeRows.map(r => r.word || '')) : (selectedWord.word || '');
+                  const afterSentence = afterRows.length > 0 ? joinWithSpace(afterRows.map(r => r.word || '')) : beforeSentence;
+                  return (
+                    <>
+                      <div style={{ marginBottom: 24 }}>
+                        <h4>{t('ai_edit_original')}</h4>
+                        <div style={{ padding: 12, backgroundColor: '#f5f5f5', borderRadius: 6 }}>
+                          {beforeSentence}
+                        </div>
+                      </div>
+                      <div style={{ marginBottom: 24 }}>
+                        <h4>{t('ai_edit_processed')}</h4>
+                        <div style={{ padding: 12, backgroundColor: '#e6f7ff', borderRadius: 6 }}>
+                          {afterSentence}
+                        </div>
+                      </div>
+                      {afterRows.length > 0 && (
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                              <tr>
+                                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>#</th>
+                                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('word')}</th>
+                                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>POS</th>
+                                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Lemma</th>
+                                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Morph</th>
+                                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>NER</th>
+                                <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('grm')}</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {afterRows.map((row, idx) => {
+                                const orig = beforeRows[idx] || {} as MasterRowWord;
+                                const highlight = (beforeVal: any, afterVal: any) => ({
+                                  style: { backgroundColor: beforeVal !== afterVal ? '#fff2e8' : 'transparent' as const, fontWeight: beforeVal !== afterVal ? 'bold' as const : 'normal' as const },
+                                  text: `${beforeVal || '-'} → ${afterVal || '-'}`
+                                });
+                                const beforePos = (orig as any).pos, afterPos = row.pos;
+                                const beforeLemma = (orig as any).lemma, afterLemma = row.lemma;
+                                const beforeMorph = (orig as any).morph, afterMorph = row.morph;
+                                const beforeNer = (orig as any).ner, afterNer = row.ner;
+                                const beforeGrm = (orig as any).grm, afterGrm = row.grm;
+                                const posCell = highlight(beforePos, afterPos);
+                                const lemmaCell = highlight(beforeLemma, afterLemma);
+                                const morphCell = highlight(beforeMorph, afterMorph);
+                                const nerCell = highlight(beforeNer, afterNer);
+                                const grmCell = highlight(beforeGrm, afterGrm);
+                                const decide = aiCellDecisions[row.id] || {};
+                                const setDecision = (field: 'pos'|'lemma'|'morph'|'ner'|'grm', value: boolean) => {
+                                  setAiCellDecisions(prev => ({
+                                    ...(prev || {}),
+                                    [row.id]: {
+                                      ...(prev?.[row.id] || {}),
+                                      [field]: value
+                                    }
+                                  }));
+                                };
+                                const showIcons = (beforeVal: any, afterVal: any, field: 'pos'|'lemma'|'morph'|'ner'|'grm') => {
+                                  const changed = (beforeVal || '') !== (afterVal || '');
+                                  const decided = decide[field] !== undefined;
+                                  if (!changed) return null;
+                                  if (decided) return null;
+                                  return (
+                                    <span>
+                                      <Button size="small" type="default" icon={<CheckOutlined />} onClick={() => setDecision(field, true)} />
+                                      <Button size="small" style={{ marginLeft: 6 }} icon={<CloseOutlined />} onClick={() => setDecision(field, false)} />
+                                    </span>
+                                  );
+                                };
+                                return (
+                                  <tr key={row.id}>
+                                    <td style={{ padding: 8, borderBottom: '1px solid #fafafa' }}>{idx + 1}</td>
+                                    <td style={{ padding: 8, borderBottom: '1px solid #fafafa' }}>{row.word}</td>
+                                    <td style={{ padding: 8, borderBottom: '1px solid #fafafa', ...posCell.style }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span>{posCell.text}</span>
+                                        {showIcons(beforePos, afterPos, 'pos')}
+                                      </div>
+                                    </td>
+                                    <td style={{ padding: 8, borderBottom: '1px solid #fafafa', ...lemmaCell.style }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span>{lemmaCell.text}</span>
+                                        {showIcons(beforeLemma, afterLemma, 'lemma')}
+                                      </div>
+                                    </td>
+                                    <td style={{ padding: 8, borderBottom: '1px solid #fafafa', ...morphCell.style }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span>{morphCell.text}</span>
+                                        {showIcons(beforeMorph, afterMorph, 'morph')}
+                                      </div>
+                                    </td>
+                                    <td style={{ padding: 8, borderBottom: '1px solid ' + '#fafafa', ...nerCell.style }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span>{nerCell.text}</span>
+                                        {showIcons(beforeNer, afterNer, 'ner')}
+                                      </div>
+                                    </td>
+                                    <td style={{ padding: 8, borderBottom: '1px solid #fafafa', ...grmCell.style }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span>{grmCell.text}</span>
+                                        {showIcons(beforeGrm, afterGrm, 'grm')}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+
+                <div style={{ textAlign: 'center' }}>
+                  <Space>
+                    <Button onClick={handleCancelAIEdit}>
+                      {t('cancel')}
+                    </Button>
+                    <Button type="primary" onClick={handleAISave}>
+                      {t('save')}
+                    </Button>
+                  </Space>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Modal>

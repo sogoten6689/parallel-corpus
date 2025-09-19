@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Optional
 import spacy
 import logging
 from services.vietnamese_nlp_service import vietnamese_nlp_service
+from services.pos_ner_mapping import map_pos_tag, map_ner_label, get_all_pos_tags, get_all_ner_labels
 
 # Cấu hình logging
 logging.basicConfig(level=logging.INFO)
@@ -221,10 +222,13 @@ async def full_text_analysis(request: TextRequest):
         for sent in doc.sents:
             tokens = []
             for token in sent:
+                # Map POS tag to specific value
+                specific_pos, pos_explanation = map_pos_tag(token.pos_, "en")
+                
                 tokens.append(TokenInfo(
                     text=token.text,
-                    pos=token.pos_,
-                    pos_explanation=spacy.explain(token.pos_),
+                    pos=specific_pos,
+                    pos_explanation=pos_explanation,
                     lemma=token.lemma_,
                     dep=token.dep_,
                     head=token.head.text
@@ -238,10 +242,13 @@ async def full_text_analysis(request: TextRequest):
         # Process entities
         entities = []
         for ent in doc.ents:
+            # Map NER label to specific value
+            specific_ner, ner_explanation = map_ner_label(ent.label_, "en")
+            
             entities.append(EntityInfo(
                 text=ent.text,
-                label=ent.label_,
-                label_explanation=spacy.explain(ent.label_),
+                label=specific_ner,
+                label_explanation=ner_explanation,
                 start=ent.start_char,
                 end=ent.end_char
             ))
@@ -425,4 +432,46 @@ async def get_supported_languages():
             }
         ],
         "note": "To add more languages, install additional spaCy models using: python -m spacy download [model_name]"
+    }
+
+@router.get("/pos-tags/{language}")
+async def get_pos_tags(language: str):
+    """
+    Get all available POS tags for a specific language
+    
+    Args:
+        language: Language code ("en" or "vi")
+    """
+    if language not in ["en", "vi"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Language must be 'en' or 'vi'"
+        )
+    
+    pos_tags = get_all_pos_tags(language)
+    return {
+        "language": language,
+        "pos_tags": pos_tags,
+        "count": len(pos_tags)
+    }
+
+@router.get("/ner-labels/{language}")
+async def get_ner_labels(language: str):
+    """
+    Get all available NER labels for a specific language
+    
+    Args:
+        language: Language code ("en" or "vi")
+    """
+    if language not in ["en", "vi"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Language must be 'en' or 'vi'"
+        )
+    
+    ner_labels = get_all_ner_labels(language)
+    return {
+        "language": language,
+        "ner_labels": ner_labels,
+        "count": len(ner_labels)
     }
