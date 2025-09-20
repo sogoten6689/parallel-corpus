@@ -13,17 +13,17 @@ const items: TabsProps['items'] = [
   {
     key: '1',
     label: t('word'),
-    children: 'Content of Tab Pane 1',
+    children: 'Đang phát triển...',
   },
   {
     key: '2',
     label: t('create_sequence'),
-    children: 'Content of Tab Pane 2',
+    children: 'Đang phát triển...',
   },
   {
     key: '3',
     label: t('tag'),
-    children: 'Content of Tab Pane 3',
+    children: 'Đang phát triển...',
   },
 ];
   return (
