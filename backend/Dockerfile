@@ -20,4 +20,5 @@ COPY . .
 # Copy .env.sample to .env if it doesn't exist
 RUN cp .env.sample .env
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
