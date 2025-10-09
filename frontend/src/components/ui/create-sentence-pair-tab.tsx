@@ -18,7 +18,6 @@ const CreateSentencePairTab: React.FC<CreateSentencePairTabProps> = ({ onSuccess
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
   const [sentenceId, setSentenceId] = useState<string>('');
 
@@ -65,46 +64,28 @@ const CreateSentencePairTab: React.FC<CreateSentencePairTabProps> = ({ onSuccess
   const onFinish = async (values: any) => {
     setLoading(true);
     try {
-      const request: CreateSentencePairRequest = {
+      // Create sentence pair and analyze automatically
+      const request = {
         vietnameseText: values.vietnameseText,
         englishText: values.englishText,
         langPair: languagePair,
       };
-
       const response = await createSentencePair(request);
       setSentenceId(response.sentenceId);
-      message.success(t('sentence_saved_successfully'));
+
+      // Then analyze sentences automatically
+      const results = await analyzeSentences(values.vietnameseText, values.englishText, languagePair);
+      setAnalysisResults(results);
       
-      if (onSuccess) {
-        onSuccess();
-      }
+      message.success('Sentence pair created and analyzed successfully');
     } catch (error) {
-      message.error('Failed to create sentence pair');
-      console.error('Error creating sentence pair:', error);
+      message.error('Failed to create and analyze sentence pair');
+      console.error('Error creating and analyzing sentence pair:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAnalyze = async () => {
-    const values = form.getFieldsValue();
-    if (!values.vietnameseText || !values.englishText || !languagePair) {
-      message.error('Please enter both Vietnamese and English sentences and select a language pair');
-      return;
-    }
-
-    setAnalyzing(true);
-    try {
-      const results = await analyzeSentences(values.vietnameseText, values.englishText, languagePair);
-      setAnalysisResults(results);
-      message.success('Analysis completed successfully');
-    } catch (error) {
-      message.error('Analysis failed');
-      console.error('Error analyzing sentences:', error);
-    } finally {
-      setAnalyzing(false);
-    }
-  };
 
   const handleSaveAnalysis = async () => {
     if (!analysisResults || !sentenceId) {
@@ -239,33 +220,20 @@ const CreateSentencePairTab: React.FC<CreateSentencePairTabProps> = ({ onSuccess
 
           <Row gutter={16}>
             <Col span={24}>
-              <Button
-                type="primary"
-                onClick={handleAnalyze}
-                loading={analyzing}
-                className="mr-2"
-              >
-                {t('analyze_sentences')}
-              </Button>
-              <Button
-                htmlType="submit"
-                loading={loading}
-              >
-                {t('create_sentence_pair')}
-              </Button>
+              <Form.Item>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  className="w-full"
+                >
+                  {t('create_sentence_pair')}
+                </Button>
+              </Form.Item>
             </Col>
           </Row>
         </Form>
       </Card>
-
-      {analyzing && (
-        <Card>
-          <div className="text-center">
-            <Spin size="large" />
-            <Text className="block mt-4">{t('analyzing_sentences')}</Text>
-          </div>
-        </Card>
-      )}
 
       {analysisResults && (
         <Card>

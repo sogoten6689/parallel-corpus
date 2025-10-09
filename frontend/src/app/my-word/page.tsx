@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button, Select, Tabs, Typography, message } from 'antd';
 import type { TabsProps } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/contexts/AuthContext';
 import CreateSentencePairTab from '@/components/ui/create-sentence-pair-tab';
 import SentencePairsListTab from '@/components/ui/sentence-pairs-list-tab';
 import PendingApprovalsTab from '@/components/ui/pending-approvals-tab';
@@ -12,6 +13,7 @@ const { Title } = Typography;
 
 const MyWord: React.FC = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('1');
 
   const items: TabsProps['items'] = [
@@ -23,13 +25,11 @@ const MyWord: React.FC = () => {
     {
       key: '2',
       label: t('sentence_pair_list'),
-      children: <SentencePairsListTab />,
+      children: <SentencePairsListTab active={activeTab === '2'} />,
     },
-    {
-      key: '3',
-      label: t('pending_approval'),
-      children: <PendingApprovalsTab />,
-    },
+    ...(user?.role === 'admin'
+      ? [{ key: '3', label: t('pending_approval'), children: <PendingApprovalsTab active={activeTab === '3'} /> }]
+      : []),
   ];
 
   return (

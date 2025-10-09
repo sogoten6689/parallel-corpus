@@ -1,16 +1,16 @@
 export interface SentencePair {
   id?: string;
-  sentenceId: string;
-  vietnameseText: string;
-  englishText: string;
-  langPair: string;
-  vietnameseAnalysis?: WordAnalysis[];
-  englishAnalysis?: WordAnalysis[];
+  sentence_id: string;
+  vietnamese_text: string;
+  english_text: string;
+  lang_pair: string;
+  vietnamese_analysis?: WordAnalysis[];
+  english_analysis?: WordAnalysis[];
   status: 'draft' | 'pending' | 'approved' | 'rejected';
-  createdBy?: number;
-  approvalBy?: number;
-  createdAt?: string;
-  updatedAt?: string;
+  created_by?: number;
+  approval_by?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface WordAnalysis {

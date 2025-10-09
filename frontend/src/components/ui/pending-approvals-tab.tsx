@@ -1,15 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Table, Button, Card, Typography, Tag, message, Modal, Space } from 'antd';
-import { EyeOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
+import { Table, Button, Card, Typography, Tag, message, Modal, Space, Select } from 'antd';
+import { EyeOutlined, CheckOutlined, CloseOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { getPendingSentencePairs, approveSentencePair, rejectSentencePair } from '@/services/sentence-pair/sentence-pair-api';
+import { getPendingSentencePairs, approveSentencePair, rejectSentencePair, getSentencePairAnalysis } from '@/services/sentence-pair/sentence-pair-api';
+import { fetchPOS, fetchNER, fetchSemantic } from '@/services/master/master-api';
 import type { SentencePair } from '@/types/sentence-pair.type';
 
 const { Title, Text } = Typography;
 
-const PendingApprovalsTab: React.FC = () => {
+type PendingApprovalsTabProps = { active?: boolean };
+
+const PendingApprovalsTab: React.FC<PendingApprovalsTabProps> = ({ active }) => {
   const { t } = useTranslation();
   const [sentencePairs, setSentencePairs] = useState<SentencePair[]>([]);
   const [loading, setLoading] = useState(false);
@@ -20,6 +23,18 @@ const PendingApprovalsTab: React.FC = () => {
   });
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedPair, setSelectedPair] = useState<SentencePair | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingPair, setEditingPair] = useState<SentencePair | null>(null);
+  const [viEditingIdx, setViEditingIdx] = useState<number | null>(null);
+  const [enEditingIdx, setEnEditingIdx] = useState<number | null>(null);
+
+  // Dropdown options for POS/NER/Semantic
+  const [viPosOptions, setViPosOptions] = useState<string[]>([]);
+  const [viNerOptions, setViNerOptions] = useState<string[]>([]);
+  const [viSemOptions, setViSemOptions] = useState<string[]>([]);
+  const [enPosOptions, setEnPosOptions] = useState<string[]>([]);
+  const [enNerOptions, setEnNerOptions] = useState<string[]>([]);
+  const [enSemOptions, setEnSemOptions] = useState<string[]>([]);
 
   const fetchPendingPairs = async (page: number = 1, pageSize: number = 10) => {
     setLoading(true);
@@ -40,8 +55,11 @@ const PendingApprovalsTab: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchPendingPairs();
-  }, []);
+    if (active) {
+      fetchPendingPairs(1, pagination.pageSize);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
 
   const handleApprove = async (id: string) => {
     Modal.confirm({
@@ -77,9 +95,49 @@ const PendingApprovalsTab: React.FC = () => {
     });
   };
 
-  const handleView = (record: SentencePair) => {
-    setSelectedPair(record);
+  const handleView = async (record: SentencePair) => {
+    try {
+      const loaded = await getSentencePairAnalysis(record.sentenceId);
+      const merged: SentencePair = {
+        ...record,
+        vietnamese_analysis: undefined,
+        english_analysis: undefined,
+        vietnameseAnalysis: loaded.vietnameseAnalysis,
+        englishAnalysis: loaded.englishAnalysis,
+      } as any;
+      setSelectedPair(merged);
+    } catch {
+      setSelectedPair(record);
+    }
     setViewModalVisible(true);
+  };
+
+  const handleOpenEdit = (record: SentencePair) => {
+    const clone: SentencePair = JSON.parse(JSON.stringify(record));
+    setEditingPair(clone);
+    setEditModalVisible(true);
+    // Fetch dropdowns for vi and en
+    Promise.all([
+      fetchPOS('vi').then(r => r.data?.data || []).catch(() => []),
+      fetchNER('vi').then(r => r.data?.data || []).catch(() => []),
+      fetchSemantic('vi').then(r => r.data?.data || []).catch(() => []),
+      fetchPOS('en').then(r => r.data?.data || []).catch(() => []),
+      fetchNER('en').then(r => r.data?.data || []).catch(() => []),
+      fetchSemantic('en').then(r => r.data?.data || []).catch(() => []),
+    ]).then(([vPos, vNer, vSem, ePos, eNer, eSem]) => {
+      setViPosOptions(vPos);
+      setViNerOptions(vNer);
+      setViSemOptions(vSem);
+      setEnPosOptions(ePos);
+      setEnNerOptions(eNer);
+      setEnSemOptions(eSem);
+    });
+  };
+
+  const handleApplyEdit = () => {
+    if (!editingPair) return;
+    setSentencePairs(prev => prev.map(p => (p.id === editingPair.id ? editingPair : p)));
+    setEditModalVisible(false);
   };
 
   const columns = [
@@ -143,20 +201,24 @@ const PendingApprovalsTab: React.FC = () => {
             onClick={() => handleView(record)}
             title={t('view')}
           />
-          <Button
-            type="text"
-            icon={<CheckOutlined />}
-            onClick={() => handleApprove(record.id!)}
-            title={t('approve')}
-            style={{ color: '#52c41a' }}
-          />
-          <Button
-            type="text"
-            danger
-            icon={<CloseOutlined />}
-            onClick={() => handleReject(record.id!)}
-            title={t('reject')}
-          />
+          {record.status === 'pending' && (
+            <>
+              <Button
+                type="text"
+                icon={<CheckOutlined />}
+                onClick={() => handleApprove(record.sentenceId)}
+                title={t('approve')}
+                style={{ color: '#52c41a' }}
+              />
+              <Button
+                type="text"
+                danger
+                icon={<CloseOutlined />}
+                onClick={() => handleReject(record.sentenceId)}
+                title={t('reject')}
+              />
+            </>
+          )}
         </Space>
       ),
     },
@@ -164,8 +226,18 @@ const PendingApprovalsTab: React.FC = () => {
 
   return (
     <div>
-      <Card>
-        <Title level={4}>{t('pending_approval')}</Title>
+      <Card
+        title={<Title level={4} style={{ margin: 0 }}>{t('pending_approval')}</Title>}
+        extra={
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => fetchPendingPairs(pagination.current, pagination.pageSize)}
+            loading={loading}
+          >
+            {t('reload') || 'Reload'}
+          </Button>
+        }
+      >
         
         {sentencePairs.length === 0 ? (
           <div className="text-center py-8">
@@ -206,40 +278,378 @@ const PendingApprovalsTab: React.FC = () => {
         width={800}
       >
         {selectedPair && (
-          <div className="space-y-4">
-            <div>
+          <div>
+            <div style={{ marginBottom: 16 }}>
               <Text strong>{t('sentence_id')}:</Text> {selectedPair.sentenceId}
+              <span style={{ marginLeft: 12 }}><Tag color="orange">{t('pending_approval')}</Tag></span>
             </div>
-            <div>
-              <Text strong>{t('vietnamese_text')}:</Text>
-              <div className="mt-1 p-3 bg-gray-50 rounded">
-                {selectedPair.vietnameseText}
+
+            {/* Vietnamese Analysis */}
+            <div style={{ marginBottom: 32 }}>
+              <Title level={4} style={{ marginBottom: 16 }}>
+                {t('vietnamese_text')} - {t('analyze_results')}
+              </Title>
+
+              {/* Original Vietnamese Text */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ padding: 12, backgroundColor: '#f5f5f5', borderRadius: 6 }}>
+                  {selectedPair.vietnameseText}
+                </div>
               </div>
+
+              {/* Vietnamese Word Analysis Table with per-word actions */}
+              {selectedPair.vietnameseAnalysis && selectedPair.vietnameseAnalysis.length > 0 && (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>#</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('word')}</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>POS</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('lemma')}</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('grm')}</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>NER</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('action')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedPair.vietnameseAnalysis.map((w, idx) => (
+                        <tr key={`vi-${idx}`}>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{idx + 1}</td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee', fontWeight: 600 }}>{w.word}</td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            {viEditingIdx === idx ? (
+                              <input value={w.pos} onChange={(e) => {
+                                const updated = [...(selectedPair.vietnameseAnalysis || [])];
+                                updated[idx] = { ...w, pos: e.target.value } as any;
+                                setSelectedPair({ ...selectedPair, vietnameseAnalysis: updated });
+                              }} style={{ width: 90 }} />
+                            ) : (
+                              <span style={{ backgroundColor: '#e6f7ff', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>
+                                {w.pos || '-'}
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            {viEditingIdx === idx ? (
+                              <input value={w.lemma} onChange={(e) => {
+                                const updated = [...(selectedPair.vietnameseAnalysis || [])];
+                                updated[idx] = { ...w, lemma: e.target.value } as any;
+                                setSelectedPair({ ...selectedPair, vietnameseAnalysis: updated });
+                              }} style={{ width: 120 }} />
+                            ) : (w.lemma || '-')}
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            {viEditingIdx === idx ? (
+                              <input value={w.grm} onChange={(e) => {
+                                const updated = [...(selectedPair.vietnameseAnalysis || [])];
+                                updated[idx] = { ...w, grm: e.target.value } as any;
+                                setSelectedPair({ ...selectedPair, vietnameseAnalysis: updated });
+                              }} style={{ width: 120 }} />
+                            ) : (w.grm || '-')}
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            {viEditingIdx === idx ? (
+                              <input value={w.ner} onChange={(e) => {
+                                const updated = [...(selectedPair.vietnameseAnalysis || [])];
+                                updated[idx] = { ...w, ner: e.target.value } as any;
+                                setSelectedPair({ ...selectedPair, vietnameseAnalysis: updated });
+                              }} style={{ width: 120 }} />
+                            ) : (w.ner || '-')}
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            <Button type="link" onClick={() => setViEditingIdx(viEditingIdx === idx ? null : idx)}>
+                              {viEditingIdx === idx ? t('done') || 'Xong' : t('edit')}
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
+
+            {/* English Analysis */}
             <div>
-              <Text strong>{t('english_text')}:</Text>
-              <div className="mt-1 p-3 bg-gray-50 rounded">
-                {selectedPair.englishText}
+              <Title level={4} style={{ marginBottom: 16 }}>
+                {t('english_text')} - {t('analyze_results')}
+              </Title>
+
+              {/* Original English Text */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ padding: 12, backgroundColor: '#f5f5f5', borderRadius: 6 }}>
+                  {selectedPair.englishText}
+                </div>
               </div>
+
+              {/* English Word Analysis Table with per-word actions */}
+              {selectedPair.englishAnalysis && selectedPair.englishAnalysis.length > 0 && (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>#</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('word')}</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>POS</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('lemma')}</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('grm')}</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>NER</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('action')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedPair.englishAnalysis.map((w, idx) => (
+                        <tr key={`en-${idx}`}>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{idx + 1}</td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee', fontWeight: 600 }}>{w.word}</td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            {enEditingIdx === idx ? (
+                              <input value={w.pos} onChange={(e) => {
+                                const updated = [...(selectedPair.englishAnalysis || [])];
+                                updated[idx] = { ...w, pos: e.target.value } as any;
+                                setSelectedPair({ ...selectedPair, englishAnalysis: updated });
+                              }} style={{ width: 90 }} />
+                            ) : (
+                              <span style={{ backgroundColor: '#f6ffed', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>
+                                {w.pos || '-'}
+                              </span>
+                            )}
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            {enEditingIdx === idx ? (
+                              <input value={w.lemma} onChange={(e) => {
+                                const updated = [...(selectedPair.englishAnalysis || [])];
+                                updated[idx] = { ...w, lemma: e.target.value } as any;
+                                setSelectedPair({ ...selectedPair, englishAnalysis: updated });
+                              }} style={{ width: 120 }} />
+                            ) : (w.lemma || '-')}
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            {enEditingIdx === idx ? (
+                              <input value={w.grm} onChange={(e) => {
+                                const updated = [...(selectedPair.englishAnalysis || [])];
+                                updated[idx] = { ...w, grm: e.target.value } as any;
+                                setSelectedPair({ ...selectedPair, englishAnalysis: updated });
+                              }} style={{ width: 120 }} />
+                            ) : (w.grm || '-')}
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            {enEditingIdx === idx ? (
+                              <input value={w.ner} onChange={(e) => {
+                                const updated = [...(selectedPair.englishAnalysis || [])];
+                                updated[idx] = { ...w, ner: e.target.value } as any;
+                                setSelectedPair({ ...selectedPair, englishAnalysis: updated });
+                              }} style={{ width: 120 }} />
+                            ) : (w.ner || '-')}
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            <Button type="link" onClick={() => setEnEditingIdx(enEditingIdx === idx ? null : idx)}>
+                              {enEditingIdx === idx ? t('done') || 'Xong' : t('edit')}
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Edit Modal */}
+      <Modal
+        title={t('edit')}
+        open={editModalVisible}
+        onCancel={() => setEditModalVisible(false)}
+        onOk={handleApplyEdit}
+        okText={t('edit')}
+        width={900}
+      >
+        {editingPair && (
+          <div>
+            {/* Vietnamese editable section */}
+            <div style={{ marginBottom: 24 }}>
+              <Title level={4} style={{ marginBottom: 12 }}>
+                {t('vietnamese_text')} - {t('analyze_results')}
+              </Title>
+              <textarea
+                value={editingPair.vietnameseText}
+                onChange={(e) => setEditingPair({ ...editingPair, vietnameseText: e.target.value })}
+                rows={3}
+                style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ddd', marginBottom: 12 }}
+              />
+              {editingPair.vietnameseAnalysis && editingPair.vietnameseAnalysis.length > 0 && (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>#</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('word')}</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>POS</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('lemma')}</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('grm')}</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>NER</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Semantic</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {editingPair.vietnameseAnalysis.map((w, idx) => (
+                        <tr key={`evi-${idx}`}>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{idx + 1}</td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee', fontWeight: 600 }}>{w.word}</td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            <Select
+                              value={w.pos}
+                              onChange={(val) => {
+                                const updated = [...(editingPair.vietnameseAnalysis || [])];
+                                updated[idx] = { ...w, pos: val } as any;
+                                setEditingPair({ ...editingPair, vietnameseAnalysis: updated });
+                              }}
+                              style={{ width: 120 }}
+                              options={viPosOptions.map(o => ({ value: o, label: o }))}
+                              showSearch
+                            />
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            <input value={w.lemma} onChange={(e) => {
+                              const updated = [...(editingPair.vietnameseAnalysis || [])];
+                              updated[idx] = { ...w, lemma: e.target.value };
+                              setEditingPair({ ...editingPair, vietnameseAnalysis: updated });
+                            }} style={{ width: 120 }} />
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            <input value={w.grm} onChange={(e) => {
+                              const updated = [...(editingPair.vietnameseAnalysis || [])];
+                              updated[idx] = { ...w, grm: e.target.value };
+                              setEditingPair({ ...editingPair, vietnameseAnalysis: updated });
+                            }} style={{ width: 120 }} />
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            <Select
+                              value={w.ner}
+                              onChange={(val) => {
+                                const updated = [...(editingPair.vietnameseAnalysis || [])];
+                                updated[idx] = { ...w, ner: val } as any;
+                                setEditingPair({ ...editingPair, vietnameseAnalysis: updated });
+                              }}
+                              style={{ width: 140 }}
+                              options={viNerOptions.map(o => ({ value: o, label: o }))}
+                              showSearch
+                            />
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            <Select
+                              value={(w as any).semantic}
+                              onChange={(val) => {
+                                const updated = [...(editingPair.vietnameseAnalysis || [])];
+                                updated[idx] = { ...(w as any), semantic: val } as any;
+                                setEditingPair({ ...editingPair, vietnameseAnalysis: updated });
+                              }}
+                              style={{ width: 140 }}
+                              options={viSemOptions.map(o => ({ value: o, label: o }))}
+                              showSearch
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* English editable section */}
             <div>
-              <Text strong>Status:</Text> <Tag color="orange">{t('pending_approval')}</Tag>
-            </div>
-            <div>
-              <Text strong>Created By:</Text> {selectedPair.createdBy}
-            </div>
-            <div>
-              <Text strong>Created At:</Text> {selectedPair.createdAt ? new Date(selectedPair.createdAt).toLocaleString() : '-'}
-            </div>
-            
-            <div className="mt-6">
-              <Text strong>Analysis Results:</Text>
-              <div className="mt-2 p-4 bg-blue-50 rounded">
-                <Text type="secondary">
-                  The sentence pair has been analyzed and is ready for approval. 
-                  Click "Approve" to move it to the master database, or "Reject" to decline it.
-                </Text>
-              </div>
+              <Title level={4} style={{ marginBottom: 12 }}>
+                {t('english_text')} - {t('analyze_results')}
+              </Title>
+              <textarea
+                value={editingPair.englishText}
+                onChange={(e) => setEditingPair({ ...editingPair, englishText: e.target.value })}
+                rows={3}
+                style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid #ddd', marginBottom: 12 }}
+              />
+              {editingPair.englishAnalysis && editingPair.englishAnalysis.length > 0 && (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>#</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('word')}</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>POS</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('lemma')}</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>{t('grm')}</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>NER</th>
+                        <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Semantic</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {editingPair.englishAnalysis.map((w, idx) => (
+                        <tr key={`een-${idx}`}>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{idx + 1}</td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee', fontWeight: 600 }}>{w.word}</td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            <Select
+                              value={w.pos}
+                              onChange={(val) => {
+                                const updated = [...(editingPair.englishAnalysis || [])];
+                                updated[idx] = { ...w, pos: val } as any;
+                                setEditingPair({ ...editingPair, englishAnalysis: updated });
+                              }}
+                              style={{ width: 120 }}
+                              options={enPosOptions.map(o => ({ value: o, label: o }))}
+                              showSearch
+                            />
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            <input value={w.lemma} onChange={(e) => {
+                              const updated = [...(editingPair.englishAnalysis || [])];
+                              updated[idx] = { ...w, lemma: e.target.value };
+                              setEditingPair({ ...editingPair, englishAnalysis: updated });
+                            }} style={{ width: 120 }} />
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            <input value={w.grm} onChange={(e) => {
+                              const updated = [...(editingPair.englishAnalysis || [])];
+                              updated[idx] = { ...w, grm: e.target.value };
+                              setEditingPair({ ...editingPair, englishAnalysis: updated });
+                            }} style={{ width: 120 }} />
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            <Select
+                              value={w.ner}
+                              onChange={(val) => {
+                                const updated = [...(editingPair.englishAnalysis || [])];
+                                updated[idx] = { ...w, ner: val } as any;
+                                setEditingPair({ ...editingPair, englishAnalysis: updated });
+                              }}
+                              style={{ width: 140 }}
+                              options={enNerOptions.map(o => ({ value: o, label: o }))}
+                              showSearch
+                            />
+                          </td>
+                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                            <Select
+                              value={(w as any).semantic}
+                              onChange={(val) => {
+                                const updated = [...(editingPair.englishAnalysis || [])];
+                                updated[idx] = { ...(w as any), semantic: val } as any;
+                                setEditingPair({ ...editingPair, englishAnalysis: updated });
+                              }}
+                              style={{ width: 140 }}
+                              options={enSemOptions.map(o => ({ value: o, label: o }))}
+                              showSearch
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}

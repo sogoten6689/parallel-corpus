@@ -66,3 +66,9 @@ export const getPendingSentencePairs = async (page: number = 1, limit: number = 
   });
   return response.data;
 };
+
+// Load analyzed tokens from backend storage
+export const getSentencePairAnalysis = async (sentenceId: string): Promise<{ vietnameseAnalysis: any[]; englishAnalysis: any[] }> => {
+  const res = await axiosInstance.get(`/api/sentence-pairs/${sentenceId}/analysis`);
+  return res.data;
+};
