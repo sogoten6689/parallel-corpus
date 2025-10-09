@@ -5,6 +5,7 @@ import { Form, Input, Select, Button, Card, Row, Col, Typography, message, Spin,
 import { DownOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { createSentencePair, analyzeSentences, saveSentencePair } from '@/services/sentence-pair/sentence-pair-api';
+import DependencyTree from '@/components/ui/dependency-tree';
 import type { CreateSentencePairRequest, WordAnalysis } from '@/types/sentence-pair.type';
 
 const { TextArea } = Input;
@@ -298,6 +299,16 @@ const CreateSentencePairTab: React.FC<CreateSentencePairTabProps> = ({ onSuccess
                   </table>
                 </div>
               )}
+
+              {/* Vietnamese Dependency Tree */}
+              {sentence.tokens && sentence.tokens.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <Title level={5} style={{ marginBottom: 12 }}>
+                    {t('vietnamese_text')} - {t('dependency_tree')}
+                  </Title>
+                  <DependencyTree tokens={sentence.tokens} />
+                </div>
+              )}
             </div>
           ))}
 
@@ -349,6 +360,16 @@ const CreateSentencePairTab: React.FC<CreateSentencePairTabProps> = ({ onSuccess
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {/* English Dependency Tree */}
+              {sentence.tokens && sentence.tokens.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <Title level={5} style={{ marginBottom: 12 }}>
+                    {t('english_text')} - {t('dependency_tree')}
+                  </Title>
+                  <DependencyTree tokens={sentence.tokens} />
                 </div>
               )}
             </div>
