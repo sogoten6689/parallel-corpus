@@ -14,7 +14,7 @@ SECRET_KEY = "your-secret-key-here-change-in-production"  # Change this in produ
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
-pwd_context = CryptContext(schemes=["argon2", "bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2", "bcrypt"], default="argon2", deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 # Simple in-memory token blacklist for logout
