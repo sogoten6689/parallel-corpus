@@ -287,12 +287,17 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, lang_pair: str, sear
     computed over all RowWord rows for the given lang_code.
 
     The indices are based on the order of rows sorted by (ID_sen, ID).
+    Now returns data for both language directions regardless of lang_pair value.
     """
     if not lang_code:
         raise HTTPException(status_code=400, detail="lang_code is required")
 
+    # Determine both possible language pairs
+    pair1 = f"{lang_code}_{other_lang_code}"
+    pair2 = f"{other_lang_code}_{lang_code}"
+    
     query = db.query(MasterRowWord).filter(MasterRowWord.lang_code == lang_code)
-    query = query.filter(MasterRowWord.lang_pair == lang_pair)
+    query = query.filter(MasterRowWord.lang_pair.in_([pair1, pair2]))
 
     
     if search != '':  # Kiểm tra search khác rỗng
@@ -324,7 +329,7 @@ def get_dicid_by_lang(lang_code: str, other_lang_code: str, lang_pair: str, sear
         db.query(MasterRowWord)
         .filter(MasterRowWord.lang_code.in_([lang_code, other_lang_code]))
         .filter(MasterRowWord.id_sen.in_(list_id_sen))
-        .filter(MasterRowWord.lang_pair == lang_pair)
+        .filter(MasterRowWord.lang_pair.in_([pair1, pair2]))
         .order_by(MasterRowWord.id_sen, MasterRowWord.id)
         .all()
     )
@@ -462,12 +467,17 @@ def get_dicid_by_lang_with_tag(
     """
     Return a dictionary mapping ID_sen -> { start: int, end: int }
     computed over all RowWord rows for the given lang_code with tag filter.
+    Now returns data for both language directions regardless of lang_pair value.
     """
     if not lang_code:
         raise HTTPException(status_code=400, detail="lang_code is required")
 
+    # Determine both possible language pairs
+    pair1 = f"{lang_code}_{other_lang_code}"
+    pair2 = f"{other_lang_code}_{lang_code}"
+    
     query = db.query(MasterRowWord).filter(MasterRowWord.lang_code == lang_code)
-    query = query.filter(MasterRowWord.lang_pair == lang_pair)
+    query = query.filter(MasterRowWord.lang_pair.in_([pair1, pair2]))
 
     # Apply search filter
     if search != '':
@@ -503,7 +513,7 @@ def get_dicid_by_lang_with_tag(
         db.query(MasterRowWord)
         .filter(MasterRowWord.lang_code.in_([lang_code, other_lang_code]))
         .filter(MasterRowWord.id_sen.in_(list_id_sen))
-        .filter(MasterRowWord.lang_pair == lang_pair)
+        .filter(MasterRowWord.lang_pair.in_([pair1, pair2]))
         .order_by(MasterRowWord.id_sen, MasterRowWord.id)
         .all()
     )
