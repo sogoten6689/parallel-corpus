@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from database import SessionLocal
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth_router, user_api, master_api, nlp_router, vietnamese_normalization_api
+from routers import auth_router, user_api, master_api, nlp_router, vietnamese_normalization_api, sentence_pair_api
 from init_db import create_database_if_not_exists
 create_database_if_not_exists()
 
@@ -33,6 +33,7 @@ app.include_router(master_api.router,prefix="/api", tags=["master"]) # admin qua
 app.include_router(user_api, tags=["users"]) # admin quan ly nguoi dung
 app.include_router(nlp_router, prefix="/nlp", tags=["nlp"]) # NLP processing
 app.include_router(vietnamese_normalization_api.router, prefix="/vietnamese", tags=["vietnamese-normalization"]) # Vietnamese text normalization
+app.include_router(sentence_pair_api.router, prefix="/api", tags=["sentence-pairs"]) # Sentence pairs management
 # app.include_router(word_row_master_api.router, tags=["word-row-master"])
 # app.include_router(import_api.router, prefix="/api", tags=["import"])
 # app.include_router(export_api.router, prefix="/api", tags=["export"])

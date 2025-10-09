@@ -20,5 +20,8 @@ COPY . .
 # Copy .env.sample to .env if it doesn't exist
 RUN cp .env.sample .env
 
+# Set PYTHONPATH to include the current directory
+ENV PYTHONPATH=/app
+
 # CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

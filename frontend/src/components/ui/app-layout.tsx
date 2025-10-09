@@ -20,6 +20,7 @@ import {
   AccountBookOutlined,
   DownOutlined,
   MenuOutlined,
+  BookOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useTheme } from '@/app/theme-provider';
@@ -213,11 +214,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               { key: '4', icon: <TagsOutlined />, label: <Link href="/word-tag">{t('menu_word_tag')}</Link> },
               { key: '5', icon: <StockOutlined />, label: <Link href="/statistical">{t('statistical')}</Link> },
               { key: '7', icon: <InfoOutlined />, label: <Link href="/introduction">{t('introduction')}</Link> },
-              // user?.id ? { key: '9', icon: <UserOutlined />, label: <Link href="/my-word">{t('my_word')}</Link> } : null,
             ];
             const mgmtChildren: Exclude<MenuProps['items'], undefined> = [
               user?.role === 'admin' ? { key: '6', icon: <SettingOutlined />, label: <Link href="/users">{t('user')}</Link> } : null,
               user?.id ? { key: '8', icon: <AccountBookOutlined />, label: <Link href="/my-profile">{t('profile')}</Link> } : null,
+              user?.id ? { key: '9', icon: <BookOutlined />, label: <Link href="/my-word">{t('my_word')}</Link> } : null,
             ].filter((i): i is NonNullable<typeof i> => i !== null);
             if (mgmtChildren.length > 0) {
               base.splice(5, 0, { key: 'mgmt', icon: <SettingOutlined />, label: <span>{t('management')}</span>, children: mgmtChildren });
