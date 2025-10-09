@@ -1,5 +1,5 @@
 import { axiosInstance } from '../axios';
-import { fullTextAnalysis, vietnameseFullAnalysis } from '../nlp/nlp-api';
+import { fullTextAnalysis, vietnameseFullAnalysis, namedEntityRecognition } from '../nlp/nlp-api';
 import type { SentencePair, CreateSentencePairRequest, SaveSentencePairRequest } from '@/types/sentence-pair.type';
 
 // Create a new sentence pair for analysis
@@ -15,7 +15,14 @@ export const analyzeSentences = async (vietnameseText: string, englishText: stri
   // Analyze Vietnamese text
   try {
     const vietnameseResult = await vietnameseFullAnalysis(vietnameseText);
-    results["vietnamese"] = vietnameseResult;
+    // Get Vietnamese NER separately
+    const vietnameseNer = await axiosInstance.post('/nlp/vietnamese/ner', { text: vietnameseText });
+    
+    // Combine analysis with NER
+    results["vietnamese"] = {
+      ...vietnameseResult,
+      entities: vietnameseNer.data
+    };
   } catch (error) {
     results["vietnamese"] = { error: `Vietnamese analysis failed: ${error}` };
   }
@@ -23,7 +30,14 @@ export const analyzeSentences = async (vietnameseText: string, englishText: stri
   // Analyze English text
   try {
     const englishResult = await fullTextAnalysis(englishText);
-    results["english"] = englishResult;
+    // Get English NER separately
+    const englishNer = await namedEntityRecognition(englishText);
+    
+    // Combine analysis with NER
+    results["english"] = {
+      ...englishResult,
+      entities: englishNer
+    };
   } catch (error) {
     results["english"] = { error: `English analysis failed: ${error}` };
   }
