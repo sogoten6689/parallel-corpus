@@ -224,7 +224,6 @@ async def full_text_analysis(request: TextRequest):
             for token in sent:
                 # Map POS tag to specific value
                 specific_pos, pos_explanation = map_pos_tag(token.pos_, "en")
-                
                 tokens.append(TokenInfo(
                     text=token.text,
                     pos=specific_pos,

@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import Modal from 'antd/es/modal/Modal';
 import { useQuery } from "@tanstack/react-query";
 import { fetchMasterRowWords, updateMasterRowWordApi, fetchPOS, fetchNER, fetchSemantic } from '@/services/master/master-api';
-import { fullTextAnalysis, vietnameseFullAnalysis } from '@/services/nlp/nlp-api';
+import { fullTextAnalysis, vietnameseFullAnalysis, namedEntityRecognition } from '@/services/nlp/nlp-api';
 import { normalizeVietnameseSyllable } from '@/services/vietnamese/vietnamese-normalization-api';
 import { MasterRowWord } from '@/types/master-row-word.type';
 import Card from 'antd/es/card/Card';
@@ -15,6 +15,7 @@ import Dropdown from 'antd/es/dropdown/dropdown';
 import { EditOutlined, DownOutlined, RobotOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { useAuth } from '@/contexts/AuthContext';
 import useApp from 'antd/es/app/useApp';
+import { axiosInstance } from '@/services/axios';
 
 
 const { Text } = Typography;
@@ -263,6 +264,20 @@ export default function MasterRowWordTable() {
         ? await vietnameseFullAnalysis(sentenceText)
         : await fullTextAnalysis(sentenceText);
 
+      // Get NER separately
+      let nerEntities: any[] = [];
+      try {
+        if (selectedWord.lang_code === 'vi') {
+          const nerResult = await axiosInstance.post('/nlp/vietnamese/ner', { text: sentenceText });
+          nerEntities = nerResult.data || [];
+        } else {
+          const nerResult = await namedEntityRecognition(sentenceText);
+          nerEntities = nerResult || [];
+        }
+      } catch (error) {
+        console.warn('NER analysis failed:', error);
+      }
+
       // Map token results back to rows by order
       const firstSentence = analysisResult.sentences && analysisResult.sentences.length > 0 ? analysisResult.sentences[0] : null;
       const tokens = (firstSentence?.tokens || []) as any[];
@@ -296,8 +311,8 @@ export default function MasterRowWordTable() {
       }));
 
       // Assign NER labels best-effort
-      if ((analysisResult as any).entities && (analysisResult as any).entities.length > 0) {
-        ((analysisResult as any).entities as any[]).forEach((ent: any) => {
+      if (nerEntities && nerEntities.length > 0) {
+        nerEntities.forEach((ent: any) => {
           const label = ent.label;
           const entText = (ent.text || '').trim();
           if (!entText) return;

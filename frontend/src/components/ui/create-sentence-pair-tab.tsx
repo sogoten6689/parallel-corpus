@@ -279,22 +279,35 @@ const CreateSentencePairTab: React.FC<CreateSentencePairTabProps> = ({ onSuccess
                       </tr>
                     </thead>
                     <tbody>
-                      {sentence.tokens.map((token: any, tokenIndex: number) => (
-                        <tr key={tokenIndex}>
-                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{tokenIndex + 1}</td>
-                          <td style={{ padding: 8, borderBottom: '1px solid #eee', fontWeight: 'bold' }}>
-                            {token.text}
-                          </td>
-                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
-                            <span style={{ backgroundColor: '#e6f7ff', padding: '2px 6px', borderRadius: 4, fontSize: '12px' }}>
-                              {token.pos || '-'}
-                            </span>
-                          </td>
-                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{token.lemma || '-'}</td>
-                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{token.dep || '-'}</td>
-                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{token.ner || '-'}</td>
-                        </tr>
-                      ))}
+                      {sentence.tokens.map((token: any, tokenIndex: number) => {
+                        // Find NER for this token from entities
+                        const tokenNer = analysisResults.vietnamese?.entities?.find((entity: any) => 
+                          entity.text.includes(token.text) || token.text.includes(entity.text)
+                        );
+                        
+                        return (
+                          <tr key={tokenIndex}>
+                            <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{tokenIndex + 1}</td>
+                            <td style={{ padding: 8, borderBottom: '1px solid #eee', fontWeight: 'bold' }}>
+                              {token.text}
+                            </td>
+                            <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                              <span style={{ backgroundColor: '#e6f7ff', padding: '2px 6px', borderRadius: 4, fontSize: '12px' }}>
+                                {token.pos || '-'}
+                              </span>
+                            </td>
+                            <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{token.lemma || '-'}</td>
+                            <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{token.dep || '-'}</td>
+                            <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                              {tokenNer ? (
+                                <span style={{ backgroundColor: '#fff7e6', padding: '2px 6px', borderRadius: 4, fontSize: '12px' }}>
+                                  {tokenNer.label}
+                                </span>
+                              ) : '-'}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -342,22 +355,35 @@ const CreateSentencePairTab: React.FC<CreateSentencePairTabProps> = ({ onSuccess
                       </tr>
                     </thead>
                     <tbody>
-                      {sentence.tokens.map((token: any, tokenIndex: number) => (
-                        <tr key={tokenIndex}>
-                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{tokenIndex + 1}</td>
-                          <td style={{ padding: 8, borderBottom: '1px solid #eee', fontWeight: 'bold' }}>
-                            {token.text}
-                          </td>
-                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
-                            <span style={{ backgroundColor: '#f6ffed', padding: '2px 6px', borderRadius: 4, fontSize: '12px' }}>
-                              {token.pos || '-'}
-                            </span>
-                          </td>
-                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{token.lemma || '-'}</td>
-                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{token.dep || '-'}</td>
-                          <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{token.ner || '-'}</td>
-                        </tr>
-                      ))}
+                      {sentence.tokens.map((token: any, tokenIndex: number) => {
+                        // Find NER for this token from entities
+                        const tokenNer = analysisResults.english?.entities?.find((entity: any) => 
+                          entity.text.includes(token.text) || token.text.includes(entity.text)
+                        );
+                        
+                        return (
+                          <tr key={tokenIndex}>
+                            <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{tokenIndex + 1}</td>
+                            <td style={{ padding: 8, borderBottom: '1px solid #eee', fontWeight: 'bold' }}>
+                              {token.text}
+                            </td>
+                            <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                              <span style={{ backgroundColor: '#f6ffed', padding: '2px 6px', borderRadius: 4, fontSize: '12px' }}>
+                                {token.pos || '-'}
+                              </span>
+                            </td>
+                            <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{token.lemma || '-'}</td>
+                            <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>{token.dep || '-'}</td>
+                            <td style={{ padding: 8, borderBottom: '1px solid #eee' }}>
+                              {tokenNer ? (
+                                <span style={{ backgroundColor: '#fff7e6', padding: '2px 6px', borderRadius: 4, fontSize: '12px' }}>
+                                  {tokenNer.label}
+                                </span>
+                              ) : '-'}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
