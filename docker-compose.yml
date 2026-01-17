@@ -6,7 +6,7 @@ services:
     build: ./backend
     container_name: paracor-backend
     ports:
-      - "8000:8000"
+      - "8002:8000"
     volumes:
       - ./backend:/app
     env_file:
@@ -19,22 +19,22 @@ services:
     build: ./frontend
     container_name: paracor-frontend
     ports:
-      - "3000:3000"
+      - "3002:3000"
     volumes:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
     env_file:
       - ./frontend/.env.local
     restart: unless-stopped
-#   db:
-#     image: postgres:15
-#     container_name: paracor-db
-#     restart: unless-stopped
-#     ports:
-#       - "5432:5432"
-#     volumes:
-#       - postgres_data:/var/lib/postgresql/data
-#     env_file:
-#       - ./backend/.env
-# volumes:
-#   postgres_data:
+  db:
+    image: postgres:15
+    container_name: paracor-db
+    restart: unless-stopped
+    ports:
+      - "5437:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ./backend/.env
+volumes:
+  postgres_data:
