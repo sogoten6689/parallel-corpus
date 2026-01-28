@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 from database import get_db
 from auth import authenticate_user, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, get_current_active_user
-from crud import get_user_by_email, create_user, get_users
+from crud import create_initial_users, get_user_by_email, create_user, get_users
 from schemas.user import UserCreate, UserLogin, UserResponse, Token, UserUpdateBase, UserUpdateByAdminBase
 from models.user import UserRole, User
 from sqlalchemy import or_
@@ -65,6 +65,22 @@ def get_user_detail(id: int = 0, db: Session = Depends(get_db), current_user: Us
         }
     }
 
+@router.post("/create-user-by-admin",)
+def create_user_by_admin(user_create: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    try: 
+        create_initial_users(db)
+        return {
+            "message": "User created successfully",
+            "data": {
+                
+            }
+        }   
+    except HTTPException:
+            raise  # Bắn lại lỗi đã raise trước đó
+
+
+
+
 @router.put("/users/{id}",)
 def update_user(id: int = 0, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user),  user_update: UserUpdateByAdminBase = UserUpdateByAdminBase):
     """Lấy danh sách users (chỉ admin) / Get list of users (admin only)"""
@@ -108,7 +124,7 @@ def update_user(id: int = 0, db: Session = Depends(get_db), current_user: User =
                 "role": user.role
             }
         }
-
+    
     except HTTPException:
         raise  # Bắn lại lỗi đã raise trước đó
 
