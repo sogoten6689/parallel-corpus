@@ -65,20 +65,6 @@ def get_user_detail(id: int = 0, db: Session = Depends(get_db), current_user: Us
         }
     }
 
-@router.post("/create-user-by-admin",)
-def create_user_by_admin(user_create: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    try: 
-        create_initial_users(db)
-        return {
-            "message": "User created successfully",
-            "data": {
-                
-            }
-        }   
-    except HTTPException:
-            raise  # Bắn lại lỗi đã raise trước đó
-
-
 
 
 @router.put("/users/{id}",)

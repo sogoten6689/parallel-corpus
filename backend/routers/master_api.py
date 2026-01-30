@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from backend.crud import create_initial_users
+from backend.schemas.user import UserCreate
 from models.master_row_word import MasterRowWord
 from database import get_db
 from fastapi import APIRouter, UploadFile, File, Depends, Form, HTTPException, BackgroundTasks
@@ -81,6 +83,20 @@ def get_all(db: Session = Depends(get_db), response_model=MasterRowWordListRespo
         "total_sen": total_sen,
         "total_pages": total_pages,
     }
+
+@router.post("/create-user-by-admin",)
+def create_user_by_admin(user_create: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    try: 
+        create_initial_users(db)
+        return {
+            "message": "User created successfully",
+            "data": {
+                
+            }
+        }   
+    except HTTPException:
+            raise  # Bắn lại lỗi đã raise trước đó
+
 
 
 @router.get("/pos")
