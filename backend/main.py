@@ -7,10 +7,11 @@ from init_db import create_database_if_not_exists
 create_database_if_not_exists()
 
 app = FastAPI(
+    openapi_prefix="/backend",
     title="Parallel Corpus API",
     version="1.0.0",
 )
-
+# backend_router = APIRouter(prefix="/backend")
 # 👇 Add this block to allow frontend to talk to backend
 app.add_middleware(
     CORSMiddleware,
@@ -27,6 +28,8 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# router = APIRouter(prefix="/master", tags=["master"])
 
 # app.include_router(api.router)
 app.include_router(auth_router, prefix="/auth", tags=["authentication"])
