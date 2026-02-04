@@ -43,11 +43,11 @@ app.include_router(sentence_pair_api.router, prefix="/api", tags=["sentence-pair
 # app.include_router(export_api.router, prefix="/api", tags=["export"])
 # app.include_router(dicId_api.router, tags=["dicid"])
 
-@app.on_event("startup")
-async def startup_event():
-    """Create initial users on startup"""
-    db = next(get_db())
-    try:
-        create_initial_users(db)
-    finally:
-        db.close()
+# @app.on_event("startup")
+# async def startup_event():
+#     """Create initial users on startup"""
+#     db = next(get_db())
+#     try:
+#         create_initial_users(db)
+#     finally:
+#         db.close()
