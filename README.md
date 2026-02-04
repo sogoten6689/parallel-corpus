@@ -12,3 +12,6 @@ sudo docker compose exec backend bash
 
 
 sudo docker compose exec backend bash alembic upgrade head
+
+413: nginx 
+    client_max_body_size 200M;
