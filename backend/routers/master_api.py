@@ -765,7 +765,7 @@ def extract_sentence_id(id_str: str) -> str:
     id_str = id_str.replace("\ufeff", "").strip()
     if len(id_str) >= 10:
         return id_str[2:-2]
-    raise ValueError(f"ID không hợp lệ: {id_str}")
+    raise ValueError(f"ID(extract_sentence_id) không hợp lệ: {id_str}")
 def extract_main_id(id_str: str) -> str:
     """
     Trích xuất 8 chữ số chính từ chuỗi ID dạng VDxxxxxxYY
@@ -776,7 +776,7 @@ def extract_main_id(id_str: str) -> str:
     # if len(id_str) >= 10 and (id_str.startswith("ED") or id_str.startswith("VD") or id_str.startswith("KR")):
     if len(id_str) >= 10:
         return id_str[2:10]
-    raise ValueError(f"ID không hợp lệ: {id_str}")
+    raise ValueError(f"ID(extract_main_id) không hợp lệ: {id_str}")
 
 def extract_last_key_id(id_str: str) -> int:
     """
@@ -787,7 +787,7 @@ def extract_last_key_id(id_str: str) -> int:
     id_str = id_str.replace("\ufeff", "").strip()
     if len(id_str) >= 8:
         return int(id_str[-2:])
-    raise ValueError(f"ID không hợp lệ: {id_str}")
+    raise ValueError(f"ID(extract_last_key_id) không hợp lệ: {id_str}")
 
 def create_phrase(key: str) -> List[List[str]]:
     """
