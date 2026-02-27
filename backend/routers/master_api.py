@@ -1,3 +1,4 @@
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 # from backend.crud import create_initial_users
@@ -13,6 +14,7 @@ from models.user import User, UserRole
 from typing import List, Optional
 from sqlalchemy import distinct, func, or_
 import math
+from fastapi_cache.decorator import cache
 
 
 from responses.master_row_word_list_response import MasterRowWordListResponse
@@ -48,6 +50,7 @@ async def import_corpus_file(current_user: Optional[User] = Depends(get_current_
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
 
 @router.get("/words")
+@cache(expire=600)
 def get_all(db: Session = Depends(get_db), response_model=MasterRowWordListResponse,
             page: int = 1, limit: int = 10, lang_code: str = '', search: str = ''):
     total_all = db.query(func.count(MasterRowWord.id)).scalar()

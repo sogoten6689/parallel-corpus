@@ -1,3 +1,7 @@
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+from fastapi_cache.decorator import cache
+import redis
 from fastapi import FastAPI
 from crud import create_initial_users
 from database import SessionLocal
@@ -45,6 +49,8 @@ app.include_router(sentence_pair_api.router, prefix="/api", tags=["sentence-pair
 
 @app.on_event("startup")
 async def startup_event():
+    redis_client = redis.Redis(host="localhost", port=6379, db=0)
+    FastAPICache.init(RedisBackend(redis_client), prefix="fastapi-cache")
     """Create initial users on startup"""
     db = next(get_db())
     try:
