@@ -254,7 +254,11 @@ class MasterRowWordService:
         self._commit(db)
         return len(rows)
     
-    def delete_all_fast(self, db: Session) -> int:
+    def delete_all_fast(self, db: Session, lang_code: str = "", lang_pair: str = "") -> int:
+        if lang_code:
+            db.query(self.model).filter(self.model.lang_code == lang_code).delete(synchronize_session=False)
+        if lang_pair:
+            db.query(self.model).filter(self.model.lang_pair == lang_pair).delete(synchronize_session=False)
         count = db.query(self.model).delete(synchronize_session=False)
         db.commit()
         return count

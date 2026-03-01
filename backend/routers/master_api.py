@@ -296,9 +296,9 @@ def update_word(db: Session = Depends(get_db), response_model=MasterRowWordListR
 
 
 @router.delete("/words/delete-all")
-def delete_all(db: Session = Depends(get_db)):
-    master_row_word_service.delete_all_fast(db)
-    return {"message": "All words deleted successfully"}
+def delete_all(db: Session = Depends(get_db), lang_code: str = "", lang_pair: str = ""):
+    master_row_word_service.delete_all_fast(db, lang_code, lang_pair)
+    return {"message": "All words deleted successfully", "lang_code": lang_code, "lang_pair": lang_pair}
 
 @router.get("/dicid")
 def get_dicid_by_lang(lang_code: str, other_lang_code: str, lang_pair: str, search: str = '', is_morph: bool = False, is_phrase: bool = False, page: int = 1, limit: int = 10, db: Session = Depends(get_db)):
